@@ -70,7 +70,7 @@
         }
     }
     NSString *dbPath =  [path stringByAppendingPathComponent:dbName];
-    VVLog(@"创建数据: %@", dbPath);
+    VVLog(@"打开或创建数据库: %@", dbPath);
     FMDatabase *fmdb = [FMDatabase databaseWithPath:dbPath];
     if ([fmdb open]) {
         if(encryptKey && encryptKey.length > 0){

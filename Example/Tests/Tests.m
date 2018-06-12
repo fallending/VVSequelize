@@ -8,6 +8,7 @@
 
 #import "VVOrmModel.h"
 #import "VVTestClasses.h"
+#import "VVSequelizeConst.h"
 
 @import XCTest;
 
@@ -20,6 +21,7 @@
 - (void)setUp
 {
     [super setUp];
+    VVSequelizeConst.verbose = YES;
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -30,15 +32,16 @@
 }
 
 - (void)testOrmModel{
-    VVOrmModel *personModel = [[VVOrmModel alloc] initWithClass:VVTestPerson.class];
+//    VVOrmModel *personModel = [[VVOrmModel alloc] initWithClass:VVTestPerson.class];
     VVOrmModel *personModel1 = [[VVOrmModel alloc] initWithClass:VVTestPerson.class
                                                     fieldOptions:@{@"idcard":@(VVOrmPrimaryKey),
                                                                    @"mobile":@(VVOrmUnique),
-                                                                   @"name":@(VVOrmNonnull)}
+                                                                   @"name":@(VVOrmNonnull),
+                                                                   @"arr":@(VVOrmUnique | VVOrmNonnull)}
                                                         excludes:nil
                                                        tableName:@"persons"
-                                                        dataBase:nil];
-    NSLog(@"%@", personModel);
+                                                        dataBase:nil];    
+//    NSLog(@"%@", personModel);
     NSLog(@"%@", personModel1);
 }
 
