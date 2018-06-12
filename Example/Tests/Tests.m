@@ -7,6 +7,7 @@
 //
 
 #import "VVOrmModel.h"
+#import "VVTestClasses.h"
 
 @import XCTest;
 
@@ -28,14 +29,17 @@
     [super tearDown];
 }
 
-- (void)testOrmOptions{
-    NSDictionary *xdic = nil;
-    NSDictionary *dic = @{@"key1": @(1), @"key2":@(2)};
-    NSUInteger i = [xdic[@"a"] integerValue];
-    for (NSString *key in dic) {
-        NSNumber *val = dic[key];
-        NSLog(@"key : %@, val: %@", key,val);
-    }
+- (void)testOrmModel{
+    VVOrmModel *personModel = [[VVOrmModel alloc] initWithClass:VVTestPerson.class];
+    VVOrmModel *personModel1 = [[VVOrmModel alloc] initWithClass:VVTestPerson.class
+                                                    fieldOptions:@{@"idcard":@(VVOrmPrimaryKey),
+                                                                   @"mobile":@(VVOrmUnique),
+                                                                   @"name":@(VVOrmNonnull)}
+                                                        excludes:nil
+                                                       tableName:@"persons"
+                                                        dataBase:nil];
+    NSLog(@"%@", personModel);
+    NSLog(@"%@", personModel1);
 }
 
 - (void)testExample

@@ -42,7 +42,7 @@ typedef NS_OPTIONS(NSUInteger, VVOrmOption) {
                      dataBase:(nullable VVFMDB *)vvfmdb;
 
 /**
- 定义ORM模型
+ 定义ORM模型.可自动新增字段,##不会修改或删除原有字段##.
  
  @param cls 模型(Class)
  @param fields 自定义各个字段的配置,格式@{@"field1":@(VVOrmOption),@"field2":@(VVOrmOption),...}}

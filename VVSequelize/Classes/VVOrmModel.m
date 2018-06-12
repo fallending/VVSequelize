@@ -14,6 +14,36 @@
 #define SQL_REAL     @"REAL" //浮点
 #define SQL_BLOB     @"BLOB" //data
 
+typedef NS_ENUM(NSUInteger, SqlDataType) {
+    SqlDataTypeInteger = 1,
+    SqlDataTypeText,
+    SqlDataTypeBlob,
+    SqlDataTypeReal,
+    SqlDataTypeNumeric,
+};
+
+NSString * const SqlDataTypeString[] = {
+    [SqlDataTypeInteger] = @"INTEGER",
+    [SqlDataTypeText]    = @"TEXT",
+    [SqlDataTypeBlob]    = @"BLOB",
+    [SqlDataTypeReal]    = @"REAL",
+    [SqlDataTypeNumeric] = @"NUMERIC"
+};
+
+NSString *sqlTypeStringOfType(SqlDataType type){
+    return (type >= SqlDataTypeInteger && type <= SqlDataTypeNumeric) ? SqlDataTypeString[type] : nil;
+}
+SqlDataType sqlTypeWithString(NSString *typeString){
+    NSString *uppercaseTypeString = typeString.uppercaseString;
+    for (SqlDataType type = SqlDataTypeInteger; type <= SqlDataTypeNumeric; type ++) {
+        NSString *tempString = sqlTypeStringOfType(type);
+        if ([uppercaseTypeString hasPrefix:tempString]) {
+            return type;
+        }
+    }
+    return 0;
+}
+
 @interface VVOrmModel ()
 
 @property (nonatomic, strong) VVFMDB *vvfmdb;
@@ -40,17 +70,18 @@
                      dataBase:(VVFMDB *)vvfmdb{
     self = [super init];
     if (self) {
-        _vvfmdb    = vvfmdb;
-        _tableName = tableName;
+        _vvfmdb    = vvfmdb ? vvfmdb : VVFMDB.defalutDb;
+        _tableName = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
         _cls       = cls;
         
         NSDictionary *classFields = [self classFields];
+        NSMutableDictionary *storeFields = [NSMutableDictionary dictionaryWithCapacity:0];
         // 1. 生成数据库fields
         for (NSString *key in classFields) {
             if([excludes containsObject:key]) continue;
-            NSString *type = classFields[key];
+            NSUInteger type = [classFields[key] integerValue];
             NSUInteger option = [fieldOptions[key] integerValue];
-            
+            storeFields[key] = @(type | option); //高8位为数据类型,低8位为数据选项
         }
         
         // 2. 检查数据表是否存在
@@ -58,64 +89,76 @@
         // 2.若存在
         if(exist){
             // 获取已存在字段
-            NSArray *tableFields = [self tableFields];
-            NSMutableArray *willModifies = [NSMutableArray arrayWithCapacity:0];
-            NSMutableArray *willDeletes = [NSMutableArray arrayWithCapacity:0];
-            
-            
-            // 计算需要修改的字段
-            
-            // 计算需要删除的字段
+            NSDictionary *tableFields = [self tableFields];
+            // 计算需要添加的字段
+            NSArray *tableKeys = tableFields.allKeys;
+            NSInteger count = 0,failCount = 0;
+            BOOL ret = YES;
+            for (NSString *field in storeFields) {
+                if([tableKeys containsObject:field]) continue;
+                NSUInteger option = [storeFields[field] unsignedIntegerValue];
+                NSString *fieldString = [self fieldSqlOf:field option:option];
+                NSString *sql = [NSString stringWithFormat:@"ALERT TABLE \"%@\" %@", _tableName, fieldString];
+                VVLog(@"%i: %@",__LINE__,sql);
+                count ++;
+                ret = [_vvfmdb.db executeUpdate:sql];
+                if(!ret) failCount ++;
+                if(option & VVOrmUnique){
+                    sql = [NSString stringWithFormat:@"ALERT TABLE \"%@\" CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT FAIL ",_tableName, field, field];
+                    VVLog(@"%i: %@",__LINE__,sql);
+                    count ++;
+                    ret = [_vvfmdb.db executeUpdate:sql];
+                    if(!ret) failCount ++;
+                }
+            }
+            NSAssert1(failCount == 0, @"插入字段失败: %@", @(count));
         }
         // 3.若不存在,计算需要新建的字段
         else{
-            
+            NSAssert1(storeFields.count > 0, @"无需创建表: %@", _tableName);
+            NSString *primaryKey = nil;
+            NSMutableString *fieldsString = [NSMutableString stringWithCapacity:0];
+            for (NSString *field in storeFields) {
+                NSUInteger option = [storeFields[field] unsignedIntegerValue];
+                NSString *fieldStr = [self fieldSqlOf:field option:option];
+                [fieldsString appendFormat:@"%@,",fieldStr];
+                if(option & VVOrmPrimaryKey) primaryKey = field;
+            }
+            if(!primaryKey){
+                [fieldsString appendFormat:@"\"vv_pkid\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"];
+            }
+            for (NSString *field in storeFields) {
+                NSUInteger option = [storeFields[field] unsignedIntegerValue];
+                if(option & VVOrmUnique) {
+                    [fieldsString appendFormat:@"CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT FAIL,", field, field];
+                }
+            }
+            [fieldsString deleteCharactersInRange:NSMakeRange(fieldsString.length - 1, 1)];
+            NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, fieldsString];
+            VVLog(@"%i: %@",__LINE__,sql);
+            BOOL ret = [_vvfmdb.db executeUpdate:sql];
+            NSAssert1(ret, @"创建表失败: %@", _tableName);
         }
-        
-        // 生成SQL语句并执行
-        
     }
     return self;
-    /*
-    NSDictionary *dic = nil;
-    if ([dicOrModel isKindOfClass:[NSDictionary class]]) {
-        dic = [self dictionary:dicOrModel exclude:excludeFields];
-    } else {
-        dic = [self sqliteMapOfClass:dicOrModel exclude:excludeFields];
-    }
-    if(!dic) {return NO;}
-    
-    NSMutableString *tableSql = [NSMutableString stringWithCapacity:0];
-    if(!primaryKey || primaryKey.length == 0) {
-        [tableSql appendFormat:@"\"vv_pkid\" integer NOT NULL PRIMARY KEY AUTOINCREMENT,"];
-    }
-    [dic enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *type, BOOL *stop) {
-        if([key isEqualToString:primaryKey]){
-            [tableSql appendFormat:@" \"%@\" %@ NOT NULL,",key, type];
-        }
-        else{
-            [tableSql appendFormat:@" \"%@\" %@,",key, type];
-        }
-    }];
-    if(primaryKey && primaryKey.length > 0){
-        [tableSql appendFormat:@"  PRIMARY KEY (\"%@\"),", primaryKey];
-    }
-    if(uniqueFields && uniqueFields.count > 0){
-        [uniqueFields enumerateObjectsUsingBlock:^(NSString *field, NSUInteger idx, BOOL *stop) {
-            [tableSql appendFormat:@"CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT IGNORE,",field,field];
-        }];
-    }
-    if(tableSql.length > 1){
-        [tableSql deleteCharactersInRange:NSMakeRange(tableSql.length - 1, 1)];
-        NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)",tableName,tableSql];
-        VVLog(@"%i: %@",__LINE__,sql);
-        return [_db executeUpdate:sql];
-    }
-    return NO;
-     */
 }
 
 #pragma mark - Private
+
+- (NSString *)fieldSqlOf:(NSString *)column option:(VVOrmOption)option{
+    NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\"",column];
+    NSString *typeString = sqlTypeStringOfType(option >> 8);
+    [string appendFormat:@" %@", typeString];
+    if(option & VVOrmPrimaryKey){
+        [string appendString:@" PRIMARY KEY NOT NULL"];
+    }
+    else if(option & VVOrmNonnull){
+        [string appendString:@" NOT NULL"];
+    }
+    if(option & VVOrmAutoIncrement){ [string appendString:@" AUTOINCREMENT"];}
+    return string;
+}
+
 - (BOOL)isTableExist{
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",_tableName];
     VVLog(@"%i: %@",__LINE__,sql);
@@ -127,15 +170,22 @@
     return NO;
 }
 
-- (NSArray *)tableFields{
+- (NSDictionary *)tableFields{
     NSString *sql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",_tableName];
     VVLog(@"%i: %@",__LINE__,sql);
     FMResultSet *set = [_vvfmdb.db executeQuery:sql];
-    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
+    NSMutableDictionary *resultDic = [NSMutableDictionary dictionaryWithCapacity:0];
     while ([set next]){
-        [array addObject:set.resultDictionary];
+        NSDictionary *dic = set.resultDictionary;
+        NSString *key = dic[@"name"];
+        NSString *typeString = dic[@"type"];
+        NSUInteger type = sqlTypeWithString(typeString);
+        BOOL notnull = [dic[@"notnull"] boolValue];
+        BOOL pk = [dic[@"pk"] boolValue];
+        NSUInteger option = type << 8 | (notnull ? VVOrmNonnull :0) | (pk ? VVOrmPrimaryKey : 0);
+        resultDic[key] = @(option);
     }
-    return array;
+    return resultDic;
 }
 
 - (NSDictionary *)classFields{
@@ -145,38 +195,37 @@
     for (int i = 0; i < count; i++) {
         NSString *name = [NSString stringWithCString:property_getName(properties[i]) encoding:NSUTF8StringEncoding];
         NSString *type = [NSString stringWithCString:property_getAttributes(properties[i]) encoding:NSUTF8StringEncoding];
-        id sqliteType = [self sqliteTypeForPropertyType:type];
-        if (sqliteType) {
-            [dic setObject:sqliteType forKey:name];
-        }
+        SqlDataType sqlDataType = [self sqliteTypeForPropertyType:type];
+        dic[name] = @(sqlDataType << 8); // 高8位保存数据类型
     }
     free(properties);
     return dic;
 }
 
-- (NSString *)sqliteTypeForPropertyType:(NSString *)properyType{
-    NSString *resultStr = nil;
+- (SqlDataType)sqliteTypeForPropertyType:(NSString *)properyType{
+    SqlDataType type = SqlDataTypeText;
     if ([properyType hasPrefix:@"T@\"NSString\""]) {
-        resultStr = SQL_TEXT;
+        type = SqlDataTypeText;
     }
     else if ([properyType hasPrefix:@"T@\"NSData\""]) {
-        resultStr = SQL_BLOB;
+        type = SqlDataTypeBlob;
     }
     else if ([properyType hasPrefix:@"Ti"]
              ||[properyType hasPrefix:@"TI"]
              ||[properyType hasPrefix:@"Ts"]
              ||[properyType hasPrefix:@"TS"]
              ||[properyType hasPrefix:@"T@\"NSNumber\""]
+             ||[properyType hasPrefix:@"T@\"NSDate\""]   // NSDate转换为timestamp存入数据库
              ||[properyType hasPrefix:@"TB"]
              ||[properyType hasPrefix:@"Tq"]
              ||[properyType hasPrefix:@"TQ"]) {
-        resultStr = SQL_INTEGER;
+        type = SqlDataTypeInteger;
     }
     else if ([properyType hasPrefix:@"Tf"]
              || [properyType hasPrefix:@"Td"]){
-        resultStr= SQL_REAL;
+        type= SqlDataTypeReal;
     }
-    return resultStr;
+    return type;
 }
 
 
