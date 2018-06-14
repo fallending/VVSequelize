@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 
-typedef id(^VVConversion)(id);
+typedef id(^VVConversion)(Class,id);
 
 @interface VVSequelize : NSObject
 

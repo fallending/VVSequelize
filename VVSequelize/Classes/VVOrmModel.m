@@ -264,7 +264,7 @@ SqliteType sqlTypeWithString(NSString *typeString){
 
 -(BOOL)insertOne:(id)object{
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(object);
+    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
     [dic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -304,7 +304,7 @@ SqliteType sqlTypeWithString(NSString *typeString){
     }];
     if (setString.length > 1) {
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
-        NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ WHERE %@",_tableName,setString,where];
+        NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@",_tableName,setString,where];
         return [_vvfmdb vv_executeUpdate:sql];
     }
     return NO;
@@ -312,7 +312,7 @@ SqliteType sqlTypeWithString(NSString *typeString){
 
 - (BOOL)updateOne:(id)object{
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(object);
+    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     NSMutableDictionary *values = dic.mutableCopy;
@@ -322,11 +322,11 @@ SqliteType sqlTypeWithString(NSString *typeString){
 
 - (BOOL)upsertOne:(id)object{
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(object);
+    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     NSString *where = [VVSqlGenerator where:condition];
-    NSString *sql = [NSString stringWithFormat:@"SELECT count AS count(*) FROM \"%@\"%@", _tableName,where];
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
     NSArray *array = [_vvfmdb vv_executeQuery:sql];
     NSInteger count = 0;
     if (array.count > 0) {
@@ -359,7 +359,7 @@ SqliteType sqlTypeWithString(NSString *typeString){
 
 - (BOOL)updateMulti:(NSArray *)objects{
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToDicArray) return NO;
-    NSArray *array = VVSequelize.objectsToDicArray(objects);
+    NSArray *array = VVSequelize.objectsToDicArray(_cls,objects);
     NSInteger failCount = 0;
     for (NSDictionary *dic in array) {
         if(!dic[_primaryKey]){ failCount ++;  continue;}
@@ -384,10 +384,10 @@ SqliteType sqlTypeWithString(NSString *typeString){
            value:(NSInteger)value{
     if (value == 0) { return YES; }
     NSString *setString = value > 0 ?
-    [NSString stringWithFormat:@"\"%@\" = \"%@\" + \"%@\"",field,field,@(value)]:
-    [NSString stringWithFormat:@"\"%@\" = \"%@\" - \"%@\"",field,field,@(ABS(value))];
+    [NSString stringWithFormat:@"\"%@\" = \"%@\" + %@",field,field,@(value)]:
+    [NSString stringWithFormat:@"\"%@\" = \"%@\" - %@",field,field,@(ABS(value))];
     NSString *where = [VVSqlGenerator where:condition];
-    NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ WHERE %@",_tableName,setString, where];
+    NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
     return [_vvfmdb vv_executeUpdate:sql];
 }
 
@@ -414,14 +414,14 @@ SqliteType sqlTypeWithString(NSString *typeString){
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM \"%@\"%@%@%@ ", _tableName,where,order,limit];
     NSArray *jsonArray = [_vvfmdb vv_executeQuery:sql];
     if (VVSequelize.dicArrayToObjects) {
-        return VVSequelize.dicArrayToObjects(jsonArray);
+        return VVSequelize.dicArrayToObjects(_cls,jsonArray);
     }
     return jsonArray;
 }
 
 - (NSInteger)count:(NSDictionary *)condition{
     NSString *where = [VVSqlGenerator where:condition];
-    NSString *sql = [NSString stringWithFormat:@"SELECT count AS count(*) FROM \"%@\"%@", _tableName,where];
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
     NSArray *array = [_vvfmdb vv_executeQuery:sql];
     NSInteger count = 0;
     if (array.count > 0) {
@@ -433,7 +433,7 @@ SqliteType sqlTypeWithString(NSString *typeString){
 
 - (BOOL)isExist:(id)object{
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(object);
+    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     return [self count:condition] > 0;
@@ -485,30 +485,30 @@ SqliteType sqlTypeWithString(NSString *typeString){
 
 - (BOOL)deleteOne:(id)object{
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(object);
+    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
     id pkid = dic[_primaryKey];
     if(!pkid) return NO;
     NSString *where = [VVSqlGenerator where:@{_primaryKey:pkid}];
-    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" WHERE %@",_tableName, where];
+    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     return [_vvfmdb vv_executeUpdate:sql];
 }
 
 - (BOOL)deleteMulti:(NSArray *)objects{
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToDicArray) return NO;
-    NSArray *array = VVSequelize.objectsToDicArray(objects);
+    NSArray *array = VVSequelize.objectsToDicArray(_cls,objects);
     NSMutableArray *pkids = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in array) {
         id pkid = dic[_primaryKey];
         if(pkid){ [pkids addObject:pkid];}
     }
     NSString *where = [VVSqlGenerator where:@{_primaryKey:@{kVsOpIn:pkids}}];
-    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" WHERE %@",_tableName, where];
+    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     return [_vvfmdb vv_executeUpdate:sql];
 }
 
 - (BOOL)delete:(NSDictionary *)condition{
     NSString *where = [VVSqlGenerator where:condition];
-    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" WHERE %@",_tableName, where];
+    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     return [_vvfmdb vv_executeUpdate:sql];
 }
 

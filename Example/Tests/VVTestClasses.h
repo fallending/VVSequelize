@@ -6,7 +6,17 @@
 //  Copyright © 2018年 Valo Lee. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+
+@interface VVTestMobile : NSObject
+@property (nonatomic, copy  ) NSString *mobile;
+@property (nonatomic, copy  ) NSString *province;
+@property (nonatomic, copy  ) NSString *city;
+@property (nonatomic, copy  ) NSString *carrier;
+@property (nonatomic, copy  ) NSString *industry;
+@property (nonatomic, assign) CGFloat relative;
+@property (nonatomic, assign) NSInteger times;
+@end
 
 @interface VVTestPerson : NSObject
 @property (nonatomic, copy  ) NSString *idcard;

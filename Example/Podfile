@@ -6,7 +6,6 @@ target 'VVSequelize_Example' do
 
   target 'VVSequelize_Tests' do
     inherit! :search_paths
-
-#    pod 'FBSnapshotTestCase'
+    pod 'MJExtension'
   end
 end

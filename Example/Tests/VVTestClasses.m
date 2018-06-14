@@ -8,6 +8,10 @@
 
 #import "VVTestClasses.h"
 
+@implementation VVTestMobile
+
+@end
+
 @implementation VVTestPerson
 
 @end
