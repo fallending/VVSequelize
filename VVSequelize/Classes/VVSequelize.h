@@ -1,6 +1,6 @@
 //
 //  VVSequelize.h
-//  Pods
+//  VVSequelize
 //
 //  Created by Jinbo Li on 2018/6/6.
 //
