@@ -42,6 +42,25 @@
                        dirPath:(nullable NSString *)dirPath
                     encryptKey:(nullable NSString *)encryptKey;
 
+#pragma mark - 原始SQL语句
+
+/**
+ 原始SQL查询
+
+ @param sql sql语句
+ @return 查询结果,json数组
+ */
+- (NSArray *)vv_executeQuery:(NSString *)sql;
+
+
+/**
+ 原始SQL更新
+
+ @param sql sql语句
+ @return 是否更新成功
+ */
+- (BOOL)vv_executeUpdate:(NSString *)sql;
+
 #pragma mark - 线程安全操作
 /**
  将操作语句放入block中即可保证线程安全, 如:

@@ -87,6 +87,21 @@
     return nil;
 }
 
+#pragma mark - 原始SQL语句
+- (NSArray *)vv_executeQuery:(NSString *)sql{
+    FMResultSet *set = [self.db executeQuery:sql];
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
+    while ([set next]) {
+        [array addObject:set.resultDictionary];
+    }
+    return array;
+}
+
+- (BOOL)vv_executeUpdate:(NSString *)sql{
+    return [self.db executeUpdate:sql];
+}
+
+
 #pragma mark - 线程安全操作
 - (void)vv_inDatabase:(void (^)(void))block{
     [[self dbQueue] inDatabase:^(FMDatabase *db) {
