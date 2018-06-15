@@ -79,13 +79,15 @@
  @param excludes 不存入数据表的字段名
  @param tableName 表名,nil表示使用cls类名
  @param vvfmdb 数据库,nil表示使用默认数据库
+ @param atTime 是否将vv_createAt,vv_updateAt添加至每条数据,用于记录插入时间,更新时间,默认为YES
  @return ORM模型
  */
 - (instancetype)initWithClass:(Class)cls
                       manuals:(nullable NSArray<VVOrmSchemaItem *> *)manuals
                      excludes:(nullable NSArray *)excludes
                     tableName:(nullable NSString *)tableName
-                     dataBase:(nullable VVFMDB *)vvfmdb;
+                     dataBase:(nullable VVFMDB *)vvfmdb
+                       atTime:(BOOL)atTime;
 
 /**
  删除表

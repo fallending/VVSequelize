@@ -9,10 +9,9 @@
 #import <objc/runtime.h>
 #import "VVSequelize.h"
 
-#define kTypeShift   8
-#define kVsPkid      @"vv_pkid"
-#define kVsCreateAt  @"vv_createAt"
-#define kVsUpdateAt  @"vv_updateAt"
+#define kVsPkid         @"vv_pkid"
+#define kVsCreateAt     @"vv_createAt"
+#define kVsUpdateAt     @"vv_updateAt"
 
 #define VVSqlTypeInteger @"INTEGER"
 #define VVSqlTypeText    @"TEXT"
@@ -62,6 +61,7 @@
 @property (nonatomic, copy  ) NSArray *fields;
 @property (nonatomic        ) Class cls;
 @property (nonatomic, copy  ) NSString *primaryKey;
+@property (nonatomic, assign) BOOL atTime;
 
 @end
 
@@ -214,19 +214,21 @@
                     tableName:(NSString *)tableName
                      dataBase:(VVFMDB *)db{
     VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
-    return [self initWithClass:cls manuals:@[column] excludes:nil tableName:tableName dataBase:db];
+    return [self initWithClass:cls manuals:@[column] excludes:nil tableName:tableName dataBase:db atTime:YES];
 }
 
 - (instancetype)initWithClass:(Class)cls
                  manuals:(NSArray<VVOrmSchemaItem *> *)manuals
                      excludes:(NSArray *)excludes
                     tableName:(NSString *)tableName
-                     dataBase:(VVFMDB *)vvfmdb{
+                     dataBase:(VVFMDB *)vvfmdb
+                       atTime:(BOOL)atTime{
     self = [super init];
     if (self) {
         _vvfmdb    = vvfmdb ? vvfmdb : VVFMDB.defalutDb;
         _tableName = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
         _cls       = cls;
+        _atTime    = atTime;
         NSMutableDictionary *classColumns = [self classColumnsWithManuals:manuals].mutableCopy;
         for (NSString *column in excludes) {
             [classColumns removeObjectForKey:column];
@@ -263,8 +265,10 @@
                 if(column.pk) _primaryKey = column.name;
 
             }
-            [columnsString appendFormat:@"%@ INTEGER,",kVsCreateAt]; //创建时间
-            [columnsString appendFormat:@"%@ INTEGER,",kVsUpdateAt]; //修改时间
+            if(_atTime){
+                [columnsString appendFormat:@"%@ INTEGER,",kVsCreateAt]; //创建时间
+                [columnsString appendFormat:@"%@ INTEGER,",kVsUpdateAt]; //修改时间
+            }
             if(!_primaryKey){
                 [columnsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
                 _primaryKey = kVsPkid;
@@ -317,6 +321,13 @@
         }
     }];
     if(keyString.length > 1 && valString.length > 1){
+        if(_atTime){
+            NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
+            [keyString appendFormat:@"\"%@\",",kVsCreateAt];
+            [valString appendFormat:@"\"%@\",",@(now)];
+            [keyString appendFormat:@"\"%@\",",kVsUpdateAt];
+            [valString appendFormat:@"\"%@\",",@(now)];
+        }
         [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
         [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",_tableName,keyString,valString];
@@ -346,6 +357,10 @@
         [setString appendFormat:@"\"%@\" = \"%@\",",key,obj];
     }];
     if (setString.length > 1) {
+        if(_atTime){
+            NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
+            [setString appendFormat:@"\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
+        }
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@",_tableName,setString,where];
         return [_vvfmdb vv_executeUpdate:sql];
@@ -364,39 +379,11 @@
 }
 
 - (BOOL)upsertOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
-    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
-    if(!dic[_primaryKey]) return NO;
-    NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
-    NSString *where = [VVSqlGenerator where:condition];
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
-    NSArray *array = [_vvfmdb vv_executeQuery:sql];
-    NSInteger count = 0;
-    if (array.count > 0) {
-        NSDictionary *dic = array.firstObject;
-        count = [dic[@"count"] integerValue];
-    }
-    if(count > 0){
-        NSMutableDictionary *values = dic.mutableCopy;
-        [values removeObjectForKey:_primaryKey];
-        return [self update:condition values:values];
+    if([self isExist:object]){
+        return [self updateOne:object];
     }
     else{
-        NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
-        NSMutableString *valString = [NSMutableString stringWithCapacity:0];
-        [dic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-            if(key && obj){
-                [keyString appendFormat:@"\"%@\",",key];
-                [valString appendFormat:@"\"%@\",",obj];
-            }
-        }];
-        if(keyString.length > 1 && valString.length > 1){
-            [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
-            [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
-            NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",_tableName,keyString,valString];
-            return [_vvfmdb vv_executeQuery:sql];
-        }
-        return NO;
+        return [self insertOne:object];
     }
 }
 
@@ -426,9 +413,12 @@
            field:(NSString *)field
            value:(NSInteger)value{
     if (value == 0) { return YES; }
-    NSString *setString = value > 0 ?
-    [NSString stringWithFormat:@"\"%@\" = \"%@\" + %@",field,field,@(value)]:
-    [NSString stringWithFormat:@"\"%@\" = \"%@\" - %@",field,field,@(ABS(value))];
+    NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\" %@ %@",
+                                  field, field, value > 0 ? @"+": @"-", @(ABS(value))];
+    if(_atTime){
+        NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
+        [setString appendFormat:@",\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
+    }
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
     return [_vvfmdb vv_executeUpdate:sql];
