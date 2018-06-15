@@ -8,37 +8,66 @@
 #import <Foundation/Foundation.h>
 #import "VVFMDB.h"
 
-typedef NS_OPTIONS(NSUInteger, VVOrmOption) {
-    VVOrmPrimaryKey = 1 << 0,
-    VVOrmUnique = 1 << 1,
-    VVOrmNonnull = 1 << 2,
-    VVOrmAutoIncrement = 1 << 3,
-};
-
 #define VVRangeAll NSMakeRange(0, 0)
+
+
+/**
+ 数据表每个字段的配置.
+ @discussion 本项目中仅默认主键vv_pkid支持自增类型,所以此类中未定义自增属性.
+ */
+@interface VVOrmSchemaItem: NSObject
+@property (nonatomic, assign) NSInteger cid;    ///< 字段ID
+@property (nonatomic, copy  ) NSString *name;   ///< 字段名
+@property (nonatomic, copy  ) NSString *type;   ///< 字段类型: TEXT,INTEGER,REAL,BLOB
+@property (nonatomic, assign) BOOL notnull;     ///< 是否不为空,默认为NO(可为空)
+@property (nonatomic, strong, nullable) id dflt_value;  ///< 默认值
+@property (nonatomic, assign) BOOL pk;          ///< 是否主键
+@property (nonatomic, assign) BOOL unique;      ///< 是否约束唯一
+
+/**
+ 生成字段配置
+
+ @param dic 格式:{"name":"xxx","type":"TEXT","unique":@(YES),"notnull":@(YES),....}
+ @return 字段配置
+ */
++ (instancetype)schemaItemWithDic:(NSDictionary *)dic;
+
+
+/**
+ 比较两个字段配置是否相同
+
+ @param item 要比较的字段配置
+ @return 是否相同
+ */
+- (BOOL)isEqualToItem:(VVOrmSchemaItem *)item;
+@end
 
 #pragma mark - 定义ORM
 
 @interface VVOrmModel : NSObject
 
 /**
- 定义ORM模型.使用默认数据库,默认表名,自动主键.
+ 定义ORM模型.使用默认数据库,默认表名.
  
  @param cls 模型(Class)
+ @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
  @return ORM模型
  */
-- (instancetype)initWithClass:(Class)cls;
+- (instancetype)initWithClass:(Class)cls
+                   primaryKey:(NSString *)primaryKey;
 
 
 /**
  定义ORM模型.使用自动主键,无额外选项.
  
  @param cls 模型(Class)
+ @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
  @param tableName 表名,nil表示使用cls类名
  @param vvfmdb 数据库,nil表示使用默认数据库
  @return ORM模型
  */
 - (instancetype)initWithClass:(Class)cls
+                   primaryKey:(NSString *)primaryKey
                     tableName:(nullable NSString *)tableName
                      dataBase:(nullable VVFMDB *)vvfmdb;
 
@@ -46,14 +75,14 @@ typedef NS_OPTIONS(NSUInteger, VVOrmOption) {
  定义ORM模型.可自动新增字段,##不会修改或删除原有字段##.
  
  @param cls 模型(Class)
- @param fields 自定义各个字段的配置,格式@{@"field1":@(VVOrmOption),@"field2":@(VVOrmOption),...}}
+ @param manuals 自定义各个字段的配置
  @param excludes 不存入数据表的字段名
  @param tableName 表名,nil表示使用cls类名
  @param vvfmdb 数据库,nil表示使用默认数据库
  @return ORM模型
  */
 - (instancetype)initWithClass:(Class)cls
-                 fieldOptions:(nullable NSDictionary *)fieldOptions
+                      manuals:(nullable NSArray<VVOrmSchemaItem *> *)manuals
                      excludes:(nullable NSArray *)excludes
                     tableName:(nullable NSString *)tableName
                      dataBase:(nullable VVFMDB *)vvfmdb;
@@ -72,15 +101,6 @@ typedef NS_OPTIONS(NSUInteger, VVOrmOption) {
  */
 - (BOOL)isTableExist;
 
-/**
- 为数据表添加不存在的字段
- 
- @param dicOrClass 字典或模型(Class),只添加不存在的字段
- @param options 其他选项:{unique:[field],nonnull:[field],exclude:[field]...}
- @return 是否添加成功
- */
-- (BOOL)alterWithDicOrClass:(id)dicOrClass
-                    options:(NSDictionary *)options;
 @end
 
 #pragma mark - CURD(C)创建

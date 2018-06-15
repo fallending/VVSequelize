@@ -7,5 +7,6 @@ target 'VVSequelize_Example' do
   target 'VVSequelize_Tests' do
     inherit! :search_paths
     pod 'MJExtension'
+    pod 'YYModel'
   end
 end

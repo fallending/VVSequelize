@@ -8,10 +8,9 @@
 
 #import "VVOrmModel.h"
 #import "VVTestClasses.h"
-#import "VVSequelizeConst.h"
-#import "VVSqlGenerator.h"
 #import "VVSequelize.h"
 #import "MJExtension.h"
+#import "YYModel.h"
 
 @import XCTest;
 
@@ -25,24 +24,26 @@
 - (void)setUp
 {
     [super setUp];
-    VVSequelizeConst.verbose = YES;
-    [VVSequelize setDicToObject:^id(Class cls, NSDictionary *dic) {
+    VVSequelize.verbose = YES;
+    [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
     }];
-    [VVSequelize setDicArrayToObjects:^NSArray *(Class cls, NSArray *dicArray) {
+    [VVSequelize setKeyValuesArrayToObjects:^NSArray *(Class cls, NSArray *dicArray) {
         return [cls mj_objectArrayWithKeyValuesArray:dicArray];
     }];
-    [VVSequelize setObjectToDic:^id(Class cls, id object) {
+    [VVSequelize setObjectToKeyValues:^id(Class cls, id object) {
         return [object mj_keyValues];
     }];
-    [VVSequelize setObjectsToDicArray:^NSArray *(Class cls, NSArray *objects) {
+    [VVSequelize setObjectsToKeyValuesArray:^NSArray *(Class cls, NSArray *objects) {
         return [cls mj_keyValuesArrayWithObjectArray:objects];
     }];
     
     NSString *path = [[NSBundle mainBundle] bundlePath];
     self.vvfmdb = [[VVFMDB alloc] initWithDBName:@"mobiles.sqlite" dirPath:path encryptKey:nil];
+    VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
+//    VVOrmSchemaItem *column2 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"times",@"unique":@(YES)}];
     self.mobileModel = [[VVOrmModel alloc] initWithClass:VVTestMobile.class
-                                            fieldOptions:@{@"mobile":@(VVOrmPrimaryKey)}
+                                                 manuals:@[column1]
                                                 excludes:nil
                                                tableName:@"mobiles"
                                                 dataBase:self.vvfmdb];
@@ -111,14 +112,23 @@
     NSLog(@"ret: %@", @(ret));
 }
 
+- (void)testMaxMinSum{
+    id max = [self.mobileModel max:@"relative"];
+    id min = [self.mobileModel min:@"relative"];
+    id sum = [self.mobileModel sum:@"relative"];
+    NSLog(@"max : %@, min : %@, sum : %@", max, min, sum);
+}
+
 
 - (void)testOrmModel{
 //    VVOrmModel *personModel = [[VVOrmModel alloc] initWithClass:VVTestPerson.class];
+    VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"idcard",@"pk":@(YES)}];
+    VVOrmSchemaItem *column2 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"unique":@(YES)}];
+    VVOrmSchemaItem *column3 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"name",@"notnull":@(YES)}];
+    VVOrmSchemaItem *column4 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"arr",@"unique":@(YES),@"notnull":@(YES)}];
+
     VVOrmModel *personModel1 = [[VVOrmModel alloc] initWithClass:VVTestPerson.class
-                                                    fieldOptions:@{@"idcard":@(VVOrmPrimaryKey),
-                                                                   @"mobile":@(VVOrmUnique),
-                                                                   @"name":@(VVOrmNonnull),
-                                                                   @"arr":@(VVOrmUnique | VVOrmNonnull)}
+                                                    manuals:@[column1,column2,column3,column4]
                                                         excludes:nil
                                                        tableName:@"persons"
                                                         dataBase:nil];    
@@ -157,6 +167,14 @@
 
 - (void)testExample
 {
+    VVTestPerson *person = [VVTestPerson new];
+    person.idcard = @"123123";
+    person.name = @"zhangsan";
+    person.age = 19;
+    person.birth = [NSDate date];
+    person.mobile = @"123123123";
+    NSDictionary *dic = person.mj_keyValues;
+    NSLog(@"%@",dic);
 //    XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
 }
 

@@ -7,7 +7,7 @@
 
 #import "VVFMDB.h"
 #import <objc/runtime.h>
-#import "VVSequelizeConst.h"
+#import "VVSequelize.h"
 
 @interface VVFMDB ()
 

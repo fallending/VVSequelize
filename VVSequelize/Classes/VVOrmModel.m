@@ -8,41 +8,52 @@
 #import "VVOrmModel.h"
 #import <objc/runtime.h>
 #import "VVSequelize.h"
-#import "VVSequelizeConst.h"
-#import "VVSqlGenerator.h"
 
-#define kTypeShift  8
-#define kVsPkid  @"vv_pkid"
+#define kTypeShift   8
+#define kVsPkid      @"vv_pkid"
 #define kVsCreateAt  @"vv_createAt"
 #define kVsUpdateAt  @"vv_updateAt"
 
-typedef NS_ENUM(NSUInteger, SqliteType) {
-    SqliteTypeInteger = 1,
-    SqliteTypeText,
-    SqliteTypeBlob,
-    SqliteTypeReal,
-};
+#define VVSqlTypeInteger @"INTEGER"
+#define VVSqlTypeText    @"TEXT"
+#define VVSqlTypeBlob    @"BLOB"
+#define VVSqlTypeReal    @"REAL"
 
-NSString * const SqliteTypeString[] = {
-    [SqliteTypeInteger] = @"INTEGER",
-    [SqliteTypeText]    = @"TEXT",
-    [SqliteTypeBlob]    = @"BLOB",
-    [SqliteTypeReal]    = @"REAL"
-};
 
-NSString *sqlTypeStringOfType(SqliteType type){
-    return (type >= SqliteTypeInteger && type <= SqliteTypeReal) ? SqliteTypeString[type] : nil;
+@implementation VVOrmSchemaItem
+- (BOOL)notnull{
+    if(_pk) return YES; // 如果是主键,则不能为空值
+    return _pk;
 }
-SqliteType sqlTypeWithString(NSString *typeString){
-    NSString *uppercaseTypeString = typeString.uppercaseString;
-    for (SqliteType type = SqliteTypeInteger; type <= SqliteTypeReal; type ++) {
-        NSString *tempString = sqlTypeStringOfType(type);
-        if ([uppercaseTypeString hasPrefix:tempString]) {
-            return type;
-        }
-    }
-    return 0;
+
++ (instancetype)schemaItemWithDic:(NSDictionary *)dic{
+    NSString *name = dic[@"name"];
+    if(!name || name.length == 0) return nil;
+    VVOrmSchemaItem *column = [VVOrmSchemaItem new];
+    column.name = name;
+    column.type = dic[@"type"];
+    column.pk = [dic[@"pk"] boolValue];
+    column.notnull = [dic[@"notnull"] boolValue];
+    column.unique = [dic[@"unique"] boolValue];
+    column.dflt_value = dic[@"dflt_value"];
+    return column;
 }
+
+
+- (BOOL)isEqualToItem:(VVOrmSchemaItem *)item{
+    id dflt_val1 = [self.dflt_value isKindOfClass:[NSNull class]] ? nil : self.dflt_value;
+    id dflt_val2 = [item.dflt_value isKindOfClass:[NSNull class]] ? nil : item.dflt_value;
+    BOOL dflt_equal = (!dflt_val1 && !dflt_val2) ? YES : [dflt_val1 isEqual:dflt_val2];
+    NSString *type1 = [self.type containsString:@"("] ? [self.type componentsSeparatedByString:@"("].firstObject : self.type;
+    NSString *type2 = [item.type containsString:@"("] ? [item.type componentsSeparatedByString:@"("].firstObject : item.type;
+    return [self.name isEqualToString:item.name]
+    && [type1.uppercaseString isEqualToString:type2.uppercaseString]
+    && dflt_equal
+    && self.pk == item.pk
+    && self.notnull == item.notnull
+    && self.unique == item.unique;
+}
+@end
 
 @interface VVOrmModel ()
 
@@ -58,100 +69,156 @@ SqliteType sqlTypeWithString(NSString *typeString){
 
 #pragma mark - Private
 
-- (NSString *)fieldSqlOf:(NSString *)column option:(VVOrmOption)option{
-    NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\"",column];
-    NSString *typeString = sqlTypeStringOfType(option >> kTypeShift);
-    [string appendFormat:@" %@", typeString];
-    if(option & VVOrmPrimaryKey){
-        [string appendString:@" PRIMARY KEY NOT NULL"];
+- (NSString *)columnSqlOf:(VVOrmSchemaItem *)column{
+    if ([column.name isEqualToString:kVsPkid]) {
+        return [NSString stringWithFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT", kVsPkid];
     }
-    else if(option & VVOrmNonnull){
-        [string appendString:@" NOT NULL"];
-    }
-    if(option & VVOrmAutoIncrement){ [string appendString:@" AUTOINCREMENT"];}
+    NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\" \"%@\"", column.name,column.type];
+    if(column.pk) { [string appendString:@" PRIMARY KEY"];}
+    if(column.notnull) { [string appendString:@" NOT NULL"];}
+    if(column.dflt_value) { [string appendFormat:@" DEFAULT(\"%@\")", column.dflt_value]; }
     return string;
 }
 
 - (BOOL)isTableExist{
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",_tableName];
     VVLog(@"%i: %@",__LINE__,sql);
-    FMResultSet *set = [_vvfmdb.db executeQuery:sql];
-    while ([set next]){
-        NSInteger count = [set intForColumn:@"count"];
+    NSArray *array = [_vvfmdb vv_executeQuery:sql];
+    for (NSDictionary *dic in array) {
+        NSInteger count = [dic[@"count"] integerValue];
         return count > 0;
     }
     return NO;
 }
 
-- (NSDictionary *)tableFields{
-    NSString *sql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",_tableName];
-    VVLog(@"%i: %@",__LINE__,sql);
-    FMResultSet *set = [_vvfmdb.db executeQuery:sql];
+- (NSDictionary *)tableColumns{
+    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",_tableName];
+    VVLog(@"%i: %@",__LINE__,tableInfoSql);
+    NSArray *columns = [_vvfmdb vv_executeQuery:tableInfoSql];
     NSMutableDictionary *resultDic = [NSMutableDictionary dictionaryWithCapacity:0];
-    while ([set next]){
-        NSDictionary *dic = set.resultDictionary;
-        NSString *key = dic[@"name"];
-        NSString *typeString = dic[@"type"];
-        NSUInteger type = sqlTypeWithString(typeString);
-        BOOL notnull = [dic[@"notnull"] boolValue];
-        BOOL pk = [dic[@"pk"] boolValue];
-        NSUInteger option = type << kTypeShift | (notnull ? VVOrmNonnull :0) | (pk ? VVOrmPrimaryKey : 0);
-        resultDic[key] = @(option);
+    for (NSDictionary *dic in columns) {
+        VVOrmSchemaItem *column = [VVOrmSchemaItem new];
+        column.cid = dic[@"cid"];
+        column.name = dic[@"name"];
+        column.type = dic[@"type"];
+        column.pk = [dic[@"pk"] boolValue];
+        column.notnull =[dic[@"notnull"] boolValue];
+        column.dflt_value = dic[@"dflt_value"];
+        resultDic[column.name] = column;
+    }
+    NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(\"%@\");",_tableName];
+    VVLog(@"%i: %@",__LINE__,indexListSql);
+    NSArray *indexList = [_vvfmdb vv_executeQuery:indexListSql];
+    for (NSDictionary *indexDic in indexList) {
+        if([indexDic[@"origin"] isEqualToString:@"u"] && [indexDic[@"unique"] integerValue] == 1){
+            NSString *indexName = indexDic[@"name"];
+            NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(\"%@\");",indexName];
+            VVLog(@"%i: %@",__LINE__,indexListSql);
+            NSArray *indexInfos = [_vvfmdb vv_executeQuery:indexInfoSql];
+            if(indexInfos.count > 0) {
+                NSDictionary *indexInfo = indexInfos.firstObject;
+                NSString *columnName = indexInfo[@"name"];
+                VVOrmSchemaItem *column = resultDic[columnName];
+                column.unique = YES;
+            }
+        }
     }
     return resultDic;
 }
 
-- (NSDictionary *)classFields{
+- (NSDictionary *)classColumnsWithManuals:(NSArray<VVOrmSchemaItem *> *)manuals{
+    NSMutableDictionary *manualColumns = [NSMutableDictionary dictionaryWithCapacity:0];
+    for (VVOrmSchemaItem *column in manuals) {
+        if(column.name) {manualColumns[column.name] = column; }
+    }
     NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:0];
     unsigned int count;
     objc_property_t *properties = class_copyPropertyList(_cls, &count);
     for (int i = 0; i < count; i++) {
         NSString *name = [NSString stringWithCString:property_getName(properties[i]) encoding:NSUTF8StringEncoding];
-        NSString *type = [NSString stringWithCString:property_getAttributes(properties[i]) encoding:NSUTF8StringEncoding];
-        SqliteType sqlDataType = [self sqliteTypeForPropertyType:type];
-        dic[name] = @(sqlDataType << kTypeShift); // 高8位保存数据类型
+        VVOrmSchemaItem *column = manualColumns[name] ? manualColumns[name] : [VVOrmSchemaItem new];
+        column.name = name;
+        if(column.type.length <= 0){
+            NSString *type = [NSString stringWithCString:property_getAttributes(properties[i]) encoding:NSUTF8StringEncoding];
+            column.type = [self sqliteTypeForPropertyType:type];
+        }
+        dic[column.name] = column;
     }
     free(properties);
     return dic;
 }
 
-- (SqliteType)sqliteTypeForPropertyType:(NSString *)properyType{
+- (NSInteger)compareSchemaItems:(NSDictionary<NSString *,VVOrmSchemaItem *> *)columns1
+                           with:(NSDictionary<NSString *,VVOrmSchemaItem *> *)columns2{
+    NSArray *allKeys1 = columns1.allKeys;
+    NSArray *allKeys2 = columns2.allKeys;
+    NSInteger different = 0;
+    for (NSString *key in allKeys1) {
+        if([key isEqualToString:kVsPkid]
+           || [key isEqualToString:kVsCreateAt]
+           || [key isEqualToString:kVsUpdateAt]){
+            continue;
+        }
+        if ([allKeys2 containsObject:key]) {
+            if(![columns1[key] isEqualToItem:columns2[key]]) different ++;
+        }
+        else{
+            different ++;
+        }
+    }
+    for (NSString *key in allKeys2) {
+        if([key isEqualToString:kVsPkid]
+           || [key isEqualToString:kVsCreateAt]
+           || [key isEqualToString:kVsUpdateAt]){
+            continue;
+        }
+        if(![allKeys1 containsObject:key]) different ++;
+    }
+    return different;
+}
+
+- (NSString *)sqliteTypeForPropertyType:(NSString *)properyType{
     // NSString,NSMutableString,NSDictionary,NSMutableDictionary,NSArray,NSSet,NSMutableSet,...
-    SqliteType type = SqliteTypeText;
+    NSString * type = VVSqlTypeText;
     // NSData,NSMutableData
-    if ([properyType hasPrefix:@"T@\"NSData\""] ||
-        [properyType hasPrefix:@"T@\"NSMutableData\""]){
-        type = SqliteTypeBlob;
+    if ([properyType hasPrefix:@"T@\"NSData\""]
+        ||[properyType hasPrefix:@"T@\"NSMutableData\""]){
+        type = VVSqlTypeBlob;
     }
     else if ([properyType hasPrefix:@"Ti"]
              ||[properyType hasPrefix:@"TI"]
              ||[properyType hasPrefix:@"Ts"]
              ||[properyType hasPrefix:@"TS"]
              ||[properyType hasPrefix:@"T@\"NSNumber\""]
-             ||[properyType hasPrefix:@"T@\"NSDate\""]   // NSDate转换为timestamp存入数据库
              ||[properyType hasPrefix:@"TB"]
              ||[properyType hasPrefix:@"Tq"]
              ||[properyType hasPrefix:@"TQ"]) {
-        type = SqliteTypeInteger;
+        type = VVSqlTypeInteger;
     }
     else if ([properyType hasPrefix:@"Tf"]
              || [properyType hasPrefix:@"Td"]){
-        type= SqliteTypeReal;
+        type= VVSqlTypeReal;
     }
+    // 其他数据类型都用Text的方式保存,再将对象转Json的时候请转为NSString形式
     return type;
 }
 
 #pragma mark - Public
-- (instancetype)initWithClass:(Class)cls{
-    return [self initWithClass:cls fieldOptions:nil excludes:nil tableName:nil dataBase:nil];
-}
-
-- (instancetype)initWithClass:(Class)cls tableName:(NSString *)tableName dataBase:(VVFMDB *)db{
-    return [self initWithClass:cls fieldOptions:nil excludes:nil tableName:tableName dataBase:db];
+- (instancetype)initWithClass:(Class)cls
+                   primaryKey:(NSString *)primaryKey{
+    return [self initWithClass:cls primaryKey:primaryKey tableName:nil dataBase:nil];
 }
 
 - (instancetype)initWithClass:(Class)cls
-                 fieldOptions:(NSDictionary *)fieldOptions
+                   primaryKey:(NSString *)primaryKey
+                    tableName:(NSString *)tableName
+                     dataBase:(VVFMDB *)db{
+    VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
+    return [self initWithClass:cls manuals:@[column] excludes:nil tableName:tableName dataBase:db];
+}
+
+- (instancetype)initWithClass:(Class)cls
+                 manuals:(NSArray<VVOrmSchemaItem *> *)manuals
                      excludes:(NSArray *)excludes
                     tableName:(NSString *)tableName
                      dataBase:(VVFMDB *)vvfmdb{
@@ -160,20 +227,11 @@ SqliteType sqlTypeWithString(NSString *typeString){
         _vvfmdb    = vvfmdb ? vvfmdb : VVFMDB.defalutDb;
         _tableName = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
         _cls       = cls;
-        NSDictionary *classFields = [self classFields];
-        NSMutableDictionary *storeFields = [NSMutableDictionary dictionaryWithCapacity:0];
-        // 1. 生成数据库fields
-        for (NSString *key in classFields) {
-            if([excludes containsObject:key]) continue;
-            NSUInteger type = [classFields[key] integerValue];
-            NSUInteger option = [fieldOptions[key] integerValue];
-            if(option & VVOrmPrimaryKey) {
-                _primaryKey = key;
-                option |= VVOrmNonnull;
-            }
-            storeFields[key] = @(type | option); //高8位为数据类型,低8位为数据选项
+        NSMutableDictionary *classColumns = [self classColumnsWithManuals:manuals].mutableCopy;
+        for (NSString *column in excludes) {
+            [classColumns removeObjectForKey:column];
         }
-        NSAssert1(storeFields.count > 0, @"无需创建表: %@", _tableName);
+        NSAssert1(classColumns.count > 0, @"无需创建表: %@", _tableName);
         
         // 2. 检查数据表是否存在
         BOOL exist = [self isTableExist];
@@ -182,76 +240,61 @@ SqliteType sqlTypeWithString(NSString *typeString){
         NSString *tempTableName = [NSString stringWithFormat:@"%@_%@",_tableName, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
         if(exist){
             // 获取已存在字段
-            NSDictionary *tableFields = [self tableFields];
+            NSDictionary *tableColumns = [self tableColumns];
             // 计算变化的字段数量
-            NSArray *tableKeys = tableFields.allKeys;
-            for (NSString *field in storeFields) {
-                if(![tableKeys containsObject:field]){ changed ++; continue; }
-                NSUInteger tableFieldOption = [tableFields[field] unsignedIntegerValue] | VVOrmUnique;
-                NSUInteger storeFieldOption = [storeFields[field] unsignedIntegerValue] | VVOrmUnique;
-                if(tableFieldOption != storeFieldOption) changed ++;
-            }
-            NSArray *storeKeys = storeFields.allKeys;
-            for (NSString *field in tableFields) {
-                if([field isEqualToString:kVsCreateAt] || [field isEqualToString:kVsUpdateAt]) continue;
-                if(![storeKeys containsObject:field]){ changed ++; continue; }
-                NSUInteger tableFieldOption = [tableFields[field] unsignedIntegerValue] | VVOrmUnique;
-                NSUInteger storeFieldOption = [storeFields[field] unsignedIntegerValue] | VVOrmUnique;
-                if(tableFieldOption != storeFieldOption) changed ++;
-            }
+            changed = [self compareSchemaItems:classColumns with:tableColumns];
             // 字段发生变更,对原数据表进行更名
             if(changed > 0){
                 NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
                 VVLog(@"%i: %@",__LINE__,sql);
-                BOOL ret = [_vvfmdb.db executeUpdate:sql];
+                BOOL ret = [_vvfmdb vv_executeUpdate:sql];
                 NSAssert1(ret, @"创建临时表失败: %@", tempTableName);
             }
         }
         
         //4. 表不存在或字段发生变更,需要创建新表
         if(!exist || changed > 0){
-            NSMutableString *fieldsString = [NSMutableString stringWithCapacity:0];
-            for (NSString *field in storeFields) {
-                NSUInteger option = [storeFields[field] unsignedIntegerValue];
-                NSString *fieldStr = [self fieldSqlOf:field option:option];
-                [fieldsString appendFormat:@"%@,",fieldStr];
-                if(option & VVOrmPrimaryKey) _primaryKey = field;
+            NSMutableString *columnsString = [NSMutableString stringWithCapacity:0];
+            NSArray *allColumns = classColumns.allValues;
+            NSMutableArray *uniqueColumns = [NSMutableArray arrayWithCapacity:0];
+            for (VVOrmSchemaItem *column in allColumns) {
+                [columnsString appendFormat:@"%@,", [self columnSqlOf:column]];
+                if(column.unique) [uniqueColumns addObject:column];
+                if(column.pk) _primaryKey = column.name;
+
             }
-            [fieldsString appendFormat:@"%@,",[self fieldSqlOf:kVsCreateAt option:(SqliteTypeInteger << kTypeShift)]]; //创建时间
-            [fieldsString appendFormat:@"%@,",[self fieldSqlOf:kVsUpdateAt option:(SqliteTypeInteger << kTypeShift)]]; //修改时间
+            [columnsString appendFormat:@"%@ INTEGER,",kVsCreateAt]; //创建时间
+            [columnsString appendFormat:@"%@ INTEGER,",kVsUpdateAt]; //修改时间
             if(!_primaryKey){
-                [fieldsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
+                [columnsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
                 _primaryKey = kVsPkid;
             }
-            for (NSString *field in storeFields) {
-                NSUInteger option = [storeFields[field] unsignedIntegerValue];
-                if(option & VVOrmUnique) {
-                    [fieldsString appendFormat:@"CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT FAIL,", field, field];
-                }
+            for (VVOrmSchemaItem *column in uniqueColumns) {
+                [columnsString appendFormat:@"CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT FAIL,", column.name, column.name];
             }
-            [fieldsString deleteCharactersInRange:NSMakeRange(fieldsString.length - 1, 1)];
-            NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, fieldsString];
+            [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
+            NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
             VVLog(@"%i: %@",__LINE__,sql);
-            BOOL ret = [_vvfmdb.db executeUpdate:sql];
+            BOOL ret = [_vvfmdb vv_executeUpdate:sql];
             NSAssert1(ret, @"创建表失败: %@", _tableName);
         }
         //5. 如果字段发生变更,将原数据表的数据插入新表
         if(exist && changed > 0){
-            NSMutableString *allfields = [NSMutableString stringWithCapacity:0];
-            for (NSString *field in storeFields) {
-                [allfields appendFormat:@"\"%@\",",field];
+            NSMutableString *allColumns = [NSMutableString stringWithCapacity:0];
+            for (NSString *column in classColumns.allKeys) {
+                [allColumns appendFormat:@"\"%@\",",column];
             }
-            if(allfields.length > 1) {
-                [allfields deleteCharactersInRange:NSMakeRange(allfields.length - 1, 1)];
+            if(allColumns.length > 1) {
+                [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
+                [_vvfmdb vv_inDatabase:^{
+                    NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", _tableName, allColumns, allColumns, tempTableName];
+                    VVLog(@"%i: %@",__LINE__,sql);
+                    BOOL ret = [_vvfmdb vv_executeUpdate:sql];
+                    sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
+                    VVLog(@"%i: %@",__LINE__,sql);
+                    ret = [_vvfmdb vv_executeUpdate:sql];
+                }];
             }
-            [_vvfmdb vv_inDatabase:^{
-                NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", _tableName, allfields, allfields, tempTableName];
-                VVLog(@"%i: %@",__LINE__,sql);
-                BOOL ret = [_vvfmdb.db executeUpdate:sql];
-                sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
-                VVLog(@"%i: %@",__LINE__,sql);
-                ret = [_vvfmdb.db executeUpdate:sql];
-            }];
         }
     }
     return self;
@@ -263,8 +306,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
 @implementation VVOrmModel (Create)
 
 -(BOOL)insertOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
+    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
     [dic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -311,8 +354,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
 }
 
 - (BOOL)updateOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
+    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     NSMutableDictionary *values = dic.mutableCopy;
@@ -321,8 +364,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
 }
 
 - (BOOL)upsertOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
+    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     NSString *where = [VVSqlGenerator where:condition];
@@ -358,8 +401,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
 }
 
 - (BOOL)updateMulti:(NSArray *)objects{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToDicArray) return NO;
-    NSArray *array = VVSequelize.objectsToDicArray(_cls,objects);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToKeyValuesArray) return NO;
+    NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
     NSInteger failCount = 0;
     for (NSDictionary *dic in array) {
         if(!dic[_primaryKey]){ failCount ++;  continue;}
@@ -413,8 +456,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
     NSString *limit = [VVSqlGenerator limit:range];
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM \"%@\"%@%@%@ ", _tableName,where,order,limit];
     NSArray *jsonArray = [_vvfmdb vv_executeQuery:sql];
-    if (VVSequelize.dicArrayToObjects) {
-        return VVSequelize.dicArrayToObjects(_cls,jsonArray);
+    if (VVSequelize.keyValuesArrayToObjects) {
+        return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
     }
     return jsonArray;
 }
@@ -432,8 +475,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
 }
 
 - (BOOL)isExist:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
+    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     return [self count:condition] > 0;
@@ -463,7 +506,7 @@ SqliteType sqlTypeWithString(NSString *typeString){
     if(!([method isEqualToString:@"max"]
        || [method isEqualToString:@"min"]
        || [method isEqualToString:@"sum"])) return nil;
-    NSString *sql = [NSString stringWithFormat:@"SELECT %@ AS %@(\"%@\") FROM \"%@\"", method, method, field, _tableName];
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@(\"%@\") AS %@ FROM \"%@\"", method, field, method, _tableName];
     NSArray *array = [_vvfmdb vv_executeQuery:sql];
     id result = nil;
     if(array.count > 0){
@@ -484,8 +527,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
 }
 
 - (BOOL)deleteOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToDic) return NO;
-    NSDictionary *dic = VVSequelize.objectToDic(_cls,object);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
+    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
     id pkid = dic[_primaryKey];
     if(!pkid) return NO;
     NSString *where = [VVSqlGenerator where:@{_primaryKey:pkid}];
@@ -494,8 +537,8 @@ SqliteType sqlTypeWithString(NSString *typeString){
 }
 
 - (BOOL)deleteMulti:(NSArray *)objects{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToDicArray) return NO;
-    NSArray *array = VVSequelize.objectsToDicArray(_cls,objects);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToKeyValuesArray) return NO;
+    NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
     NSMutableArray *pkids = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in array) {
         id pkid = dic[_primaryKey];

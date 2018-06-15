@@ -7,12 +7,14 @@
 
 #import "VVSequelize.h"
 
+static BOOL _verbose = NO;
+
 @interface VVSequelizeInnerPrivate: NSObject
 
-@property (nonatomic, copy) VVConversion dicToObject;
-@property (nonatomic, copy) VVConversion dicArrayToObjects;
-@property (nonatomic, copy) VVConversion objectToDic;
-@property (nonatomic, copy) VVConversion objectsToDicArray;
+@property (nonatomic, copy) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
+@property (nonatomic, copy) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
+@property (nonatomic, copy) VVObjectToKeyValues       objectToKeyValues;        ///< 对象转字典
+@property (nonatomic, copy) VVObjectsToKeyValuesArray objectsToKeyValuesArray;  ///< 对象数组转字典数组
 
 @end
 
@@ -30,37 +32,58 @@
     return _innerPrivate;
 }
 
-+ (VVConversion)dicToObject{
-    return [[self class] innerPrivate].dicToObject;
+#pragma mark - 调试信息打印
++ (void)VVVerbose:(NSString *)fmt, ...{
+    if(_verbose){
+        va_list args;
+        va_start(args, fmt);
+        NSString *string = fmt? [[NSString alloc] initWithFormat:fmt locale:[NSLocale currentLocale] arguments:args]:fmt;
+        va_end(args);
+        NSLog(@"%@", string);
+    }
 }
 
-+ (void)setDicToObject:(VVConversion)dicToObject{
-    [[self class] innerPrivate].dicToObject = dicToObject;
++ (BOOL)verbose{
+    return _verbose;
 }
 
-+ (VVConversion)dicArrayToObjects{
-    return [[self class] innerPrivate].dicArrayToObjects;
++ (void)setVerbose:(BOOL)verbose{
+    _verbose = verbose;
 }
 
-+ (void)setDicArrayToObjects:(VVConversion)dicArrayToObjects{
-    [[self class] innerPrivate].dicArrayToObjects = dicArrayToObjects;
+
+#pragma mark - 对象和字典互转
+
++ (VVKeyValuesToObject)keyValuesToObject{
+    return [[self class] innerPrivate].keyValuesToObject;
 }
 
-+ (VVConversion)objectToDic{
-    return [[self class] innerPrivate].objectToDic;
++ (void)setKeyValuesToObject:(VVKeyValuesToObject)keyValuesToObject{
+    [[self class] innerPrivate].keyValuesToObject = keyValuesToObject;
 }
 
-+ (void)setObjectToDic:(VVConversion)objectToDic{
-    [[self class] innerPrivate].objectToDic = objectToDic;
++ (VVKeyValuesArrayToObjects)keyValuesArrayToObjects{
+    return [[self class] innerPrivate].keyValuesArrayToObjects;
 }
 
-+ (VVConversion)objectsToDicArray{
-    return [[self class] innerPrivate].objectsToDicArray;
++ (void)setKeyValuesArrayToObjects:(VVKeyValuesArrayToObjects)keyValuesArrayToObjects{
+    [[self class] innerPrivate].keyValuesArrayToObjects = keyValuesArrayToObjects;
 }
 
-+ (void)setObjectsToDicArray:(VVConversion)objectsToDicArray{
-    [[self class] innerPrivate].objectsToDicArray = objectsToDicArray;
-    
++ (VVObjectToKeyValues)objectToKeyValues{
+    return [[self class] innerPrivate].objectToKeyValues;
+}
+
++ (void)setObjectToKeyValues:(VVObjectToKeyValues)objectToKeyValues{
+    [[self class] innerPrivate].objectToKeyValues = objectToKeyValues;
+}
+
++ (VVObjectsToKeyValuesArray)objectsToKeyValuesArray{
+    return [[self class] innerPrivate].objectsToKeyValuesArray;
+}
+
++ (void)setObjectsToKeyValuesArray:(VVObjectsToKeyValuesArray)objectsToKeyValuesArray{
+    [[self class] innerPrivate].objectsToKeyValuesArray = objectsToKeyValuesArray;
 }
 
 @end
