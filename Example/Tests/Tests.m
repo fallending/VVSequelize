@@ -38,15 +38,16 @@
         return [cls mj_keyValuesArrayWithObjectArray:objects];
     }];
     
-    NSString *path = [[NSBundle mainBundle] bundlePath];
-    self.vvfmdb = [[VVFMDB alloc] initWithDBName:@"mobiles.sqlite" dirPath:path encryptKey:nil];
+//    NSString *path = [[NSBundle mainBundle] bundlePath];
+    self.vvfmdb = [[VVFMDB alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
     VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
 //    VVOrmSchemaItem *column2 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"times",@"unique":@(YES)}];
-    self.mobileModel = [[VVOrmModel alloc] initWithClass:VVTestMobile.class
-                                                 manuals:@[column1]
-                                                excludes:nil
-                                               tableName:@"mobiles"
-                                                dataBase:self.vvfmdb];
+    self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
+                                             manuals:@[column1]
+                                            excludes:nil
+                                           tableName:@"mobiles"
+                                            dataBase:self.vvfmdb
+                                              atTime:YES];
 }
 
 - (void)tearDown
@@ -127,11 +128,12 @@
     VVOrmSchemaItem *column3 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"name",@"notnull":@(YES)}];
     VVOrmSchemaItem *column4 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"arr",@"unique":@(YES),@"notnull":@(YES)}];
 
-    VVOrmModel *personModel1 = [[VVOrmModel alloc] initWithClass:VVTestPerson.class
-                                                    manuals:@[column1,column2,column3,column4]
-                                                        excludes:nil
-                                                       tableName:@"persons"
-                                                        dataBase:nil];    
+    VVOrmModel *personModel1 = [VVOrmModel ormModelWithClass:VVTestPerson.class
+                                                     manuals:@[column1,column2,column3,column4]
+                                                    excludes:nil
+                                                   tableName:@"persons"
+                                                    dataBase:nil
+                                                      atTime:YES];
 //    NSLog(@"%@", personModel);
     NSLog(@"%@", personModel1);
     NSString *sql = @"UPDATE \"persons\" SET \"name\" = \"lisi\" WHERE \"idcard\" = \"123456\"";

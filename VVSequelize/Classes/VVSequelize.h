@@ -9,6 +9,7 @@
 #import "VVFMDB.h"
 #import "VVOrmModel.h"
 #import "VVSqlGenerator.h"
+#import "VVCipherHelper.h"
 
 #define VVLog(...) [VVSequelize VVVerbose:__VA_ARGS__]
 

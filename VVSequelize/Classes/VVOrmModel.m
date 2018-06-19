@@ -31,13 +31,12 @@
     VVOrmSchemaItem *column = [VVOrmSchemaItem new];
     column.name = name;
     column.type = dic[@"type"];
-    column.pk = [dic[@"pk"] boolValue];
+    column.pk   = [dic[@"pk"] boolValue];
     column.notnull = [dic[@"notnull"] boolValue];
-    column.unique = [dic[@"unique"] boolValue];
+    column.unique  = [dic[@"unique"] boolValue];
     column.dflt_value = dic[@"dflt_value"];
     return column;
 }
-
 
 - (BOOL)isEqualToItem:(VVOrmSchemaItem *)item{
     id dflt_val1 = [self.dflt_value isKindOfClass:[NSNull class]] ? nil : self.dflt_value;
@@ -59,6 +58,8 @@
 @property (nonatomic, strong) VVFMDB *vvfmdb;
 @property (nonatomic, copy  ) NSString *tableName;
 @property (nonatomic, copy  ) NSArray *fields;
+@property (nonatomic, copy  ) NSArray *manuals;
+@property (nonatomic, copy  ) NSArray *excludes;
 @property (nonatomic        ) Class cls;
 @property (nonatomic, copy  ) NSString *primaryKey;
 @property (nonatomic, assign) BOOL atTime;
@@ -98,7 +99,6 @@
     NSMutableDictionary *resultDic = [NSMutableDictionary dictionaryWithCapacity:0];
     for (NSDictionary *dic in columns) {
         VVOrmSchemaItem *column = [VVOrmSchemaItem new];
-        column.cid = dic[@"cid"];
         column.name = dic[@"name"];
         column.type = dic[@"type"];
         column.pk = [dic[@"pk"] boolValue];
@@ -203,105 +203,148 @@
     return type;
 }
 
++ (NSMutableDictionary *)modelPool{
+    static NSMutableDictionary *_modelPool;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _modelPool = [NSMutableDictionary dictionaryWithCapacity:0];
+    });
+    return _modelPool;
+}
+
 #pragma mark - Public
-- (instancetype)initWithClass:(Class)cls
-                   primaryKey:(NSString *)primaryKey{
-    return [self initWithClass:cls primaryKey:primaryKey tableName:nil dataBase:nil];
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(NSString *)primaryKey{
+    return [self ormModelWithClass:cls primaryKey:primaryKey tableName:nil dataBase:nil];
 }
 
-- (instancetype)initWithClass:(Class)cls
-                   primaryKey:(NSString *)primaryKey
-                    tableName:(NSString *)tableName
-                     dataBase:(VVFMDB *)db{
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(NSString *)primaryKey
+                        tableName:(NSString *)tableName
+                         dataBase:(VVFMDB *)db{
     VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
-    return [self initWithClass:cls manuals:@[column] excludes:nil tableName:tableName dataBase:db atTime:YES];
+    return [self ormModelWithClass:cls manuals:@[column] excludes:nil tableName:tableName dataBase:db atTime:YES];
 }
 
-- (instancetype)initWithClass:(Class)cls
-                 manuals:(NSArray<VVOrmSchemaItem *> *)manuals
-                     excludes:(NSArray *)excludes
-                    tableName:(NSString *)tableName
-                     dataBase:(VVFMDB *)vvfmdb
-                       atTime:(BOOL)atTime{
-    self = [super init];
-    if (self) {
-        _vvfmdb    = vvfmdb ? vvfmdb : VVFMDB.defalutDb;
-        _tableName = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
-        _cls       = cls;
-        _atTime    = atTime;
-        NSMutableDictionary *classColumns = [self classColumnsWithManuals:manuals].mutableCopy;
-        for (NSString *column in excludes) {
-            [classColumns removeObjectForKey:column];
-        }
-        NSAssert1(classColumns.count > 0, @"无需创建表: %@", _tableName);
-        
-        // 2. 检查数据表是否存在
-        BOOL exist = [self isTableExist];
-        NSInteger changed = 0;
-        // 3. 若存在,检查是否需要进行变更.如需变更,则将原数据表进行更名.
-        NSString *tempTableName = [NSString stringWithFormat:@"%@_%@",_tableName, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
-        if(exist){
-            // 获取已存在字段
-            NSDictionary *tableColumns = [self tableColumns];
-            // 计算变化的字段数量
-            changed = [self compareSchemaItems:classColumns with:tableColumns];
-            // 字段发生变更,对原数据表进行更名
-            if(changed > 0){
-                NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
-                VVLog(@"%i: %@",__LINE__,sql);
-                BOOL ret = [_vvfmdb vv_executeUpdate:sql];
-                NSAssert1(ret, @"创建临时表失败: %@", tempTableName);
-            }
-        }
-        
-        //4. 表不存在或字段发生变更,需要创建新表
-        if(!exist || changed > 0){
-            NSMutableString *columnsString = [NSMutableString stringWithCapacity:0];
-            NSArray *allColumns = classColumns.allValues;
-            NSMutableArray *uniqueColumns = [NSMutableArray arrayWithCapacity:0];
-            for (VVOrmSchemaItem *column in allColumns) {
-                [columnsString appendFormat:@"%@,", [self columnSqlOf:column]];
-                if(column.unique) [uniqueColumns addObject:column];
-                if(column.pk) _primaryKey = column.name;
++ (instancetype)ormModelWithClass:(Class)cls
+                          manuals:(NSArray *)manuals
+                         excludes:(NSArray *)excludes
+                        tableName:(NSString *)tableName
+                         dataBase:(VVFMDB *)vvfmdb
+                           atTime:(BOOL)atTime{
+    if(!cls) return nil;
+    NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
+    VVFMDB   *db = vvfmdb ? vvfmdb : VVFMDB.defalutDb;
+    NSString *dbname = db.db.databasePath.lastPathComponent;
+    NSString *modelKey = [dbname stringByAppendingString:tbname];
+    VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:modelKey];
+    if(!model){
+        model = [[VVOrmModel alloc] init];
+    }
+    model.cls = cls;
+    model.tableName = tbname;
+    model.vvfmdb = db;
+    model.manuals = manuals;
+    model.excludes = excludes;
+    model.atTime = atTime;
+    [model createOrModifyTable];
+    [[VVOrmModel modelPool] setObject:model forKey:modelKey];
+    return model;
+}
 
-            }
-            if(_atTime){
-                [columnsString appendFormat:@"%@ INTEGER,",kVsCreateAt]; //创建时间
-                [columnsString appendFormat:@"%@ INTEGER,",kVsUpdateAt]; //修改时间
-            }
-            if(!_primaryKey){
-                [columnsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
-                _primaryKey = kVsPkid;
-            }
-            for (VVOrmSchemaItem *column in uniqueColumns) {
-                [columnsString appendFormat:@"CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT FAIL,", column.name, column.name];
-            }
-            [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
-            NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
+/**
+ 根据参数,创建或修改表
+ */
+- (void)createOrModifyTable{
+    // 处理自定义字段配置
+    NSMutableArray *temps = [NSMutableArray arrayWithCapacity:0];
+    for (id obj in _manuals) {
+        if ([obj isKindOfClass:[NSDictionary class]]) {
+            [temps addObject:[VVOrmSchemaItem schemaItemWithDic:obj]];
+        }
+        else if([obj isKindOfClass:[VVOrmSchemaItem class]]){
+            [temps addObject:obj];
+        }
+    }
+    // 根据要存储的类生成字段配置列表
+    NSMutableDictionary *classColumns = [self classColumnsWithManuals:temps].mutableCopy;
+    for (NSString *column in _excludes) {
+        [classColumns removeObjectForKey:column];
+    }
+    NSAssert1(classColumns.count > 0, @"无需创建表: %@", _tableName);
+    
+    // 检查数据表是否存在
+    BOOL exist = [self isTableExist];
+    NSInteger changed = 0;
+    // 若表存在,检查是否需要进行变更.如需变更,则将原数据表进行更名.
+    NSString *tempTableName = [NSString stringWithFormat:@"%@_%@",_tableName, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
+    if(exist){
+        // 获取已存在字段
+        NSDictionary *tableColumns = [self tableColumns];
+        // 计算变化的字段数量
+        changed = [self compareSchemaItems:classColumns with:tableColumns];
+        // 字段发生变更,对原数据表进行更名
+        if(changed > 0){
+            NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
             VVLog(@"%i: %@",__LINE__,sql);
             BOOL ret = [_vvfmdb vv_executeUpdate:sql];
-            NSAssert1(ret, @"创建表失败: %@", _tableName);
+            NSAssert1(ret, @"创建临时表失败: %@", tempTableName);
         }
-        //5. 如果字段发生变更,将原数据表的数据插入新表
-        if(exist && changed > 0){
-            NSMutableString *allColumns = [NSMutableString stringWithCapacity:0];
-            for (NSString *column in classColumns.allKeys) {
-                [allColumns appendFormat:@"\"%@\",",column];
-            }
-            if(allColumns.length > 1) {
-                [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
-                [_vvfmdb vv_inDatabase:^{
-                    NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", _tableName, allColumns, allColumns, tempTableName];
-                    VVLog(@"%i: %@",__LINE__,sql);
-                    BOOL ret = [_vvfmdb vv_executeUpdate:sql];
+    }
+    
+    // 若表不存在或字段发生变更,需要创建新表
+    if(!exist || changed > 0){
+        NSMutableString *columnsString = [NSMutableString stringWithCapacity:0];
+        NSArray *allColumns = classColumns.allValues;
+        NSMutableArray *uniqueColumns = [NSMutableArray arrayWithCapacity:0];
+        for (VVOrmSchemaItem *column in allColumns) {
+            [columnsString appendFormat:@"%@,", [self columnSqlOf:column]];
+            if(column.unique) [uniqueColumns addObject:column];
+            if(column.pk) _primaryKey = column.name;
+            
+        }
+        if(_atTime){
+            [columnsString appendFormat:@"%@ INTEGER,",kVsCreateAt]; //创建时间
+            [columnsString appendFormat:@"%@ INTEGER,",kVsUpdateAt]; //修改时间
+        }
+        if(!_primaryKey){
+            [columnsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
+            _primaryKey = kVsPkid;
+        }
+        for (VVOrmSchemaItem *column in uniqueColumns) {
+            [columnsString appendFormat:@"CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT FAIL,", column.name, column.name];
+        }
+        [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
+        NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
+        VVLog(@"%i: %@",__LINE__,sql);
+        BOOL ret = [_vvfmdb vv_executeUpdate:sql];
+        NSAssert1(ret, @"创建表失败: %@", _tableName);
+    }
+    // 如果字段发生变更,将原数据表的数据插入新表
+    if(exist && changed > 0){
+        NSMutableString *allColumns = [NSMutableString stringWithCapacity:0];
+        for (NSString *column in classColumns.allKeys) {
+            [allColumns appendFormat:@"\"%@\",",column];
+        }
+        if(allColumns.length > 1) {
+            [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
+            [_vvfmdb vv_inDatabase:^{
+                // 将旧表数据复制至新表
+                NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", _tableName, allColumns, allColumns, tempTableName];
+                VVLog(@"%i: %@",__LINE__,sql);
+                BOOL ret = [_vvfmdb vv_executeUpdate:sql];
+                // 数据复制成功则删除旧表
+                if(ret){
                     sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
                     VVLog(@"%i: %@",__LINE__,sql);
                     ret = [_vvfmdb vv_executeUpdate:sql];
-                }];
-            }
+                }
+                else{
+                    VVLog(@"警告: 从旧表(%@)复制数据到新表(%@)失败!",tempTableName,_tableName);
+                }
+            }];
         }
     }
-    return self;
 }
 
 @end
@@ -310,8 +353,16 @@
 @implementation VVOrmModel (Create)
 
 -(BOOL)insertOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
-    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
+    NSDictionary *dic = nil;
+    if([object isKindOfClass:[NSDictionary class]]) {
+        dic = object;
+    }
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
+    }
+    else {
+        return NO;
+    }
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
     [dic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -369,8 +420,17 @@
 }
 
 - (BOOL)updateOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
-    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid]) return NO;
+    NSDictionary *dic = nil;
+    if([object isKindOfClass:[NSDictionary class]]) {
+        dic = object;
+    }
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
+    }
+    else {
+        return NO;
+    }
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     NSMutableDictionary *values = dic.mutableCopy;
@@ -388,15 +448,9 @@
 }
 
 - (BOOL)updateMulti:(NSArray *)objects{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToKeyValuesArray) return NO;
-    NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
     NSInteger failCount = 0;
-    for (NSDictionary *dic in array) {
-        if(!dic[_primaryKey]){ failCount ++;  continue;}
-        NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
-        NSMutableDictionary *values = dic.mutableCopy;
-        [values removeObjectForKey:_primaryKey];
-        if(![self update:condition values:values]) {failCount ++;}
+    for (id object in objects) {
+        if(![self updateOne:object]) {failCount ++;}
     }
     return failCount == 0;
 }
@@ -465,8 +519,16 @@
 }
 
 - (BOOL)isExist:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
-    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
+    NSDictionary *dic = nil;
+    if([object isKindOfClass:[NSDictionary class]]) {
+        dic = object;
+    }
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
+    }
+    else {
+        return NO;
+    }
     if(!dic[_primaryKey]) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     return [self count:condition] > 0;
@@ -494,8 +556,8 @@
 
 - (id)calc:(NSString *)field method:(NSString *)method{
     if(!([method isEqualToString:@"max"]
-       || [method isEqualToString:@"min"]
-       || [method isEqualToString:@"sum"])) return nil;
+         || [method isEqualToString:@"min"]
+         || [method isEqualToString:@"sum"])) return nil;
     NSString *sql = [NSString stringWithFormat:@"SELECT %@(\"%@\") AS %@ FROM \"%@\"", method, field, method, _tableName];
     NSArray *array = [_vvfmdb vv_executeQuery:sql];
     id result = nil;
@@ -517,8 +579,16 @@
 }
 
 - (BOOL)deleteOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectToKeyValues) return NO;
-    NSDictionary *dic = VVSequelize.objectToKeyValues(_cls,object);
+    NSDictionary *dic = nil;
+    if([object isKindOfClass:[NSDictionary class]]) {
+        dic = object;
+    }
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
+    }
+    else {
+        return NO;
+    }
     id pkid = dic[_primaryKey];
     if(!pkid) return NO;
     NSString *where = [VVSqlGenerator where:@{_primaryKey:pkid}];

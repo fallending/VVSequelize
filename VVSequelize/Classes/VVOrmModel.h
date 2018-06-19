@@ -10,23 +10,21 @@
 
 #define VVRangeAll NSMakeRange(0, 0)
 
-
 /**
  数据表每个字段的配置.
  @discussion 本项目中仅默认主键vv_pkid支持自增类型,所以此类中未定义自增属性.
  */
 @interface VVOrmSchemaItem: NSObject
-@property (nonatomic, assign) NSInteger cid;    ///< 字段ID
 @property (nonatomic, copy  ) NSString *name;   ///< 字段名
-@property (nonatomic, copy  ) NSString *type;   ///< 字段类型: TEXT,INTEGER,REAL,BLOB
 @property (nonatomic, assign) BOOL notnull;     ///< 是否不为空,默认为NO(可为空)
-@property (nonatomic, strong, nullable) id dflt_value;  ///< 默认值
 @property (nonatomic, assign) BOOL pk;          ///< 是否主键
 @property (nonatomic, assign) BOOL unique;      ///< 是否约束唯一
+@property (nonatomic, copy  , nullable) NSString *type;   ///< 字段类型: TEXT,INTEGER,REAL,BLOB
+@property (nonatomic, strong, nullable) id dflt_value;    ///< 默认值
 
 /**
  生成字段配置
-
+ 
  @param dic 格式:{"name":"xxx","type":"TEXT","unique":@(YES),"notnull":@(YES),....}
  @return 字段配置
  */
@@ -35,7 +33,7 @@
 
 /**
  比较两个字段配置是否相同
-
+ 
  @param item 要比较的字段配置
  @return 是否相同
  */
@@ -53,8 +51,8 @@
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
  @return ORM模型
  */
-- (instancetype)initWithClass:(Class)cls
-                   primaryKey:(NSString *)primaryKey;
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(NSString *)primaryKey;
 
 
 /**
@@ -66,28 +64,28 @@
  @param vvfmdb 数据库,nil表示使用默认数据库
  @return ORM模型
  */
-- (instancetype)initWithClass:(Class)cls
-                   primaryKey:(NSString *)primaryKey
-                    tableName:(nullable NSString *)tableName
-                     dataBase:(nullable VVFMDB *)vvfmdb;
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(NSString *)primaryKey
+                        tableName:(nullable NSString *)tableName
+                         dataBase:(nullable VVFMDB *)vvfmdb;
 
 /**
  定义ORM模型.可自动新增字段,##不会修改或删除原有字段##.
  
  @param cls 模型(Class)
- @param manuals 自定义各个字段的配置
+ @param manuals 自定义各个字段的配置.格式为VVOrmSchemaItem数组,或可转换为VVOrmSchemaItem的json数组.
  @param excludes 不存入数据表的字段名
  @param tableName 表名,nil表示使用cls类名
  @param vvfmdb 数据库,nil表示使用默认数据库
  @param atTime 是否将vv_createAt,vv_updateAt添加至每条数据,用于记录插入时间,更新时间,默认为YES
  @return ORM模型
  */
-- (instancetype)initWithClass:(Class)cls
-                      manuals:(nullable NSArray<VVOrmSchemaItem *> *)manuals
-                     excludes:(nullable NSArray *)excludes
-                    tableName:(nullable NSString *)tableName
-                     dataBase:(nullable VVFMDB *)vvfmdb
-                       atTime:(BOOL)atTime;
++ (instancetype)ormModelWithClass:(Class)cls
+                          manuals:(nullable NSArray *)manuals
+                         excludes:(nullable NSArray *)excludes
+                        tableName:(nullable NSString *)tableName
+                         dataBase:(nullable VVFMDB *)vvfmdb
+                           atTime:(BOOL)atTime;
 
 /**
  删除表
@@ -108,8 +106,20 @@
 #pragma mark - CURD(C)创建
 @interface VVOrmModel (Create)
 
+/**
+ 新增一条数据,对象或字典
+
+ @param object 要新增的数据对象
+ @return 是否新增成功
+ */
 -(BOOL)insertOne:(id)object;
 
+/**
+ 新增多条数据
+
+ @param objects 要新增的数据
+ @return 是否新增成功
+ */
 -(BOOL)insertMulti:(NSArray *)objects;
 
 @end
@@ -119,7 +129,7 @@
 
 /**
  根据条件更新数据
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @param values 要设置的数据,格式为{"field1":data1,"field2":data2,...}
  @return 是否更新成功
@@ -128,23 +138,23 @@
         values:(NSDictionary *)values;
 
 /**
- 更新一条数据,更新不成功不会插入新数据.
-
+ 更新一条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
+ 
  @param object 要更新的数据
  @return 是否更新成功
  */
 - (BOOL)updateOne:(id)object;
 
 /**
- 更新一条数据,更新失败会插入新数据.
-
+ 更新一条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
+ 
  @param object 要更新的数据
  @return 是否更新或插入成功
  */
 - (BOOL)upsertOne:(id)object;
 
 /**
- 更新多条数据,更新不成功不会插入新数据.
+ 更新多条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
  
  @param objects 要更新的数据
  @return 是否更新成功
@@ -152,7 +162,7 @@
 - (BOOL)updateMulti:(NSArray *)objects;
 
 /**
- 更新多条数据,更新失败会插入新数据.
+ 更新多条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
  
  @param objects 要更新的数据
  @return 是否更新或插入成功
@@ -161,7 +171,7 @@
 
 /**
  将某个字段的值增加某个数值
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @param field 要更新的指端
  @param value 要增加的值,可为负数
@@ -178,7 +188,7 @@
 
 /**
  查询一条数据
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 找到的数据
  */
@@ -187,7 +197,7 @@
 
 /**
  根据条件查询所有数据
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 查询结果
  */
@@ -196,7 +206,7 @@
 
 /**
  根据条件查询数据
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
@@ -209,7 +219,7 @@
 
 /**
  根据条件统计数据条数
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 数据条数
  */
@@ -218,7 +228,7 @@
 
 /**
  检查数据库中是否保存有某个数据
-
+ 
  @param object 数据对象
  @return 是否存在
  */
@@ -226,7 +236,7 @@
 
 /**
  根据条件查询数据和数据数量.数量只根据查询条件获取,不受range限制.
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
@@ -238,7 +248,7 @@
 
 /**
  获取某个字段的最大值
-
+ 
  @param field 字段名
  @return 最大值.因Text也可以计算最大值,故返回值为id类型
  */
@@ -267,14 +277,14 @@
 
 /**
  删除表
-
+ 
  @return 是否删除成功
  */
 - (BOOL)drop;
 
 /**
  删除一条数据
-
+ 
  @param object 要删除的数据
  @return 是否删除成功
  */
@@ -282,7 +292,7 @@
 
 /**
  删除多条数据
-
+ 
  @param objects 要删除的数据
  @return 是否删除成功
  */
@@ -291,7 +301,7 @@
 
 /**
  根据条件删除数据
-
+ 
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 是否删除成功
  */
