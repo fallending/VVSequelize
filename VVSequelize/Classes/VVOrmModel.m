@@ -281,6 +281,12 @@
     if(exist){
         // 获取已存在字段
         NSDictionary *tableColumns = [self tableColumns];
+        for (VVOrmSchemaItem *column in tableColumns.allValues) {
+            if (column.pk) {
+                _primaryKey = column.name;
+                break;
+            }
+        }
         // 计算变化的字段数量
         changed = [self compareSchemaItems:classColumns with:tableColumns];
         // 字段发生变更,对原数据表进行更名
@@ -301,11 +307,10 @@
             [columnsString appendFormat:@"%@,", [self columnSqlOf:column]];
             if(column.unique) [uniqueColumns addObject:column];
             if(column.pk) _primaryKey = column.name;
-            
         }
         if(_atTime){
-            [columnsString appendFormat:@"\"%@\" INTEGER,",kVsCreateAt]; //创建时间
-            [columnsString appendFormat:@"\"%@\" INTEGER,",kVsUpdateAt]; //修改时间
+            [columnsString appendFormat:@"\"%@\" REAL,",kVsCreateAt]; //创建时间
+            [columnsString appendFormat:@"\"%@\" REAL,",kVsUpdateAt]; //修改时间
         }
         if(!_primaryKey){
             [columnsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
@@ -373,7 +378,7 @@
     }];
     if(keyString.length > 1 && valString.length > 1){
         if(_atTime){
-            NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
+            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
             [keyString appendFormat:@"\"%@\",",kVsCreateAt];
             [valString appendFormat:@"\"%@\",",@(now)];
             [keyString appendFormat:@"\"%@\",",kVsUpdateAt];
@@ -409,7 +414,7 @@
     }];
     if (setString.length > 1) {
         if(_atTime){
-            NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
+            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
             [setString appendFormat:@"\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
         }
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
@@ -470,7 +475,7 @@
     NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\" %@ %@",
                                   field, field, value > 0 ? @"+": @"-", @(ABS(value))];
     if(_atTime){
-        NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
         [setString appendFormat:@",\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
     }
     [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];

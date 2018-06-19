@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.1.0-Beta1'
+  s.version          = '0.1.0-beta2'
   s.summary          = '基于FMDB的ORM模型封装.'
 
 # This description is used to generate tags and improve search results.

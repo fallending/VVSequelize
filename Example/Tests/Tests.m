@@ -69,7 +69,7 @@
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (NSInteger i = 0; i < 100; i ++) {
         VVTestMobile *mobile = [VVTestMobile new];
-        mobile.mobile = [NSString stringWithFormat:@"1%4i%4i",arc4random_uniform(9999),arc4random_uniform(9999)];
+        mobile.mobile = [NSString stringWithFormat:@"1%02i%04i%04i",arc4random_uniform(99),arc4random_uniform(9999),arc4random_uniform(9999)];
         mobile.province = @"四川";
         mobile.city = @"成都";
         mobile.industry = @"IT";
@@ -86,7 +86,7 @@
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (NSInteger i = 0; i < 100; i ++) {
         VVTestMobile *mobile = [VVTestMobile new];
-        mobile.mobile = [NSString stringWithFormat:@"1%4i%4i",arc4random_uniform(9999),arc4random_uniform(9999)];
+        mobile.mobile = [NSString stringWithFormat:@"1%02i%04i%04i",arc4random_uniform(99),arc4random_uniform(9999),arc4random_uniform(9999)];
         mobile.province = @"四川";
         mobile.city = @"成都";
         mobile.industry = @"IT";
