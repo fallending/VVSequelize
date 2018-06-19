@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.1.0'
-  s.summary          = 'A short description of VVSequelize.'
+  s.version          = '0.1.0-Beta1'
+  s.summary          = '基于FMDB的ORM模型封装.'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -18,10 +18,10 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-TODO: Add long description of the pod here.
+                       基于FMDB的ORM模型封装.
                        DESC
 
-  s.homepage         = 'https://github.com/Valo Lee/VVSequelize'
+  s.homepage         = 'https://github.com/pozi119/VVSequelize'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Valo Lee' => 'pozi119@163.com' }
