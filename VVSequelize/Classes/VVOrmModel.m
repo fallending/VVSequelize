@@ -304,8 +304,8 @@
             
         }
         if(_atTime){
-            [columnsString appendFormat:@"%@ INTEGER,",kVsCreateAt]; //创建时间
-            [columnsString appendFormat:@"%@ INTEGER,",kVsUpdateAt]; //修改时间
+            [columnsString appendFormat:@"\"%@\" INTEGER,",kVsCreateAt]; //创建时间
+            [columnsString appendFormat:@"\"%@\" INTEGER,",kVsUpdateAt]; //修改时间
         }
         if(!_primaryKey){
             [columnsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
@@ -473,6 +473,7 @@
         NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
         [setString appendFormat:@",\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
     }
+    [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
     return [_vvfmdb vv_executeUpdate:sql];
