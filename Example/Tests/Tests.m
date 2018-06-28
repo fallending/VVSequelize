@@ -134,9 +134,9 @@
                                                    tableName:@"persons"
                                                     dataBase:nil
                                                       atTime:YES];
-    NSUInteger nextid = [personModel1 nextAutoPrimaryKey];
+    NSUInteger maxrowid = [personModel1 maxRowid];
 //    NSLog(@"%@", personModel);
-    NSLog(@"nextid: %@", @(nextid));
+    NSLog(@"maxrowid: %@", @(maxrowid));
     NSString *sql = @"UPDATE \"persons\" SET \"name\" = \"lisi\" WHERE \"idcard\" = \"123456\"";
     VVFMDB *vvfmdb = [personModel1 valueForKey:@"vvfmdb"];
     BOOL ret = [vvfmdb.db executeQuery:sql];
