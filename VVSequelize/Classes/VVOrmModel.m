@@ -559,9 +559,7 @@
  通常iOS App内嵌数据库单表的数据量不会达到rowid最大值，此处取`max(rowid)`可以做唯一值, `max(rowid) + 1`为下一条将插入的数据的自动主键值.
  */
 - (NSUInteger)maxRowid{
-    id mrowid = [self max:@"rowid"];
-    if(!mrowid || [mrowid isKindOfClass:NSNull.class]) return 0;
-    return [mrowid unsignedIntegerValue];
+    return [[self max:@"rowid"] unsignedIntegerValue];
 }
 
 - (id)max:(NSString *)field{
@@ -587,7 +585,7 @@
         NSDictionary *dic = array.firstObject;
         result = dic[method];
     }
-    return result;
+    return [result isKindOfClass:NSNull.class] ? nil : result;
 }
 
 @end
