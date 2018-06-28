@@ -248,6 +248,14 @@
                          range:(NSRange)range;
 
 /**
+ 下一个自动主键值`max(rowid)+1`
+
+ @return 下一个自动主键值
+ @discussion 在某些场景,表使用自动主键,数据尚未插入但需要使用主键值,可使用此方法获取
+ */
+- (NSUInteger)nextAutoPrimaryKey;
+
+/**
  获取某个字段的最大值
  
  @param field 字段名

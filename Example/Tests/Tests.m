@@ -134,13 +134,13 @@
                                                    tableName:@"persons"
                                                     dataBase:nil
                                                       atTime:YES];
+    NSUInteger nextid = [personModel1 nextAutoPrimaryKey];
 //    NSLog(@"%@", personModel);
-    NSLog(@"%@", personModel1);
+    NSLog(@"nextid: %@", @(nextid));
     NSString *sql = @"UPDATE \"persons\" SET \"name\" = \"lisi\" WHERE \"idcard\" = \"123456\"";
     VVFMDB *vvfmdb = [personModel1 valueForKey:@"vvfmdb"];
     BOOL ret = [vvfmdb.db executeQuery:sql];
     NSLog(@"%@",@(ret));
-
 }
 
 - (void)testWhere{
