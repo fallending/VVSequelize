@@ -70,7 +70,7 @@
         }
     }
     NSString *dbPath =  [path stringByAppendingPathComponent:dbName];
-    VVLog(@"打开或创建数据库: %@", dbPath);
+    VVLog(VVLogLevelSQL,@"打开或创建数据库: %@", dbPath);
     FMDatabase *fmdb = [FMDatabase databaseWithPath:dbPath];
     if ([fmdb open]) {
         if(encryptKey && encryptKey.length > 0){
@@ -89,16 +89,21 @@
 
 #pragma mark - 原始SQL语句
 - (NSArray *)vv_executeQuery:(NSString *)sql{
+    VVLog(VVLogLevelSQL,@"query: %@",sql);
     FMResultSet *set = [self.db executeQuery:sql];
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     while ([set next]) {
         [array addObject:set.resultDictionary];
     }
+    VVLog(VVLogLevelSQLAndResult, @"query result: %@",array);
     return array;
 }
 
 - (BOOL)vv_executeUpdate:(NSString *)sql{
-    return [self.db executeUpdate:sql];
+    VVLog(VVLogLevelSQL,@"execute: %@",sql);
+    BOOL ret = [self.db executeUpdate:sql];
+    VVLog(VVLogLevelSQLAndResult, @"execute result: %@",@(ret));
+    return ret;
 }
 
 

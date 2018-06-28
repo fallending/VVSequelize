@@ -7,7 +7,7 @@
 
 #import "VVSequelize.h"
 
-static BOOL _verbose = NO;
+static VVLogLevel _verbose = VVLogLevelNone;
 
 @interface VVSequelizeInnerPrivate: NSObject
 
@@ -33,8 +33,9 @@ static BOOL _verbose = NO;
 }
 
 #pragma mark - 调试信息打印
-+ (void)VVVerbose:(NSString *)fmt, ...{
-    if(_verbose){
++ (void)VVVerbose:(NSUInteger)level
+           format:(NSString *)fmt, ...{
+    if(_verbose > 0 && _verbose >= level){
         va_list args;
         va_start(args, fmt);
         NSString *string = fmt? [[NSString alloc] initWithFormat:fmt locale:[NSLocale currentLocale] arguments:args]:fmt;
@@ -47,7 +48,7 @@ static BOOL _verbose = NO;
     return _verbose;
 }
 
-+ (void)setVerbose:(BOOL)verbose{
++ (void)setVerbose:(VVLogLevel)verbose{
     _verbose = verbose;
 }
 

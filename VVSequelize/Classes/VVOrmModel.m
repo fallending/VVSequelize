@@ -83,7 +83,6 @@
 
 - (BOOL)isTableExist{
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",_tableName];
-    VVLog(@"%i: %@",__LINE__,sql);
     NSArray *array = [_vvfmdb vv_executeQuery:sql];
     for (NSDictionary *dic in array) {
         NSInteger count = [dic[@"count"] integerValue];
@@ -94,7 +93,6 @@
 
 - (NSDictionary *)tableColumns{
     NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",_tableName];
-    VVLog(@"%i: %@",__LINE__,tableInfoSql);
     NSArray *columns = [_vvfmdb vv_executeQuery:tableInfoSql];
     NSMutableDictionary *resultDic = [NSMutableDictionary dictionaryWithCapacity:0];
     for (NSDictionary *dic in columns) {
@@ -107,13 +105,11 @@
         resultDic[column.name] = column;
     }
     NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(\"%@\");",_tableName];
-    VVLog(@"%i: %@",__LINE__,indexListSql);
     NSArray *indexList = [_vvfmdb vv_executeQuery:indexListSql];
     for (NSDictionary *indexDic in indexList) {
         if([indexDic[@"origin"] isEqualToString:@"u"] && [indexDic[@"unique"] integerValue] == 1){
             NSString *indexName = indexDic[@"name"];
             NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(\"%@\");",indexName];
-            VVLog(@"%i: %@",__LINE__,indexListSql);
             NSArray *indexInfos = [_vvfmdb vv_executeQuery:indexInfoSql];
             if(indexInfos.count > 0) {
                 NSDictionary *indexInfo = indexInfos.firstObject;
@@ -293,7 +289,6 @@
         // 字段发生变更,对原数据表进行更名
         if(changed > 0){
             NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
-            VVLog(@"%i: %@",__LINE__,sql);
             BOOL ret = [_vvfmdb vv_executeUpdate:sql];
             NSAssert1(ret, @"创建临时表失败: %@", tempTableName);
         }
@@ -322,7 +317,6 @@
         }
         [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
-        VVLog(@"%i: %@",__LINE__,sql);
         BOOL ret = [_vvfmdb vv_executeUpdate:sql];
         NSAssert1(ret, @"创建表失败: %@", _tableName);
     }
@@ -337,16 +331,14 @@
             [_vvfmdb vv_inDatabase:^{
                 // 将旧表数据复制至新表
                 NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", _tableName, allColumns, allColumns, tempTableName];
-                VVLog(@"%i: %@",__LINE__,sql);
                 BOOL ret = [_vvfmdb vv_executeUpdate:sql];
                 // 数据复制成功则删除旧表
                 if(ret){
                     sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
-                    VVLog(@"%i: %@",__LINE__,sql);
                     ret = [_vvfmdb vv_executeUpdate:sql];
                 }
                 else{
-                    VVLog(@"警告: 从旧表(%@)复制数据到新表(%@)失败!",tempTableName,_tableName);
+                    VVLog(VVLogLevelSQLAndResult, @"警告: 从旧表(%@)复制数据到新表(%@)失败!",tempTableName,_tableName);
                 }
             }];
         }
@@ -578,7 +570,7 @@
     if(!([method isEqualToString:@"max"]
          || [method isEqualToString:@"min"]
          || [method isEqualToString:@"sum"])) return nil;
-    NSString *sql = [NSString stringWithFormat:@"SELECT %@(\"%@\") AS %@ FROM \"%@\"", method, field, method, _tableName];
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@(\"%@\") AS \"%@\" FROM \"%@\"", method, field, method, _tableName];
     NSArray *array = [_vvfmdb vv_executeQuery:sql];
     id result = nil;
     if(array.count > 0){

@@ -11,7 +11,14 @@
 #import "VVSqlGenerator.h"
 #import "VVCipherHelper.h"
 
-#define VVLog(...) [VVSequelize VVVerbose:__VA_ARGS__]
+
+typedef enum : NSUInteger {
+    VVLogLevelNone          = 0,
+    VVLogLevelSQL           = 1,
+    VVLogLevelSQLAndResult  = 2,
+} VVLogLevel;
+
+#define VVLog(level, ...) [VVSequelize VVVerbose:(level) format:__VA_ARGS__]
 
 typedef id(^VVKeyValuesToObject)(Class,NSDictionary *);
 typedef id(^VVKeyValuesArrayToObjects)(Class,NSArray<NSDictionary *> *);
@@ -20,14 +27,16 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
 
 @interface VVSequelize : NSObject
 
-@property (nonatomic, assign, class) BOOL verbose; ///< 是否打印调试信息
+@property (nonatomic, assign, class) VVLogLevel verbose; ///< 是否打印调试信息,0-不打印,1-仅打印sql,2-打印每次sql结果
 
 /**
  打印调试信息,通过verbose控制
-
+ 
+ @param level 调试层级
  @param fmt 调试信息格式及字符串
  */
-+ (void)VVVerbose:(NSString *)fmt, ...;
++ (void)VVVerbose:(NSUInteger)level
+           format:(NSString *)fmt, ...;
 
 @property (nonatomic, copy, class) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
 @property (nonatomic, copy, class) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
