@@ -41,6 +41,6 @@ Pod::Spec.new do |s|
   # s.dependency 'AFNetworking', '~> 2.3'
   
   s.dependency "FMDB/SQLCipher"
-  s.xcconfig = {'HEADER_SEARCH_PATHS' => '$(PODS_ROOT)/SQLCipher' }
+  # s.xcconfig = { 'OTHER_CFLAGS' => '$(inherited) -DSQLITE_HAS_CODEC -DHAVE_USLEEP=1', 'HEADER_SEARCH_PATHS' => '$(PODS_ROOT)/SQLCipher' }
   
 end
