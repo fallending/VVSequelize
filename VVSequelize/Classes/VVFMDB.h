@@ -6,7 +6,11 @@
 //
 
 #import <Foundation/Foundation.h>
+#if __has_include(<VVSequelize/VVSequelize.h>)
+#import <FMDB/FMDB.h>
+#else
 #import "FMDB.h"
+#endif
 
 @interface VVFMDB : NSObject
 
