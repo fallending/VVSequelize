@@ -1,36 +1,14 @@
 //
-//  VVFMDB.m
+//  VVDataBase.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/6/6.
 //
 
-#import "VVFMDB.h"
-#import <objc/runtime.h>
+#import "VVDataBase.h"
 #import "VVSequelize.h"
 
-@interface VVFMDB ()
-
-@property (nonatomic, strong) NSString *dbPath;
-
-@end
-
-
-@implementation VVFMDB
-
-#pragma mark - Private
-
-- (FMDatabaseQueue *)dbQueue{
-    if (!_dbQueue) {
-        [_db close];
-        _dbQueue = [FMDatabaseQueue databaseQueueWithPath:_dbPath];
-        _db = [_dbQueue valueForKey:@"_db"];
-        if(_encryptKey && _encryptKey.length > 0){
-            [_db setKey:_encryptKey];
-        }
-    }
-    return _dbQueue;
-}
+@implementation VVDataBase
 
 #pragma mark - 创建数据库
 /**
@@ -39,12 +17,12 @@
  @return 数据库单例对象
  */
 + (instancetype)defalutDb{
-    static VVFMDB *_vvfmdb;
+    static VVDataBase *_vvdb;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _vvfmdb = [[self alloc] initWithDBName:nil];
+        _vvdb = [[self alloc] initWithDBName:nil];
     });
-    return _vvfmdb;
+    return _vvdb;
 }
 
 - (instancetype)initWithDBName:(NSString *)dbName{
@@ -71,37 +49,34 @@
     }
     NSString *dbPath =  [path stringByAppendingPathComponent:dbName];
     VVLog(VVLogLevelSQL,@"打开或创建数据库: %@", dbPath);
-    FMDatabase *fmdb = [FMDatabase databaseWithPath:dbPath];
-    if ([fmdb open]) {
+    BOOL ret = VVSequelize.bridge && [VVSequelize.bridge db_createOrOpen:dbPath];
+    if (ret && [VVSequelize.bridge db_open]) {
         if(encryptKey && encryptKey.length > 0){
-            [fmdb setKey:encryptKey];
+            if([VVSequelize.bridge respondsToSelector:@selector(db_setEncryptKey:)]){
+                [VVSequelize.bridge db_setEncryptKey:self.encryptKey];
+            }
         }
         self = [self init];
         if (self) {
-            self.db = fmdb;
             self.dbPath = dbPath;
             return self;
         }
     }
-    NSAssert1(NO, @"创建/打开数据库(%@)失败!",dbPath);
+    NSAssert1(NO, @"创建/打开数据库(%@)失败!请检查是否设置`VVSequelize.bridge`",dbPath);
     return nil;
 }
 
 #pragma mark - 原始SQL语句
 - (NSArray *)vv_executeQuery:(NSString *)sql{
     VVLog(VVLogLevelSQL,@"query: %@",sql);
-    FMResultSet *set = [self.db executeQuery:sql];
-    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-    while ([set next]) {
-        [array addObject:set.resultDictionary];
-    }
+    NSArray *array = VVSequelize.bridge ? @[] : [VVSequelize.bridge db_executeQuery:sql];
     VVLog(VVLogLevelSQLAndResult, @"query result: %@",array);
     return array;
 }
 
 - (BOOL)vv_executeUpdate:(NSString *)sql{
     VVLog(VVLogLevelSQL,@"execute: %@",sql);
-    BOOL ret = [self.db executeUpdate:sql];
+    BOOL ret = VVSequelize.bridge && [VVSequelize.bridge db_executeUpdate:sql];
     VVLog(VVLogLevelSQLAndResult, @"execute result: %@",@(ret));
     return ret;
 }
@@ -109,26 +84,32 @@
 
 #pragma mark - 线程安全操作
 - (void)vv_inDatabase:(void (^)(void))block{
-    [[self dbQueue] inDatabase:^(FMDatabase *db) {
-        block();
-    }];
+    if([VVSequelize.bridge respondsToSelector:@selector(db_inDatabase:)]){
+        [VVSequelize.bridge db_inDatabase:^(void) {
+            block();
+        }];
+    }
 }
 
 - (void)vv_inTransaction:(void(^)(BOOL *rollback))block{
-    [[self dbQueue] inTransaction:^(FMDatabase *db, BOOL *rollback) {
-        block(rollback);
-    }];
+    if([VVSequelize.bridge respondsToSelector:@selector(db_inTransaction:)]){
+        [VVSequelize.bridge db_inTransaction:^(BOOL *rollback) {
+            block(rollback);
+        }];
+    }
 }
 
 #pragma mark - 其他操作
 - (void)close{
-    [_db close];
+    VVSequelize.bridge && [VVSequelize.bridge db_close];
 }
 
 - (void)open{
-    [_db open];
+    VVSequelize.bridge && [VVSequelize.bridge db_open];
     if(self.encryptKey && self.encryptKey.length > 0){
-        [_db setKey:self.encryptKey];
+        if(VVSequelize.bridge && [VVSequelize.bridge respondsToSelector:@selector(db_setEncryptKey:)]){
+            [VVSequelize.bridge db_setEncryptKey:self.encryptKey];
+        }
     }
 }
 

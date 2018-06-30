@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.1.0-beta3'
-  s.summary          = '基于FMDB的ORM模型封装.'
+  s.version          = '0.1.0-beta4'
+  s.summary          = '基于sqlite3的ORM模型封装.'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-                       基于FMDB的ORM模型封装.
+                       基于sqlite3的ORM模型封装.
                        DESC
 
   s.homepage         = 'https://github.com/pozi119/VVSequelize'
@@ -40,7 +40,7 @@ Pod::Spec.new do |s|
   # s.frameworks = 'UIKit', 'MapKit'
   # s.dependency 'AFNetworking', '~> 2.3'
   
-  s.dependency "FMDB/SQLCipher"
+  # s.dependency "FMDB/SQLCipher"
   # s.xcconfig = { 'OTHER_CFLAGS' => '$(inherited) -DSQLITE_HAS_CODEC -DHAVE_USLEEP=1', 'HEADER_SEARCH_PATHS' => '$(PODS_ROOT)/SQLCipher' }
   
 end

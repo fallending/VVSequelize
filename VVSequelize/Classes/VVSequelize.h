@@ -6,11 +6,11 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "VVFMDB.h"
+#import "VVDataBase.h"
 #import "VVOrmModel.h"
 #import "VVSqlGenerator.h"
 #import "VVCipherHelper.h"
-
+#import "VVSequelizeBridge.h"
 
 typedef enum : NSUInteger {
     VVLogLevelNone          = 0,
@@ -20,13 +20,9 @@ typedef enum : NSUInteger {
 
 #define VVLog(level, ...) [VVSequelize VVVerbose:(level) format:__VA_ARGS__]
 
-typedef id(^VVKeyValuesToObject)(Class,NSDictionary *);
-typedef id(^VVKeyValuesArrayToObjects)(Class,NSArray<NSDictionary *> *);
-typedef id(^VVObjectToKeyValues)(Class,id);
-typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
-
 @interface VVSequelize : NSObject
 
+@property (nonatomic, strong, class) id<VVSequelizeBridge> bridge; ///< 和外部桥接的对象
 @property (nonatomic, assign, class) VVLogLevel verbose; ///< 是否打印调试信息,0-不打印,1-仅打印sql,2-打印每次sql结果
 
 /**
@@ -38,9 +34,5 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
 + (void)VVVerbose:(NSUInteger)level
            format:(NSString *)fmt, ...;
 
-@property (nonatomic, copy, class) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
-@property (nonatomic, copy, class) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
-@property (nonatomic, copy, class) VVObjectToKeyValues       objectToKeyValues;        ///< 对象转字典
-@property (nonatomic, copy, class) VVObjectsToKeyValuesArray objectsToKeyValuesArray;  ///< 对象数组转字典数组
 
 @end

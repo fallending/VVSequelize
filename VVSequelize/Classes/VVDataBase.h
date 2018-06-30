@@ -1,21 +1,16 @@
 //
-//  VVFMDB.h
+//  VVDataBase.h
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/6/6.
 //
 
 #import <Foundation/Foundation.h>
-#if __has_include(<VVSequelize/VVSequelize.h>)
-#import <FMDB/FMDB.h>
-#else
-#import "FMDB.h"
-#endif
+#import "VVSequelizeBridge.h"
 
-@interface VVFMDB : NSObject
+@interface VVDataBase : NSObject
 
-@property (nonatomic, strong) FMDatabaseQueue *dbQueue;
-@property (nonatomic, strong) FMDatabase *db;
+@property (nonatomic, strong) NSString *dbPath;
 @property (nonatomic, strong) NSString *encryptKey;
 
 #pragma mark - 创建数据库

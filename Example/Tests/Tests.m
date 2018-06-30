@@ -15,7 +15,7 @@
 @import XCTest;
 
 @interface Tests : XCTestCase
-@property (nonatomic, strong) VVFMDB *vvfmdb;
+@property (nonatomic, strong) VVDataBase *vvdb;
 @property (nonatomic, strong) VVOrmModel *mobileModel;
 @end
 
@@ -39,14 +39,14 @@
     }];
     
 //    NSString *path = [[NSBundle mainBundle] bundlePath];
-    self.vvfmdb = [[VVFMDB alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
+    self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
     VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
 //    VVOrmSchemaItem *column2 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"times",@"unique":@(YES)}];
     self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
                                              manuals:@[column1]
                                             excludes:nil
                                            tableName:@"mobiles"
-                                            dataBase:self.vvfmdb
+                                            dataBase:self.vvdb
                                               atTime:YES];
 }
 
@@ -138,8 +138,8 @@
 //    NSLog(@"%@", personModel);
     NSLog(@"maxrowid: %@", @(maxrowid));
     NSString *sql = @"UPDATE \"persons\" SET \"name\" = \"lisi\" WHERE \"idcard\" = \"123456\"";
-    VVFMDB *vvfmdb = [personModel1 valueForKey:@"vvfmdb"];
-    BOOL ret = [vvfmdb.db executeQuery:sql];
+    VVDataBase *vvdb = [personModel1 valueForKey:@"vvdb"];
+    BOOL ret = [vvdb.db executeQuery:sql];
     NSLog(@"%@",@(ret));
 }
 

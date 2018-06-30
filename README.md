@@ -63,13 +63,13 @@ end
     生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
     示例如下:
 ```objc
-self.vvfmdb = [[VVFMDB alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
+self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
 VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
 self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
                                          manuals:@[column1]
                                         excludes:nil
                                        tableName:@"mobiles"
-                                        dataBase:self.vvfmdb
+                                        dataBase:self.vvdb
                                           atTime:YES];
 
 ```

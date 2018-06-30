@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "VVFMDB.h"
+#import "VVDataBase.h"
 
 #define VVRangeAll NSMakeRange(0, 0)
 
@@ -60,14 +60,14 @@
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
  @param tableName 表名,nil表示使用cls类名
- @param vvfmdb 数据库,nil表示使用默认数据库
+ @param vvdb 数据库,nil表示使用默认数据库
  @return ORM模型
  @discussion 生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
  */
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey
                         tableName:(nullable NSString *)tableName
-                         dataBase:(nullable VVFMDB *)vvfmdb;
+                         dataBase:(nullable VVDataBase *)vvdb;
 
 /**
  定义ORM模型.可自动新增字段,##不会修改或删除原有字段##.
@@ -76,7 +76,7 @@
  @param manuals 自定义各个字段的配置.格式为VVOrmSchemaItem数组,或可转换为VVOrmSchemaItem的json数组.
  @param excludes 不存入数据表的字段名
  @param tableName 表名,nil表示使用cls类名
- @param vvfmdb 数据库,nil表示使用默认数据库
+ @param vvdb 数据库,nil表示使用默认数据库
  @param atTime 是否将vv_createAt,vv_updateAt添加至每条数据,用于记录插入时间,更新时间,默认为YES
  @return ORM模型
  @discussion 生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
@@ -85,7 +85,7 @@
                           manuals:(nullable NSArray *)manuals
                          excludes:(nullable NSArray *)excludes
                         tableName:(nullable NSString *)tableName
-                         dataBase:(nullable VVFMDB *)vvfmdb
+                         dataBase:(nullable VVDataBase *)vvdb
                            atTime:(BOOL)atTime;
 
 /**
