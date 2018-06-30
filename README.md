@@ -15,9 +15,30 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 VVSequelize is available through [CocoaPods](https://cocoapods.org). To install
 it, simply add the following line to your Podfile:
+
 目前处于开发阶段,不定期更新
 ```ruby
 pod 'VVSequelize', :git => 'https://github.com/pozi119/VVSequelize.git'
+```
+如果要在Podfile中是使用```use_frameworks!```, 需要在 Podfile 结尾加上hook,为 FMDB 添加头文件搜索路径,解决FMDB编译失败的问题.
+```ruby
+
+target 'targetxxxx' do
+    pod 'VVSequelize', :git => 'https://github.com/pozi119/VVSequelize.git'
+end
+
+post_install do |installer|
+    print "Add 'SQLCipher' to FMDB 'HEADER_SEARCH_PATHS' \n"
+    installer.pods_project.targets.each do |target|
+        if target.name == "FMDB"
+            target.build_configurations.each do |config|
+                header_search = {"HEADER_SEARCH_PATHS" => "SQLCipher"}
+                config.build_settings.merge!(header_search)
+            end
+        end
+    end
+end
+
 ```
 
 ## Usage
