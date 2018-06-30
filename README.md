@@ -15,9 +15,9 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 VVSequelize is available through [CocoaPods](https://cocoapods.org). To install
 it, simply add the following line to your Podfile:
-
+目前处于开发阶段,不定期更新
 ```ruby
-pod 'VVSequelize'
+pod 'VVSequelize', :git => 'https://github.com/pozi119/VVSequelize.git'
 ```
 
 ## Usage
