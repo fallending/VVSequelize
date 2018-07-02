@@ -6,11 +6,10 @@
 //  Copyright (c) 2018 Valo Lee. All rights reserved.
 //
 
-#import "VVOrmModel.h"
 #import "VVTestClasses.h"
-#import "VVSequelize.h"
 #import "MJExtension.h"
 #import "YYModel.h"
+#import <VVSequelize/VVSequelize.h>
 
 @import XCTest;
 
@@ -139,7 +138,7 @@
     NSLog(@"maxrowid: %@", @(maxrowid));
     NSString *sql = @"UPDATE \"persons\" SET \"name\" = \"lisi\" WHERE \"idcard\" = \"123456\"";
     VVDataBase *vvdb = [personModel1 valueForKey:@"vvdb"];
-    BOOL ret = [vvdb.db executeQuery:sql];
+    BOOL ret = [vvdb executeUpdate:sql];
     NSLog(@"%@",@(ret));
 }
 

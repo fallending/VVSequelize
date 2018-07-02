@@ -68,7 +68,7 @@
 
 @implementation VVOrmModel
 
-#pragma mark - Private
+//MARK: - Private
 
 - (NSString *)columnSqlOf:(VVOrmSchemaItem *)column{
     if ([column.name isEqualToString:kVsPkid]) {
@@ -83,7 +83,7 @@
 
 - (NSDictionary *)tableColumns{
     NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",_tableName];
-    NSArray *columns = [_vvdb vv_executeQuery:tableInfoSql];
+    NSArray *columns = [_vvdb executeQuery:tableInfoSql];
     NSMutableDictionary *resultDic = [NSMutableDictionary dictionaryWithCapacity:0];
     for (NSDictionary *dic in columns) {
         VVOrmSchemaItem *column = [VVOrmSchemaItem new];
@@ -95,12 +95,12 @@
         resultDic[column.name] = column;
     }
     NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(\"%@\");",_tableName];
-    NSArray *indexList = [_vvdb vv_executeQuery:indexListSql];
+    NSArray *indexList = [_vvdb executeQuery:indexListSql];
     for (NSDictionary *indexDic in indexList) {
         if([indexDic[@"origin"] isEqualToString:@"u"] && [indexDic[@"unique"] integerValue] == 1){
             NSString *indexName = indexDic[@"name"];
             NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(\"%@\");",indexName];
-            NSArray *indexInfos = [_vvdb vv_executeQuery:indexInfoSql];
+            NSArray *indexInfos = [_vvdb executeQuery:indexInfoSql];
             if(indexInfos.count > 0) {
                 NSDictionary *indexInfo = indexInfos.firstObject;
                 NSString *columnName = indexInfo[@"name"];
@@ -198,7 +198,7 @@
     return _modelPool;
 }
 
-#pragma mark - Public
+//MARK: - Public
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey{
     return [self ormModelWithClass:cls primaryKey:primaryKey tableName:nil dataBase:nil];
@@ -279,7 +279,7 @@
         // 字段发生变更,对原数据表进行更名
         if(changed > 0){
             NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
-            BOOL ret = [_vvdb vv_executeUpdate:sql];
+            BOOL ret = [_vvdb executeUpdate:sql];
             NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
         }
     }
@@ -307,7 +307,7 @@
         }
         [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
-        BOOL ret = [_vvdb vv_executeUpdate:sql];
+        BOOL ret = [_vvdb executeUpdate:sql];
         NSAssert1(ret, @"Failure to create a table: %@", _tableName);
     }
     // 如果字段发生变更,将原数据表的数据插入新表
@@ -318,14 +318,14 @@
         }
         if(allColumns.length > 1) {
             [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
-            [_vvdb vv_inDatabase:^{
+            [_vvdb inQueue:^{
                 // 将旧表数据复制至新表
                 NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self->_tableName, allColumns, allColumns, tempTableName];
-                BOOL ret = [self->_vvdb vv_executeUpdate:sql];
+                BOOL ret = [self->_vvdb executeUpdate:sql];
                 // 数据复制成功则删除旧表
                 if(ret){
                     sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
-                    ret = [self->_vvdb vv_executeUpdate:sql];
+                    ret = [self->_vvdb executeUpdate:sql];
                 }
                 else{
                     VVLog(2, @"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
@@ -337,7 +337,7 @@
 
 - (BOOL)dropTable{
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",_tableName];
-    NSArray *array = [_vvdb vv_executeQuery:sql];
+    NSArray *array = [_vvdb executeQuery:sql];
     for (NSDictionary *dic in array) {
         NSInteger count = [dic[@"count"] integerValue];
         return count > 0;
@@ -347,7 +347,7 @@
 
 - (BOOL)isTableExist{
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",_tableName];
-    NSArray *array = [_vvdb vv_executeQuery:sql];
+    NSArray *array = [_vvdb executeQuery:sql];
     for (NSDictionary *dic in array) {
         NSInteger count = [dic[@"count"] integerValue];
         return count > 0;
@@ -358,7 +358,6 @@
 
 @end
 
-#pragma mark - CURD(C)创建
 @implementation VVOrmModel (Create)
 
 -(BOOL)insertOne:(id)object{
@@ -366,8 +365,8 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
-        dic = [VVSequelize.bridge model_keyValuesOfObject:object];
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
     }
     else {
         return NO;
@@ -391,7 +390,7 @@
         [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
         [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",_tableName,keyString,valString];
-        return [_vvdb vv_executeQuery:sql];
+        return [_vvdb executeQuery:sql];
     }
     return NO;
 }
@@ -406,7 +405,6 @@
 
 @end
 
-#pragma mark - CURD(U)更新
 @implementation VVOrmModel (Update)
 
 - (BOOL)update:(NSDictionary *)condition
@@ -425,7 +423,7 @@
         }
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@",_tableName,setString,where];
-        return [_vvdb vv_executeUpdate:sql];
+        return [_vvdb executeUpdate:sql];
     }
     return NO;
 }
@@ -436,8 +434,8 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
-        dic = [VVSequelize.bridge model_keyValuesOfObject:object];
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
     }
     else {
         return NO;
@@ -487,12 +485,11 @@
     [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
-    return [_vvdb vv_executeUpdate:sql];
+    return [_vvdb executeUpdate:sql];
 }
 
 @end
 
-#pragma mark - CURD(R)读取
 @implementation VVOrmModel (Retrieve)
 
 - (id)findOne:(NSDictionary *)condition{
@@ -511,9 +508,9 @@
     NSString *order = [VVSqlGenerator orderBy:orderBy];
     NSString *limit = [VVSqlGenerator limit:range];
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM \"%@\"%@%@%@ ", _tableName,where,order,limit];
-    NSArray *jsonArray = [_vvdb vv_executeQuery:sql];
-    if ([VVSequelize.bridge respondsToSelector:@selector(model_objectArrayWithkeyValuesArray:class:)]) {
-        return [VVSequelize.bridge model_objectArrayWithkeyValuesArray:jsonArray class:_cls];
+    NSArray *jsonArray = [_vvdb executeQuery:sql];
+    if (VVSequelize.keyValuesArrayToObjects) {
+        return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
     }
     return jsonArray;
 }
@@ -521,7 +518,7 @@
 - (NSInteger)count:(NSDictionary *)condition{
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
-    NSArray *array = [_vvdb vv_executeQuery:sql];
+    NSArray *array = [_vvdb executeQuery:sql];
     NSInteger count = 0;
     if (array.count > 0) {
         NSDictionary *dic = array.firstObject;
@@ -535,8 +532,8 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
-        dic = [VVSequelize.bridge model_keyValuesOfObject:object];
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
     }
     else {
         return NO;
@@ -582,7 +579,7 @@
          || [method isEqualToString:@"min"]
          || [method isEqualToString:@"sum"])) return nil;
     NSString *sql = [NSString stringWithFormat:@"SELECT %@(\"%@\") AS \"%@\" FROM \"%@\"", method, field, method, _tableName];
-    NSArray *array = [_vvdb vv_executeQuery:sql];
+    NSArray *array = [_vvdb executeQuery:sql];
     id result = nil;
     if(array.count > 0){
         NSDictionary *dic = array.firstObject;
@@ -593,12 +590,11 @@
 
 @end
 
-#pragma mark - CURD(D)删除
 @implementation VVOrmModel (Delete)
 
 - (BOOL)drop{
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"",_tableName];
-    return [_vvdb vv_executeUpdate:sql];
+    return [_vvdb executeUpdate:sql];
 }
 
 - (BOOL)deleteOne:(id)object{
@@ -606,8 +602,8 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
-        dic = [VVSequelize.bridge model_keyValuesOfObject:object];
+    else if(VVSequelize.objectToKeyValues){
+        dic = VVSequelize.objectToKeyValues(_cls,object);
     }
     else {
         return NO;
@@ -616,13 +612,12 @@
     if(!pkid) return NO;
     NSString *where = [VVSqlGenerator where:@{_primaryKey:pkid}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
-    return [_vvdb vv_executeUpdate:sql];
+    return [_vvdb executeUpdate:sql];
 }
 
 - (BOOL)deleteMulti:(NSArray *)objects{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.bridge
-       || ![VVSequelize.bridge respondsToSelector:@selector(model_keyValuesArrayWithObjectArray:class:)]) return NO;
-    NSArray *array = [VVSequelize.bridge model_keyValuesArrayWithObjectArray:objects class:_cls];
+    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToKeyValuesArray) return NO;
+    NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
     NSMutableArray *pkids = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in array) {
         id pkid = dic[_primaryKey];
@@ -630,13 +625,13 @@
     }
     NSString *where = [VVSqlGenerator where:@{_primaryKey:@{kVsOpIn:pkids}}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
-    return [_vvdb vv_executeUpdate:sql];
+    return [_vvdb executeUpdate:sql];
 }
 
 - (BOOL)delete:(NSDictionary *)condition{
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
-    return [_vvdb vv_executeUpdate:sql];
+    return [_vvdb executeUpdate:sql];
 }
 
 @end

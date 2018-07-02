@@ -7,11 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3A2B2CCFF1E6127C73E0D526 /* Pods_VVSequelize_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBA44D65D4D4DE86438B567E /* Pods_VVSequelize_Tests.framework */; };
 		3E07BDC020D256CD00A12B94 /* mobiles.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */; };
 		3E07BDC120D257ED00A12B94 /* mobiles.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */; };
 		3E42AE1B20CF98800050EA22 /* VVTestClasses.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E42AE1A20CF98800050EA22 /* VVTestClasses.m */; };
-		3EC3BB16B855D64F9115D011 /* libPods-VVSequelize_Example.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CF2C393BEED50F779155946 /* libPods-VVSequelize_Example.a */; };
-		3EF1738820E795510048F31B /* VVTestBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF1738720E795510048F31B /* VVTestBridge.m */; };
 		6003F58E195388D20070C39A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58D195388D20070C39A /* Foundation.framework */; };
 		6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58F195388D20070C39A /* CoreGraphics.framework */; };
 		6003F592195388D20070C39A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F591195388D20070C39A /* UIKit.framework */; };
@@ -27,7 +26,7 @@
 		6003F5BC195388D20070C39A /* Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6003F5BB195388D20070C39A /* Tests.m */; };
 		71719F9F1E33DC2100824A3D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 71719F9D1E33DC2100824A3D /* LaunchScreen.storyboard */; };
 		873B8AEB1B1F5CCA007FD442 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 873B8AEA1B1F5CCA007FD442 /* Main.storyboard */; };
-		C0398827C90FB60680EA6406 /* libPods-VVSequelize_Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C517D3BE0474D92649C03B52 /* libPods-VVSequelize_Tests.a */; };
+		B25F828CF2DC344EA4041367 /* Pods_VVSequelize_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6124EDD6B5E5C594E76C07B /* Pods_VVSequelize_Example.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,12 +42,9 @@
 /* Begin PBXFileReference section */
 		1D35FB986B749E5A10F687F1 /* Pods-VVSequelize_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VVSequelize_Example.debug.xcconfig"; path = "Pods/Target Support Files/Pods-VVSequelize_Example/Pods-VVSequelize_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		1E450AED6236C34B2B1295CE /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
-		3CF2C393BEED50F779155946 /* libPods-VVSequelize_Example.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-VVSequelize_Example.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = mobiles.sqlite; sourceTree = "<group>"; };
 		3E42AE1920CF98800050EA22 /* VVTestClasses.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VVTestClasses.h; sourceTree = "<group>"; };
 		3E42AE1A20CF98800050EA22 /* VVTestClasses.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VVTestClasses.m; sourceTree = "<group>"; };
-		3EF1738620E795510048F31B /* VVTestBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VVTestBridge.h; sourceTree = "<group>"; };
-		3EF1738720E795510048F31B /* VVTestBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VVTestBridge.m; sourceTree = "<group>"; };
 		6003F58A195388D20070C39A /* VVSequelize_Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VVSequelize_Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6003F58D195388D20070C39A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		6003F58F195388D20070C39A /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -72,10 +68,11 @@
 		873B8AEA1B1F5CCA007FD442 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = Main.storyboard; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		A358E865EF7AE1733CDDE349 /* VVSequelize.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = VVSequelize.podspec; path = ../VVSequelize.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		B0EAA301D7D516107052770E /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		C517D3BE0474D92649C03B52 /* libPods-VVSequelize_Tests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-VVSequelize_Tests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D8C030336818F9BF752A6C1D /* Pods-VVSequelize_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VVSequelize_Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-VVSequelize_Example/Pods-VVSequelize_Example.release.xcconfig"; sourceTree = "<group>"; };
 		DBB8C078F270223E326BE0A0 /* Pods-VVSequelize_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VVSequelize_Tests.release.xcconfig"; path = "Pods/Target Support Files/Pods-VVSequelize_Tests/Pods-VVSequelize_Tests.release.xcconfig"; sourceTree = "<group>"; };
 		DD9D3C83826FB0C8FACBE764 /* Pods-VVSequelize_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VVSequelize_Tests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-VVSequelize_Tests/Pods-VVSequelize_Tests.debug.xcconfig"; sourceTree = "<group>"; };
+		E6124EDD6B5E5C594E76C07B /* Pods_VVSequelize_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VVSequelize_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		EBA44D65D4D4DE86438B567E /* Pods_VVSequelize_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VVSequelize_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,7 +83,7 @@
 				6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */,
 				6003F592195388D20070C39A /* UIKit.framework in Frameworks */,
 				6003F58E195388D20070C39A /* Foundation.framework in Frameworks */,
-				3EC3BB16B855D64F9115D011 /* libPods-VVSequelize_Example.a in Frameworks */,
+				B25F828CF2DC344EA4041367 /* Pods_VVSequelize_Example.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,7 +94,7 @@
 				6003F5B0195388D20070C39A /* XCTest.framework in Frameworks */,
 				6003F5B2195388D20070C39A /* UIKit.framework in Frameworks */,
 				6003F5B1195388D20070C39A /* Foundation.framework in Frameworks */,
-				C0398827C90FB60680EA6406 /* libPods-VVSequelize_Tests.a in Frameworks */,
+				3A2B2CCFF1E6127C73E0D526 /* Pods_VVSequelize_Tests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,8 +140,8 @@
 				6003F58F195388D20070C39A /* CoreGraphics.framework */,
 				6003F591195388D20070C39A /* UIKit.framework */,
 				6003F5AF195388D20070C39A /* XCTest.framework */,
-				3CF2C393BEED50F779155946 /* libPods-VVSequelize_Example.a */,
-				C517D3BE0474D92649C03B52 /* libPods-VVSequelize_Tests.a */,
+				E6124EDD6B5E5C594E76C07B /* Pods_VVSequelize_Example.framework */,
+				EBA44D65D4D4DE86438B567E /* Pods_VVSequelize_Tests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -182,8 +179,6 @@
 				3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */,
 				3E42AE1920CF98800050EA22 /* VVTestClasses.h */,
 				3E42AE1A20CF98800050EA22 /* VVTestClasses.m */,
-				3EF1738620E795510048F31B /* VVTestBridge.h */,
-				3EF1738720E795510048F31B /* VVTestBridge.m */,
 				6003F5BB195388D20070C39A /* Tests.m */,
 				6003F5B6195388D20070C39A /* Supporting Files */,
 			);
@@ -221,6 +216,7 @@
 				6003F586195388D20070C39A /* Sources */,
 				6003F587195388D20070C39A /* Frameworks */,
 				6003F588195388D20070C39A /* Resources */,
+				EF5EC8E505A0A75811C172A8 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -239,6 +235,7 @@
 				6003F5AA195388D20070C39A /* Sources */,
 				6003F5AB195388D20070C39A /* Frameworks */,
 				6003F5AC195388D20070C39A /* Resources */,
+				1BAF214E4FC37EF045AD99D1 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -327,6 +324,26 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		1BAF214E4FC37EF045AD99D1 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-VVSequelize_Tests/Pods-VVSequelize_Tests-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/MJExtension/MJExtension.framework",
+				"${BUILT_PRODUCTS_DIR}/YYModel/YYModel.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MJExtension.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/YYModel.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-VVSequelize_Tests/Pods-VVSequelize_Tests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		DC147BB3B4542B6CB044AE64 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -343,6 +360,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		EF5EC8E505A0A75811C172A8 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-VVSequelize_Example/Pods-VVSequelize_Example-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/FMDB/FMDB.framework",
+				"${BUILT_PRODUCTS_DIR}/SQLCipher/SQLCipher.framework",
+				"${BUILT_PRODUCTS_DIR}/VVSequelize/VVSequelize.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FMDB.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SQLCipher.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/VVSequelize.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-VVSequelize_Example/Pods-VVSequelize_Example-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -364,7 +403,6 @@
 			files = (
 				3E42AE1B20CF98800050EA22 /* VVTestClasses.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
-				3EF1738820E795510048F31B /* VVTestBridge.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

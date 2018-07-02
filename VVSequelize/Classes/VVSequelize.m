@@ -8,13 +8,32 @@
 #import "VVSequelize.h"
 
 static NSInteger _loglevel = 0;
-static id<VVSequelizeBridge> _bridge = nil;
+
+@interface VVSequelizeInnerPrivate: NSObject
+
+@property (nonatomic, copy) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
+@property (nonatomic, copy) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
+@property (nonatomic, copy) VVObjectToKeyValues       objectToKeyValues;        ///< 对象转字典
+@property (nonatomic, copy) VVObjectsToKeyValuesArray objectsToKeyValuesArray;  ///< 对象数组转字典数组
+
+@end
+
+@implementation VVSequelizeInnerPrivate
+
+@end
 
 @implementation VVSequelize
 
-@dynamic bridge;
++ (VVSequelizeInnerPrivate *)innerPrivate{
+    static VVSequelizeInnerPrivate *_innerPrivate;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _innerPrivate = [[VVSequelizeInnerPrivate alloc] init];
+    });
+    return _innerPrivate;
+}
 
-#pragma mark - 调试信息打印
+//MARK: - 调试信息打印
 + (void)VVVerbose:(NSUInteger)level
            format:(NSString *)fmt, ...{
     if(_loglevel > 0 && _loglevel >= level){
@@ -34,17 +53,37 @@ static id<VVSequelizeBridge> _bridge = nil;
     _loglevel = loglevel;
 }
 
-- (id<VVSequelizeBridge>)bridge{
-    NSAssert(_bridge != nil, @"Please set up bridge first!");
-    return _bridge;
+//MARK: - 对象和字典互转
+
++ (VVKeyValuesToObject)keyValuesToObject{
+    return [[self class] innerPrivate].keyValuesToObject;
 }
 
-+ (void)setBridge:(id<VVSequelizeBridge>)bridge{
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        VVLog(1,@"Bridge can be set only once!");
-        _bridge = bridge;
-    });
++ (void)setKeyValuesToObject:(VVKeyValuesToObject)keyValuesToObject{
+    [[self class] innerPrivate].keyValuesToObject = keyValuesToObject;
 }
 
++ (VVKeyValuesArrayToObjects)keyValuesArrayToObjects{
+    return [[self class] innerPrivate].keyValuesArrayToObjects;
+}
+
++ (void)setKeyValuesArrayToObjects:(VVKeyValuesArrayToObjects)keyValuesArrayToObjects{
+    [[self class] innerPrivate].keyValuesArrayToObjects = keyValuesArrayToObjects;
+}
+
++ (VVObjectToKeyValues)objectToKeyValues{
+    return [[self class] innerPrivate].objectToKeyValues;
+}
+
++ (void)setObjectToKeyValues:(VVObjectToKeyValues)objectToKeyValues{
+    [[self class] innerPrivate].objectToKeyValues = objectToKeyValues;
+}
+
++ (VVObjectsToKeyValuesArray)objectsToKeyValuesArray{
+    return [[self class] innerPrivate].objectsToKeyValuesArray;
+}
+
++ (void)setObjectsToKeyValuesArray:(VVObjectsToKeyValuesArray)objectsToKeyValuesArray{
+    [[self class] innerPrivate].objectsToKeyValuesArray = objectsToKeyValuesArray;
+}
 @end

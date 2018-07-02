@@ -41,7 +41,6 @@
 - (BOOL)isEqualToItem:(VVOrmSchemaItem *)item;
 @end
 
-#pragma mark - 定义ORM
 @interface VVOrmModel : NSObject
 /**
  定义ORM模型.使用默认数据库,默认表名.
@@ -105,7 +104,6 @@
 
 @end
 
-#pragma mark - CURD(C)创建
 @interface VVOrmModel (Create)
 
 /**
@@ -126,7 +124,6 @@
 
 @end
 
-#pragma mark - CURD(U)更新
 @interface VVOrmModel (Update)
 
 /**
@@ -185,7 +182,6 @@
 
 @end
 
-#pragma mark - CURD(R)读取
 @interface VVOrmModel (Retrieve)
 
 /**
@@ -282,7 +278,6 @@
 
 @end
 
-#pragma mark - CURD(D)删除
 @interface VVOrmModel (Delete)
 
 /**

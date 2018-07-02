@@ -20,7 +20,7 @@
 
 @implementation VVSqlGenerator
 
-#pragma mark - Where语句
+//MARK: - Where语句
 
 + (NSString *)where:(NSDictionary *)condition{
     NSString *where = [[self class] key:nil _and:condition];
@@ -185,7 +185,7 @@
     return [NSString stringWithFormat:@"\"%@\" NOT LIKE \"%@\"", key, val];
 }
 
-#pragma mark - Order语句
+//MARK: - Order语句
 + (NSString *)orderBy:(NSDictionary *)orderBy{
     NSMutableString *orderString = [NSMutableString stringWithCapacity:0];
     [orderBy enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *order, BOOL * _Nonnull stop) {
@@ -200,7 +200,7 @@
     return @"";
 }
 
-#pragma mark - Limit语句
+//MARK: - Limit语句
 + (NSString *)limit:(NSRange)range{
     return range.length == 0 ? @"" : [NSString stringWithFormat:@" LIMIT %@,%@",@(range.location),@(range.length)];
 }

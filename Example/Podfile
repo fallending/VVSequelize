@@ -1,4 +1,4 @@
-#use_frameworks!
+use_frameworks!
 #inhibit_all_warnings!
 
 target 'VVSequelize_Example' do
@@ -6,8 +6,19 @@ target 'VVSequelize_Example' do
 
   target 'VVSequelize_Tests' do
     inherit! :search_paths
-    pod 'FMDB/SQLCipher'
     pod 'MJExtension'
     pod 'YYModel'
   end
+end
+
+post_install do |installer|
+    print "Add 'SQLCipher' to FMDB 'HEADER_SEARCH_PATHS' \n"
+    installer.pods_project.targets.each do |target|
+        if target.name == "FMDB"
+            target.build_configurations.each do |config|
+                header_search = {"HEADER_SEARCH_PATHS" => "SQLCipher"}
+                config.build_settings.merge!(header_search)
+            end
+        end
+    end
 end
