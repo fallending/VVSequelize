@@ -354,6 +354,20 @@
     return NO;
 }
 
+- (void)inQueue:(id (^)(void))block
+     completion:(void (^)(id))completion{
+    [self.vvdb inQueue:^{
+        completion(block());
+    }];
+}
+
+- (void)inTransaction:(id (^)(BOOL *))block
+           completion:(void (^)(BOOL,id))completion{
+    [self.vvdb inTransaction:^(BOOL *rollback) {
+        id ret = block(rollback);
+        completion(*rollback,ret);
+    }];
+}
 
 @end
 

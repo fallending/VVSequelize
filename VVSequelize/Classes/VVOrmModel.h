@@ -102,6 +102,26 @@
  */
 - (BOOL)isTableExist;
 
+/**
+ 线程安全操作
+
+ @param block 数据库操作
+ @param completion 数据库操作完成之后的处理
+ @discussion `ormModelWithClass`不能放入此操作
+ */
+- (void)inQueue:(nonnull id (^)(void))block
+     completion:(nonnull void (^)(id ret))completion;
+
+/**
+ 事务操作
+ 
+ @param block 数据库事务操作
+ @param completion 事务完成之后的处理
+ @discussion `ormModelWithClass`不能放入此操作
+ */
+- (void)inTransaction:(nonnull id (^)(BOOL *rollback))block
+           completion:(nonnull void (^)(BOOL rb,id ret))completion;
+
 @end
 
 @interface VVOrmModel (Create)
