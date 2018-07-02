@@ -12,7 +12,8 @@
 
 /**
  数据表每个字段的配置.
- @discussion 本项目中仅默认主键vv_pkid支持自增类型,所以此类中未定义自增属性.
+ 
+ 本项目中仅默认主键vv_pkid支持自增类型,所以此类中未定义自增属性.
  */
 @interface VVOrmSchemaItem: NSObject
 @property (nonatomic, copy  ) NSString *name;   ///< 字段名

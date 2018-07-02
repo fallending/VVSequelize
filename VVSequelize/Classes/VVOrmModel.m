@@ -81,16 +81,6 @@
     return string;
 }
 
-- (BOOL)isTableExist{
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",_tableName];
-    NSArray *array = [_vvdb vv_executeQuery:sql];
-    for (NSDictionary *dic in array) {
-        NSInteger count = [dic[@"count"] integerValue];
-        return count > 0;
-    }
-    return NO;
-}
-
 - (NSDictionary *)tableColumns{
     NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",_tableName];
     NSArray *columns = [_vvdb vv_executeQuery:tableInfoSql];
@@ -268,7 +258,7 @@
         [classColumns removeObjectForKey:column];
     }
     self.fields = classColumns.allKeys;
-    NSAssert1(classColumns.count > 0, @"无需创建表: %@", _tableName);
+    NSAssert1(classColumns.count > 0, @"No need to create a table : %@", _tableName);
     
     // 检查数据表是否存在
     BOOL exist = [self isTableExist];
@@ -290,7 +280,7 @@
         if(changed > 0){
             NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
             BOOL ret = [_vvdb vv_executeUpdate:sql];
-            NSAssert1(ret, @"创建临时表失败: %@", tempTableName);
+            NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
         }
     }
     
@@ -318,7 +308,7 @@
         [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
         BOOL ret = [_vvdb vv_executeUpdate:sql];
-        NSAssert1(ret, @"创建表失败: %@", _tableName);
+        NSAssert1(ret, @"Failure to create a table: %@", _tableName);
     }
     // 如果字段发生变更,将原数据表的数据插入新表
     if(exist && changed > 0){
@@ -330,20 +320,41 @@
             [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
             [_vvdb vv_inDatabase:^{
                 // 将旧表数据复制至新表
-                NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", _tableName, allColumns, allColumns, tempTableName];
-                BOOL ret = [_vvdb vv_executeUpdate:sql];
+                NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self->_tableName, allColumns, allColumns, tempTableName];
+                BOOL ret = [self->_vvdb vv_executeUpdate:sql];
                 // 数据复制成功则删除旧表
                 if(ret){
                     sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
-                    ret = [_vvdb vv_executeUpdate:sql];
+                    ret = [self->_vvdb vv_executeUpdate:sql];
                 }
                 else{
-                    VVLog(VVLogLevelSQLAndResult, @"警告: 从旧表(%@)复制数据到新表(%@)失败!",tempTableName,_tableName);
+                    VVLog(2, @"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
                 }
             }];
         }
     }
 }
+
+- (BOOL)dropTable{
+    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",_tableName];
+    NSArray *array = [_vvdb vv_executeQuery:sql];
+    for (NSDictionary *dic in array) {
+        NSInteger count = [dic[@"count"] integerValue];
+        return count > 0;
+    }
+    return NO;
+}
+
+- (BOOL)isTableExist{
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",_tableName];
+    NSArray *array = [_vvdb vv_executeQuery:sql];
+    for (NSDictionary *dic in array) {
+        NSInteger count = [dic[@"count"] integerValue];
+        return count > 0;
+    }
+    return NO;
+}
+
 
 @end
 
@@ -355,7 +366,7 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.bridge && [VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
+    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
         dic = [VVSequelize.bridge model_keyValuesOfObject:object];
     }
     else {
@@ -425,7 +436,7 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.bridge && [VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
+    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
         dic = [VVSequelize.bridge model_keyValuesOfObject:object];
     }
     else {
@@ -501,7 +512,7 @@
     NSString *limit = [VVSqlGenerator limit:range];
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM \"%@\"%@%@%@ ", _tableName,where,order,limit];
     NSArray *jsonArray = [_vvdb vv_executeQuery:sql];
-    if (VVSequelize.bridge && [VVSequelize.bridge respondsToSelector:@selector(model_objectArrayWithkeyValuesArray:class:)]) {
+    if ([VVSequelize.bridge respondsToSelector:@selector(model_objectArrayWithkeyValuesArray:class:)]) {
         return [VVSequelize.bridge model_objectArrayWithkeyValuesArray:jsonArray class:_cls];
     }
     return jsonArray;
@@ -524,7 +535,7 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.bridge && [VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
+    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
         dic = [VVSequelize.bridge model_keyValuesOfObject:object];
     }
     else {
@@ -595,7 +606,7 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.bridge && [VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
+    else if([VVSequelize.bridge respondsToSelector:@selector(model_keyValuesOfObject:)]){
         dic = [VVSequelize.bridge model_keyValuesOfObject:object];
     }
     else {

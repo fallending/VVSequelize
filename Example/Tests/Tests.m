@@ -24,7 +24,7 @@
 - (void)setUp
 {
     [super setUp];
-    VVSequelize.verbose = VVLogLevelSQLAndResult;
+    VVSequelize.loglevel = 2;
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
     }];

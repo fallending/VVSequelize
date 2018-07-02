@@ -48,8 +48,8 @@
         }
     }
     NSString *dbPath =  [path stringByAppendingPathComponent:dbName];
-    VVLog(VVLogLevelSQL,@"打开或创建数据库: %@", dbPath);
-    BOOL ret = VVSequelize.bridge && [VVSequelize.bridge db_createOrOpen:dbPath];
+    VVLog(1,@"Open or create the database: %@", dbPath);
+    BOOL ret = [VVSequelize.bridge db_initWithPath:dbPath];
     if (ret && [VVSequelize.bridge db_open]) {
         if(encryptKey && encryptKey.length > 0){
             if([VVSequelize.bridge respondsToSelector:@selector(db_setEncryptKey:)]){
@@ -62,30 +62,30 @@
             return self;
         }
     }
-    NSAssert1(NO, @"创建/打开数据库(%@)失败!请检查是否设置`VVSequelize.bridge`",dbPath);
+    NSAssert1(NO, @"Open or create the database (%@) failure!",dbPath);
     return nil;
 }
 
 #pragma mark - 原始SQL语句
 - (NSArray *)vv_executeQuery:(NSString *)sql{
-    VVLog(VVLogLevelSQL,@"query: %@",sql);
+    VVLog(1,@"query: %@",sql);
     NSArray *array = VVSequelize.bridge ? @[] : [VVSequelize.bridge db_executeQuery:sql];
-    VVLog(VVLogLevelSQLAndResult, @"query result: %@",array);
+    VVLog(2, @"query result: %@",array);
     return array;
 }
 
 - (BOOL)vv_executeUpdate:(NSString *)sql{
-    VVLog(VVLogLevelSQL,@"execute: %@",sql);
-    BOOL ret = VVSequelize.bridge && [VVSequelize.bridge db_executeUpdate:sql];
-    VVLog(VVLogLevelSQLAndResult, @"execute result: %@",@(ret));
+    VVLog(1,@"execute: %@",sql);
+    BOOL ret = [VVSequelize.bridge db_executeUpdate:sql];
+    VVLog(2, @"execute result: %@",@(ret));
     return ret;
 }
 
 
 #pragma mark - 线程安全操作
 - (void)vv_inDatabase:(void (^)(void))block{
-    if([VVSequelize.bridge respondsToSelector:@selector(db_inDatabase:)]){
-        [VVSequelize.bridge db_inDatabase:^(void) {
+    if([VVSequelize.bridge respondsToSelector:@selector(db_inSecureQueue:)]){
+        [VVSequelize.bridge db_inSecureQueue:^(void) {
             block();
         }];
     }
@@ -100,17 +100,18 @@
 }
 
 #pragma mark - 其他操作
-- (void)close{
-    VVSequelize.bridge && [VVSequelize.bridge db_close];
+- (BOOL)close{
+    return [VVSequelize.bridge db_close];
 }
 
-- (void)open{
-    VVSequelize.bridge && [VVSequelize.bridge db_open];
-    if(self.encryptKey && self.encryptKey.length > 0){
-        if(VVSequelize.bridge && [VVSequelize.bridge respondsToSelector:@selector(db_setEncryptKey:)]){
+- (BOOL)open{
+    BOOL ret = [VVSequelize.bridge db_open];
+    if(ret && self.encryptKey.length > 0){
+        if([VVSequelize.bridge respondsToSelector:@selector(db_setEncryptKey:)]){
             [VVSequelize.bridge db_setEncryptKey:self.encryptKey];
         }
     }
+    return ret;
 }
 
 @end
