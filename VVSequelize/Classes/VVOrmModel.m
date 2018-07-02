@@ -221,8 +221,7 @@
     if(!cls) return nil;
     NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
     VVDataBase   *db = vvdb ? vvdb : VVDataBase.defalutDb;
-    NSString *dbname = db.dbPath.lastPathComponent;
-    NSString *modelKey = [dbname stringByAppendingString:tbname];
+    NSString *modelKey = [db.dbPath stringByAppendingString:tbname];
     VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:modelKey];
     if(!model){
         model = [[VVOrmModel alloc] init];
