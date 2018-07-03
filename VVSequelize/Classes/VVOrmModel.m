@@ -505,6 +505,10 @@
 
 @implementation VVOrmModel (Retrieve)
 
+- (id)findOneByPKVal:(id)PKVal{
+    return [self findAll:@{_primaryKey:PKVal}];
+}
+
 - (id)findOne:(NSDictionary *)condition{
     NSArray *array = [self findAll:condition orderBy:nil range:NSMakeRange(0, 1)];
     return array.count > 0 ? array.firstObject : nil;

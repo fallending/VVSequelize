@@ -205,6 +205,13 @@
 @end
 
 @interface VVOrmModel (Retrieve)
+/**
+ 根据主键的值,查询一条数据
+ 
+ @param PKVal 主键的值
+ @return 找到的数据
+ */
+- (nullable id)findOneByPKVal:(id)PKVal;
 
 /**
  查询一条数据
