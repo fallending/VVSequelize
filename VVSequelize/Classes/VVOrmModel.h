@@ -48,7 +48,7 @@
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
  @return ORM模型
- @discussion 生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
+ @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey;
@@ -62,7 +62,7 @@
  @param tableName 表名,nil表示使用cls类名
  @param vvdb 数据库,nil表示使用默认数据库
  @return ORM模型
- @discussion 生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
+ @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey
@@ -79,7 +79,7 @@
  @param vvdb 数据库,nil表示使用默认数据库
  @param atTime 是否将vv_createAt,vv_updateAt添加至每条数据,用于记录插入时间,更新时间,默认为YES
  @return ORM模型
- @discussion 生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
+ @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
 + (instancetype)ormModelWithClass:(Class)cls
                           manuals:(nullable NSArray *)manuals
@@ -107,7 +107,8 @@
 
  @param block 数据库操作
  @param completion 数据库操作完成之后的处理
- @discussion `ormModelWithClass`不能放入此操作
+ @warning 此方法的block和completion都在queue中异步执行.
+ `ormModelWithClass`不能放入block.若需要在主线程执行,请在completion中添加相关代码.
  */
 - (void)inQueue:(nonnull id (^)(void))block
      completion:(nonnull void (^)(id ret))completion;
@@ -117,7 +118,8 @@
  
  @param block 数据库事务操作
  @param completion 事务完成之后的处理
- @discussion `ormModelWithClass`不能放入此操作
+ @warning 此方法的block和completion都在queue中异步执行.
+ `ormModelWithClass`不能放入block.若需要在主线程执行,请在completion中添加相关代码.
  */
 - (void)inTransaction:(nonnull id (^)(BOOL *rollback))block
            completion:(nonnull void (^)(BOOL rb,id ret))completion;
