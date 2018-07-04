@@ -17,6 +17,7 @@
 @interface VVDataBase ()
 @property (nonatomic, strong) FMDatabase *fmdb;
 @property (nonatomic, strong) FMDatabaseQueue *fmdbQueue;
+@property (nonatomic, copy  ) NSString *userDefaultsKey;
 @end
 
 @implementation VVDataBase
@@ -59,17 +60,19 @@
         }
     }
     NSString *dbPath =  [path stringByAppendingPathComponent:dbName];
+    NSString *homePath = NSHomeDirectory();
+    NSRange range = [dbPath rangeOfString:homePath];
+    NSString *relativePath = range.location == NSNotFound ?
+        dbPath : [dbPath substringFromIndex:range.location + range.length];
     VVLog(1,@"Open or create the database: %@", dbPath);
     FMDatabase *fmdb = [FMDatabase databaseWithPath:dbPath];
     if ([fmdb open]) {
-        if(encryptKey.length > 0){
-            [fmdb setKey:encryptKey];
-        }
         self = [self init];
         if (self) {
             _fmdb = fmdb;
             _dbPath = dbPath;
-            _encryptKey = encryptKey;
+            _userDefaultsKey = [NSString stringWithFormat:@"VVDBEncryptKey%@",relativePath];
+            self.encryptKey = encryptKey;
             return self;
         }
     }
@@ -114,6 +117,10 @@
 
 //MARK: - 其他操作
 - (BOOL)close{
+    if(_fmdbQueue){
+        [_fmdbQueue close];
+        _fmdbQueue = nil;
+    }
     return [self.fmdb close];
 }
 
@@ -125,7 +132,7 @@
     return ret;
 }
 
-//MARK: - Private
+//MARK: - Getter/Setter
 - (FMDatabaseQueue *)fmdbQueue{
     if(_fmdbQueue){
         // 数据库可能被手动关闭
@@ -142,4 +149,29 @@
     }
     return _fmdbQueue;
 }
+
+- (void)setEncryptKey:(NSString *)encryptKey{
+    static dispatch_semaphore_t lock;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        lock = dispatch_semaphore_create(1);
+    });
+    NSString *origin = [[NSUserDefaults standardUserDefaults] stringForKey:_userDefaultsKey];
+    [self close];
+    dispatch_semaphore_wait(lock, DISPATCH_TIME_FOREVER);
+    BOOL ret = [VVCipherHelper changeKeyForDatabase:_dbPath originKey:origin newKey:encryptKey];
+    dispatch_semaphore_signal(lock);
+    if(ret){
+        if(encryptKey == nil){
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:_userDefaultsKey];
+        }
+        else{
+            [[NSUserDefaults standardUserDefaults] setObject:encryptKey forKey:_userDefaultsKey];
+        }
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        _encryptKey = encryptKey;
+    }
+    [self open];
+}
+
 @end

@@ -37,7 +37,13 @@
         return [cls mj_keyValuesArrayWithObjectArray:objects];
     }];
     
-//    NSString *path = [[NSBundle mainBundle] bundlePath];
+    NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+    NSString *targetPath = [path stringByAppendingPathComponent:@"mobiles.sqlite"];
+    if(![[NSFileManager defaultManager] fileExistsAtPath:targetPath]){
+        NSString *sourcePath = [[NSBundle mainBundle] pathForResource:@"mobiles.sqlite" ofType:nil];
+        [[NSFileManager defaultManager] copyItemAtPath:sourcePath toPath:targetPath error:nil];
+    }
+
     self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
     VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
 //    VVOrmSchemaItem *column2 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"times",@"unique":@(YES)}];

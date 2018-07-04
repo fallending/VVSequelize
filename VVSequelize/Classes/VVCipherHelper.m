@@ -94,6 +94,7 @@
                       newKey:(NSString *)newKey{
     if ((originKey.length == 0 && newKey.length == 0) ||
         [originKey isEqualToString:newKey]) {
+        /// 无需更换加密Key时,直接返回NO.也无需进行加密Key之后的相关操作.
         return NO;
     }
     else if(originKey.length == 0){

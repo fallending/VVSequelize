@@ -42,6 +42,9 @@
 @end
 
 @interface VVOrmModel : NSObject
+
+@property (nonatomic, strong, readonly) VVDataBase *vvdb; ///< 数据库,可执行某些自定义查询/更新
+
 /**
  定义ORM模型.使用默认数据库,默认表名.
  
