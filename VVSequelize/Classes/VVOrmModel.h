@@ -134,7 +134,7 @@
 /**
  新增一条数据,对象或字典
 
- @param object 要新增的数据对象
+ @param object 要新增的数据对象,对象或字典
  @return 是否新增成功
  */
 -(BOOL)insertOne:(id)object;
@@ -142,10 +142,11 @@
 /**
  新增多条数据
 
- @param objects 要新增的数据
- @return 是否新增成功
+ @param objects 要新增的数据,数据/字典/混合数组
+ @return 新增成功的条数
+ @note 每条数据依次插入
  */
--(BOOL)insertMulti:(NSArray *)objects;
+-(NSUInteger)insertMulti:(NSArray *)objects;
 
 @end
 
@@ -164,7 +165,7 @@
 /**
  更新一条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
  
- @param object 要更新的数据
+ @param object 要更新的数据,对象或数组
  @return 是否更新成功
  */
 - (BOOL)updateOne:(id)object;
@@ -181,17 +182,19 @@
  更新多条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
  
  @param objects 要更新的数据
- @return 是否更新成功
+ @return 更新成功的条数
+ @note 每条数据依次更新
  */
-- (BOOL)updateMulti:(NSArray *)objects;
+- (NSUInteger)updateMulti:(NSArray *)objects;
 
 /**
  更新多条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
  
  @param objects 要更新的数据
- @return 是否更新或插入成功
+ @return 更新或插入成功的条数
+ @note 每条数据依次更新或插入
  */
-- (BOOL)upsertMulti:(NSArray *)objects;
+- (NSUInteger)upsertMulti:(NSArray *)objects;
 
 /**
  将某个字段的值增加某个数值
@@ -213,6 +216,7 @@
  
  @param PKVal 主键的值
  @return 找到的数据
+ @note 若定义了VVSequelize的对象模型互转block,返回对象,否则返回字典
  */
 - (nullable id)findOneByPKVal:(id)PKVal;
 
@@ -221,6 +225,7 @@
  
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 找到的数据
+ @note 若定义了VVSequelize的对象模型互转block,返回对象,否则返回字典
  */
 - (nullable id)findOne:(nullable NSDictionary *)condition;
 
@@ -230,6 +235,7 @@
  
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 查询结果
+ @note 若定义了VVSequelize的对象模型互转block,返回对象数组,否则返回字典数组
  */
 - (NSArray *)findAll:(nullable NSDictionary *)condition;
 
@@ -241,6 +247,7 @@
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 查询结果
+ @note 若定义了VVSequelize的对象模型互转block,返回对象数组,否则返回字典数组
  */
 - (NSArray *)findAll:(nullable NSDictionary *)condition
              orderBy:(nullable NSDictionary *)orderBy
@@ -271,6 +278,7 @@
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 数据和数据数量,格式为{"count":100,list:[object]}
+ @note 若定义了VVSequelize的对象模型互转block,list为对象数组,否则为字典数组
  */
 - (NSDictionary *)findAndCount:(NSDictionary *)condition
                        orderBy:(NSDictionary *)orderBy

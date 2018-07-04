@@ -408,12 +408,12 @@
     return NO;
 }
 
--(BOOL)insertMulti:(NSArray *)objects{
-    NSInteger failCount = 0;
+-(NSUInteger)insertMulti:(NSArray *)objects{
+    NSUInteger succCount = 0;
     for (id obj in objects) {
-        if(![self insertOne:obj]){ failCount ++;}
+        if([self insertOne:obj]){ succCount ++;}
     }
-    return failCount == 0;
+    return succCount;
 }
 
 @end
@@ -469,20 +469,20 @@
     }
 }
 
-- (BOOL)updateMulti:(NSArray *)objects{
-    NSInteger failCount = 0;
+- (NSUInteger)updateMulti:(NSArray *)objects{
+    NSUInteger succCount = 0;
     for (id object in objects) {
-        if(![self updateOne:object]) {failCount ++;}
+        if([self updateOne:object]) {succCount ++;}
     }
-    return failCount == 0;
+    return succCount;
 }
 
-- (BOOL)upsertMulti:(NSArray *)objects{
-    NSInteger failCount = 0;
+- (NSUInteger)upsertMulti:(NSArray *)objects{
+    NSUInteger succCount = 0;
     for (id object in objects) {
-        if(![self upsertOne:object]) {failCount ++;}
+        if([self upsertOne:object]) {succCount ++;}
     }
-    return failCount == 0;
+    return succCount;
 }
 
 - (BOOL)increase:(NSDictionary *)condition
