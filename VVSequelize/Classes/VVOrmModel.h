@@ -43,7 +43,8 @@
 
 @interface VVOrmModel : NSObject
 
-@property (nonatomic, strong, readonly) VVDataBase *vvdb; ///< 数据库,可执行某些自定义查询/更新
+@property (nonatomic, strong, readonly) VVDataBase *vvdb;    ///< 数据库,可执行某些自定义查询/更新
+@property (nonatomic, copy  , readonly) NSString *tableName; ///< 表名
 
 /**
  定义ORM模型.使用默认数据库,默认表名.
@@ -104,28 +105,6 @@
  @return 是否存在
  */
 - (BOOL)isTableExist;
-
-/**
- 线程安全操作
-
- @param block 数据库操作
- @param completion 数据库操作完成之后的处理
- @warning 此方法的block和completion都在queue中异步执行.
- `ormModelWithClass`不能放入block.若需要在主线程执行,请在completion中添加相关代码.
- */
-- (void)inQueue:(nonnull id (^)(void))block
-     completion:(nonnull void (^)(id ret))completion;
-
-/**
- 事务操作
- 
- @param block 数据库事务操作
- @param completion 事务完成之后的处理
- @warning 此方法的block和completion都在queue中异步执行.
- `ormModelWithClass`不能放入block.若需要在主线程执行,请在completion中添加相关代码.
- */
-- (void)inTransaction:(nonnull id (^)(BOOL *rollback))block
-           completion:(nonnull void (^)(BOOL rb,id ret))completion;
 
 @end
 

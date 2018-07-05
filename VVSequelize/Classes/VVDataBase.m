@@ -101,17 +101,19 @@
 
 
 //MARK: - 线程安全操作
-- (void)inQueue:(void (^)(void))block{
-    if(!block) return;
-    [self.fmdbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-        block();
+- (void)inQueue:(id (^)(void))block
+     completion:(void (^)(id))completion{
+    [self.fmdbQueue inDatabase:^(FMDatabase *db) {
+        id ret = block();
+        !completion ? : completion(ret);
     }];
 }
 
-- (void)inTransaction:(void(^)(BOOL *rollback))block{
-    if(!block) return;
-    [self.fmdbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
-        block(rollback);
+- (void)inTransaction:(id (^)(BOOL *))block
+           completion:(void (^)(BOOL,id))completion{
+    [self.fmdbQueue inTransaction:^(FMDatabase * db, BOOL * rollback) {
+        id ret = block(rollback);
+        !completion ? : completion(*rollback,ret);
     }];
 }
 

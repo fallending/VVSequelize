@@ -317,7 +317,7 @@
         }
         if(allColumns.length > 1) {
             [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
-            [_vvdb inQueue:^{
+            [_vvdb inQueue:^id{
                 // 将旧表数据复制至新表
                 NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self->_tableName, allColumns, allColumns, tempTableName];
                 BOOL ret = [self->_vvdb executeUpdate:sql];
@@ -329,7 +329,8 @@
                 else{
                     VVLog(2, @"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
                 }
-            }];
+                return @(ret);
+            } completion:nil];
         }
     }
 }
@@ -352,21 +353,6 @@
         return count > 0;
     }
     return NO;
-}
-
-- (void)inQueue:(id (^)(void))block
-     completion:(void (^)(id))completion{
-    [self.vvdb inQueue:^{
-        completion(block());
-    }];
-}
-
-- (void)inTransaction:(id (^)(BOOL *))block
-           completion:(void (^)(BOOL,id))completion{
-    [self.vvdb inTransaction:^(BOOL *rollback) {
-        id ret = block(rollback);
-        completion(*rollback,ret);
-    }];
 }
 
 @end

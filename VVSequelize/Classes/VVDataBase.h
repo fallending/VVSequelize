@@ -60,15 +60,26 @@
 
 //MARK: - 线程安全操作
 /**
- 将操作语句放入block中进行线程安全操作,参考FMDB用法.
+ 线程安全操作
+ 
+ @param block 数据库操作
+ @param completion 数据库操作完成之后的处理
+ @warning 此方法的block和completion都在queue中异步执行.
+ `ormModelWithClass`不能放入block.若需要在主线程执行,请在completion中添加相关代码.
  */
-- (void)inQueue:(void (^)(void))block;
-
+- (void)inQueue:(nonnull id (^)(void))block
+     completion:(nullable void (^)(id ret))completion;
 
 /**
- 将操作语句放入block中可执行事务操作,参考FMDB的用法.
+ 事务操作
+ 
+ @param block 数据库事务操作
+ @param completion 事务完成之后的处理
+ @warning 此方法的block和completion都在queue中异步执行.
+ `ormModelWithClass`不能放入block.若需要在主线程执行,请在completion中添加相关代码.
  */
-- (void)inTransaction:(void(^)(BOOL *rollback))block;
+- (void)inTransaction:(nonnull id (^)(BOOL *rollback))block
+           completion:(nullable void (^)(BOOL rb,id ret))completion;
 
 //MARK: - 其他操作
 /**
