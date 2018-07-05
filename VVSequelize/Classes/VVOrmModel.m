@@ -492,7 +492,7 @@
 @implementation VVOrmModel (Retrieve)
 
 - (id)findOneByPKVal:(id)PKVal{
-    return [self findAll:@{_primaryKey:PKVal}];
+    return [self findOne:@{_primaryKey:PKVal}];
 }
 
 - (id)findOne:(NSDictionary *)condition{
