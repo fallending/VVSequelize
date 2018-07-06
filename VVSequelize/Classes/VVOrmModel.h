@@ -189,6 +189,8 @@
  @param PKVal 主键的值
  @return 找到的数据
  @note 若定义了VVSequelize的对象模型互转block,返回对象,否则返回字典
+ 
+ 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (nullable id)findOneByPKVal:(id)PKVal;
 
@@ -198,6 +200,8 @@
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 找到的数据
  @note 若定义了VVSequelize的对象模型互转block,返回对象,否则返回字典
+ 
+ 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (nullable id)findOne:(nullable NSDictionary *)condition;
 
@@ -207,7 +211,9 @@
  
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 查询结果
- @note 若定义了VVSequelize的对象模型互转block,返回对象数组,否则返回字典数组
+ @note 若定义了VVSequelize的对象模型互转block,返回对象数组,否则返回字典数组.
+ 
+ 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (NSArray *)findAll:(nullable NSDictionary *)condition;
 
@@ -220,6 +226,8 @@
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 查询结果
  @note 若定义了VVSequelize的对象模型互转block,返回对象数组,否则返回字典数组
+ 
+ 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (NSArray *)findAll:(nullable NSDictionary *)condition
              orderBy:(nullable NSDictionary *)orderBy
