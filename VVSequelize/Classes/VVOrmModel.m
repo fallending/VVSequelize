@@ -210,8 +210,12 @@
                        primaryKey:(NSString *)primaryKey
                         tableName:(NSString *)tableName
                          dataBase:(VVDataBase *)db{
-    VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
-    return [self ormModelWithClass:cls manuals:@[column] excludes:nil tableName:tableName dataBase:db atTime:YES];
+    NSMutableArray *manuals = [NSMutableArray arrayWithCapacity:0];
+    if(primaryKey && primaryKey.length > 0){
+        VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
+        [manuals addObject:column];
+    }
+    return [self ormModelWithClass:cls manuals:manuals excludes:nil tableName:tableName dataBase:db atTime:YES];
 }
 
 + (instancetype)ormModelWithClass:(Class)cls
