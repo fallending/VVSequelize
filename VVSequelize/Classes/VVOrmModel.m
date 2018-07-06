@@ -64,6 +64,8 @@
 @property (nonatomic, copy  ) NSString *primaryKey;
 @property (nonatomic, assign) BOOL atTime;
 
+@property (nonatomic, assign) BOOL isDropped; ///< ormModel对应的表是否被drop
+
 @end
 
 @implementation VVOrmModel
@@ -221,13 +223,13 @@
     if(!cls) return nil;
     NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
     VVDataBase   *db = vvdb ? vvdb : VVDataBase.defalutDb;
-    NSString *modelKey = [db.dbPath stringByAppendingString:tbname];
-    NSRange range = [modelKey rangeOfString:NSHomeDirectory()];
+    NSString *poolKey = [db.dbPath stringByAppendingString:tbname];
+    NSRange range = [poolKey rangeOfString:NSHomeDirectory()];
     if(range.location != NSNotFound){
         // 使用相对路径作为Key
-        modelKey = [modelKey substringFromIndex:range.location + range.length];
+        poolKey = [poolKey substringFromIndex:range.location + range.length];
     }
-    VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:modelKey];
+    VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:poolKey];
     if(!model){
         model = [[VVOrmModel alloc] init];
     }
@@ -238,7 +240,7 @@
     model.excludes = excludes;
     model.atTime = atTime;
     [model createOrModifyTable];
-    [[VVOrmModel modelPool] setObject:model forKey:modelKey];
+    [[VVOrmModel modelPool] setObject:model forKey:poolKey];
     return model;
 }
 
@@ -355,6 +357,7 @@
 @implementation VVOrmModel (Create)
 
 -(BOOL)insertOne:(id)object{
+    if(self.isDropped) {[self createOrModifyTable];}
     NSDictionary *dic = nil;
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
@@ -403,6 +406,7 @@
 
 - (BOOL)update:(NSDictionary *)condition
         values:(NSDictionary *)values{
+    if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSMutableString *setString = [NSMutableString stringWithCapacity:0];
     [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -470,6 +474,7 @@
            field:(NSString *)field
            value:(NSInteger)value{
     if (value == 0) { return YES; }
+    if(self.isDropped) {[self createOrModifyTable];}
     NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\" %@ %@",
                                   field, field, value > 0 ? @"+": @"-", @(ABS(value))];
     if(_atTime){
@@ -502,6 +507,7 @@
 - (NSArray *)findAll:(NSDictionary *)condition
              orderBy:(NSDictionary *)orderBy
                range:(NSRange)range{
+    if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *order = [VVSqlGenerator orderBy:orderBy];
     NSString *limit = [VVSqlGenerator limit:range];
@@ -514,6 +520,7 @@
 }
 
 - (NSInteger)count:(NSDictionary *)condition{
+    if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
     NSArray *array = [_vvdb executeQuery:sql];
@@ -526,6 +533,7 @@
 }
 
 - (BOOL)isExist:(id)object{
+    if(self.isDropped) {[self createOrModifyTable];}
     NSDictionary *dic = nil;
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
@@ -573,6 +581,7 @@
 }
 
 - (id)calc:(NSString *)field method:(NSString *)method{
+    if(self.isDropped) {[self createOrModifyTable];}
     if(!([method isEqualToString:@"max"]
          || [method isEqualToString:@"min"]
          || [method isEqualToString:@"sum"])) return nil;
@@ -591,11 +600,13 @@
 @implementation VVOrmModel (Delete)
 
 - (BOOL)drop{
-    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXIST \"%@\"",_tableName];
-    return [_vvdb executeUpdate:sql];
+    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",_tableName];
+    _isDropped = [_vvdb executeUpdate:sql];
+    return _isDropped;
 }
 
 - (BOOL)deleteOne:(id)object{
+    if(self.isDropped) {[self createOrModifyTable];}
     NSDictionary *dic = nil;
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
@@ -614,6 +625,7 @@
 }
 
 - (BOOL)deleteMulti:(NSArray *)objects{
+    if(self.isDropped) {[self createOrModifyTable];}
     if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToKeyValuesArray) return NO;
     NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
     NSMutableArray *pkids = [NSMutableArray arrayWithCapacity:0];
@@ -627,6 +639,7 @@
 }
 
 - (BOOL)delete:(NSDictionary *)condition{
+    if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     return [_vvdb executeUpdate:sql];
