@@ -263,6 +263,8 @@
     for (NSString *column in _excludes) {
         [classColumns removeObjectForKey:column];
     }
+    // 定义的数据库类可能使用vv_pkid作为主键,并且需要在外部使用
+    [classColumns removeObjectForKey:kVsPkid];
     self.fields = classColumns.allKeys;
     NSAssert1(classColumns.count > 0, @"No need to create a table : %@", _tableName);
     
@@ -368,6 +370,7 @@
     else {
         return NO;
     }
+    if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] != 0) return NO;
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
     [dic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -438,6 +441,7 @@
         return NO;
     }
     if(!dic[_primaryKey]) return NO;
+    if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] == 0) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     NSMutableDictionary *values = dic.mutableCopy;
     [values removeObjectForKey:_primaryKey];
@@ -545,6 +549,7 @@
         return NO;
     }
     if(!dic[_primaryKey]) return NO;
+    if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] == 0) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
     return [self count:condition] > 0;
 }
@@ -619,6 +624,7 @@
     }
     id pkid = dic[_primaryKey];
     if(!pkid) return NO;
+    if([_primaryKey isEqualToString:kVsPkid] && [pkid integerValue] == 0) return NO;
     NSString *where = [VVSqlGenerator where:@{_primaryKey:pkid}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     return [_vvdb executeUpdate:sql];
