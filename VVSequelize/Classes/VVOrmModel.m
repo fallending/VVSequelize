@@ -222,6 +222,11 @@
     NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
     VVDataBase   *db = vvdb ? vvdb : VVDataBase.defalutDb;
     NSString *modelKey = [db.dbPath stringByAppendingString:tbname];
+    NSRange range = [modelKey rangeOfString:NSHomeDirectory()];
+    if(range.location != NSNotFound){
+        // 使用相对路径作为Key
+        modelKey = [modelKey substringFromIndex:range.location + range.length];
+    }
     VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:modelKey];
     if(!model){
         model = [[VVOrmModel alloc] init];
@@ -333,16 +338,6 @@
             } completion:nil];
         }
     }
-}
-
-- (BOOL)dropTable{
-    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",_tableName];
-    NSArray *array = [_vvdb executeQuery:sql];
-    for (NSDictionary *dic in array) {
-        NSInteger count = [dic[@"count"] integerValue];
-        return count > 0;
-    }
-    return NO;
 }
 
 - (BOOL)isTableExist{
@@ -596,7 +591,7 @@
 @implementation VVOrmModel (Delete)
 
 - (BOOL)drop{
-    NSString *sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"",_tableName];
+    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXIST \"%@\"",_tableName];
     return [_vvdb executeUpdate:sql];
 }
 

@@ -93,13 +93,6 @@
                            atTime:(BOOL)atTime;
 
 /**
- 删除表
- 
- @return 是否删除成功
- */
-- (BOOL)dropTable;
-
-/**
  检查数据表是否存在
  
  @return 是否存在
