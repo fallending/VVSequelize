@@ -387,7 +387,7 @@
         [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
         [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",_tableName,keyString,valString];
-        return [_vvdb executeQuery:sql];
+        return [_vvdb executeUpdate:sql];
     }
     return NO;
 }
@@ -427,7 +427,6 @@
 }
 
 - (BOOL)updateOne:(id)object{
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid]) return NO;
     NSDictionary *dic = nil;
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
@@ -492,6 +491,7 @@
 @implementation VVOrmModel (Retrieve)
 
 - (id)findOneByPKVal:(id)PKVal{
+    if(!PKVal) return nil;
     return [self findOne:@{_primaryKey:PKVal}];
 }
 
@@ -626,7 +626,7 @@
 
 - (BOOL)deleteMulti:(NSArray *)objects{
     if(self.isDropped) {[self createOrModifyTable];}
-    if(!_primaryKey || [_primaryKey isEqualToString:kVsPkid] || !VVSequelize.objectsToKeyValuesArray) return NO;
+    if(!VVSequelize.objectsToKeyValuesArray) return NO;
     NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
     NSMutableArray *pkids = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in array) {
