@@ -117,6 +117,7 @@
  @param objects 要新增的数据,数据/字典/混合数组
  @return 新增成功的条数
  @note 每条数据依次插入
+ @warning 若insert大量数据,请放入事务中进行操作
  */
 -(NSUInteger)insertMulti:(NSArray *)objects;
 
@@ -156,6 +157,7 @@
  @param objects 要更新的数据
  @return 更新成功的条数
  @note 每条数据依次更新
+ @warning 若update大量数据,请放入事务中进行操作
  */
 - (NSUInteger)updateMulti:(NSArray *)objects;
 
@@ -165,6 +167,7 @@
  @param objects 要更新的数据
  @return 更新或插入成功的条数
  @note 每条数据依次更新或插入
+ @warning 若upsert大量数据,请放入事务中进行操作
  */
 - (NSUInteger)upsertMulti:(NSArray *)objects;
 
@@ -230,6 +233,23 @@
  定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (NSArray *)findAll:(nullable NSDictionary *)condition
+             orderBy:(nullable NSDictionary *)orderBy
+               range:(NSRange)range;
+
+/**
+ 根据条件查询数据
+ 
+ @param condition 查询条件,格式详见VVSqlGenerator
+ @param fields 指定查询的字段
+ @param orderBy 排序方式
+ @param range 数据范围,用于翻页,range.length为0时,查询所有数据
+ @return 查询结果
+ @note 若定义了VVSequelize的对象模型互转block且未指定fields,返回对象数组,否则返回字典数组
+ 
+ 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
+ */
+- (NSArray *)findAll:(nullable NSDictionary *)condition
+              fields:(nullable NSArray<NSString *> *)fields
              orderBy:(nullable NSDictionary *)orderBy
                range:(NSRange)range;
 

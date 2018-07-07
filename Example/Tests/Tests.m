@@ -61,6 +61,19 @@
     [super tearDown];
 }
 
+- (void)testFind{
+    NSArray *array = [self.mobileModel findAll:nil fields:@[@"mobile",@"city"] orderBy:nil range:NSMakeRange(0, 10)];
+    NSLog(@"array:%@",array);
+    array = [self.mobileModel findAll:nil fields:nil orderBy:nil range:NSMakeRange(0, 10)];
+    NSLog(@"array:%@",array);
+    array = [self.mobileModel findAll:nil fields:@[@"",@""] orderBy:nil range:NSMakeRange(0, 10)];
+    NSLog(@"array:%@",array);
+    array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
+    NSLog(@"array:%@",array);
+    id obj = [self.mobileModel findOne:nil];
+    NSLog(@"obj:%@",obj);
+}
+
 - (void)testMobileModel{
     NSInteger count = [self.mobileModel count:nil];
     BOOL ret = [self.mobileModel increase:nil field:@"times" value:-1];

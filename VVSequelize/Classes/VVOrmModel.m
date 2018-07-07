@@ -515,17 +515,36 @@
 - (NSArray *)findAll:(NSDictionary *)condition
              orderBy:(NSDictionary *)orderBy
                range:(NSRange)range{
+    return [self findAll:condition fields:nil orderBy:orderBy range:range];
+}
+
+- (NSArray *)findAll:(NSDictionary *)condition
+              fields:(NSArray<NSString *> *)fields
+             orderBy:(NSDictionary *)orderBy
+               range:(NSRange)range{
     if(self.isDropped) {[self createOrModifyTable];}
+    NSString *fieldsStr = @"*";
+    if(fields.count > 0){
+        NSMutableString *tempStr = [NSMutableString stringWithCapacity:0];
+        for (NSString *field in fields) {
+            if(field.length > 0) [tempStr appendFormat:@"\"%@\",",field];
+        }
+        if(tempStr.length > 1) {
+            [tempStr deleteCharactersInRange:NSMakeRange(tempStr.length - 1, 1)];
+            fieldsStr = tempStr;
+        }
+    }
     NSString *where = [VVSqlGenerator where:condition];
     NSString *order = [VVSqlGenerator orderBy:orderBy];
     NSString *limit = [VVSqlGenerator limit:range];
-    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM \"%@\"%@%@%@ ", _tableName,where,order,limit];
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM \"%@\"%@%@%@ ", fieldsStr, _tableName,where,order,limit];
     NSArray *jsonArray = [_vvdb executeQuery:sql];
-    if (VVSequelize.keyValuesArrayToObjects) {
+    if ([fieldsStr isEqualToString:@"*"] && VVSequelize.keyValuesArrayToObjects) {
         return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
     }
     return jsonArray;
 }
+
 
 - (NSInteger)count:(NSDictionary *)condition{
     if(self.isDropped) {[self createOrModifyTable];}
