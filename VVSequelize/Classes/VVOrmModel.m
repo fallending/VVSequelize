@@ -252,6 +252,7 @@
  根据参数,创建或修改表
  */
 - (void)createOrModifyTable{
+    _isDropped = NO;
     // 处理自定义字段配置
     NSMutableArray *temps = [NSMutableArray arrayWithCapacity:0];
     for (id obj in _manuals) {

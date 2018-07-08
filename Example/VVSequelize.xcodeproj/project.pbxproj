@@ -217,6 +217,7 @@
 				6003F587195388D20070C39A /* Frameworks */,
 				6003F588195388D20070C39A /* Resources */,
 				EF5EC8E505A0A75811C172A8 /* [CP] Embed Pods Frameworks */,
+				D97F22F09F1C6C321D5C3BC0 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -236,6 +237,7 @@
 				6003F5AB195388D20070C39A /* Frameworks */,
 				6003F5AC195388D20070C39A /* Resources */,
 				1BAF214E4FC37EF045AD99D1 /* [CP] Embed Pods Frameworks */,
+				B4872685200A92A4C182DA1C /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -342,6 +344,36 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-VVSequelize_Tests/Pods-VVSequelize_Tests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B4872685200A92A4C182DA1C /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-VVSequelize_Tests/Pods-VVSequelize_Tests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D97F22F09F1C6C321D5C3BC0 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-VVSequelize_Example/Pods-VVSequelize_Example-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		DC147BB3B4542B6CB044AE64 /* [CP] Check Pods Manifest.lock */ = {
