@@ -65,11 +65,12 @@
     NSString *relativePath = range.location == NSNotFound ?
         dbPath : [dbPath substringFromIndex:range.location + range.length];
     VVLog(1,@"Open or create the database: %@", dbPath);
-    FMDatabase *fmdb = [FMDatabase databaseWithPath:dbPath];
-    if ([fmdb open]) {
+    FMDatabaseQueue *fmdbQueue = [FMDatabaseQueue databaseQueueWithPath:dbPath];
+    if (fmdbQueue) {
         self = [self init];
         if (self) {
-            _fmdb = fmdb;
+            _fmdbQueue = fmdbQueue;
+            _fmdb = [fmdbQueue valueForKey:@"_db"];
             _dbPath = dbPath;
             _userDefaultsKey = [NSString stringWithFormat:@"VVDBEncryptKey%@",relativePath];
             self.encryptKey = encryptKey;
@@ -101,28 +102,24 @@
 
 
 //MARK: - 线程安全操作
-- (void)inQueue:(id (^)(void))block
-     completion:(void (^)(id))completion{
+- (id)inQueue:(id (^)(void))block{
+    __block id ret = nil;
     [self.fmdbQueue inDatabase:^(FMDatabase *db) {
-        id ret = block();
-        !completion ? : completion(ret);
+        ret = block();
     }];
+    return ret;
 }
 
-- (void)inTransaction:(id (^)(BOOL *))block
-           completion:(void (^)(BOOL,id))completion{
+- (id)inTransaction:(id (^)(BOOL * rollback))block{
+    __block id ret = nil;
     [self.fmdbQueue inTransaction:^(FMDatabase * db, BOOL * rollback) {
-        id ret = block(rollback);
-        !completion ? : completion(*rollback,ret);
+        ret = block(rollback);
     }];
+    return ret;
 }
 
 //MARK: - 其他操作
 - (BOOL)close{
-    if(_fmdbQueue){
-        [_fmdbQueue close];
-        _fmdbQueue = nil;
-    }
     return [self.fmdb close];
 }
 
@@ -135,23 +132,6 @@
 }
 
 //MARK: - Getter/Setter
-- (FMDatabaseQueue *)fmdbQueue{
-    if(_fmdbQueue){
-        // 数据库可能被手动关闭
-        void *sqlite3db = (__bridge void *)([_fmdb valueForKey:@"_db"]);
-        if(!sqlite3db) _fmdbQueue = nil;
-    }
-    if(!_fmdbQueue){
-        [_fmdb close];
-        _fmdbQueue = [FMDatabaseQueue databaseQueueWithPath:_dbPath];
-        _fmdb = [_fmdbQueue valueForKey:@"_db"];
-        if(_encryptKey.length > 0){
-            [_fmdb setKey:_encryptKey];
-        }
-    }
-    return _fmdbQueue;
-}
-
 - (void)setEncryptKey:(NSString *)encryptKey{
     static dispatch_semaphore_t lock;
     static dispatch_once_t onceToken;

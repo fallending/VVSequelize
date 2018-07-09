@@ -292,8 +292,10 @@
         // 字段发生变更,对原数据表进行更名
         if(changed > 0){
             NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
-            BOOL ret = [_vvdb executeUpdate:sql];
-            NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
+            NSNumber *ret = [_vvdb inQueue:^id{
+                return @([self->_vvdb executeUpdate:sql]);
+            }];
+            NSAssert1(ret.boolValue, @"Failure to create a temporary table: %@", tempTableName);
         }
     }
     
@@ -320,8 +322,10 @@
         }
         [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
-        BOOL ret = [_vvdb executeUpdate:sql];
-        NSAssert1(ret, @"Failure to create a table: %@", _tableName);
+        NSNumber *ret = [_vvdb inQueue:^id{
+            return @([self->_vvdb executeUpdate:sql]);
+        }];
+        NSAssert1(ret.boolValue, @"Failure to create a table: %@", _tableName);
     }
     // 如果字段发生变更,将原数据表的数据插入新表
     if(exist && changed > 0){
@@ -331,7 +335,7 @@
         }
         if(allColumns.length > 1) {
             [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
-            [_vvdb inQueue:^id{
+            [_vvdb inTransaction:^id(BOOL *rollback) {
                 // 将旧表数据复制至新表
                 NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self->_tableName, allColumns, allColumns, tempTableName];
                 BOOL ret = [self->_vvdb executeUpdate:sql];
@@ -340,11 +344,12 @@
                     sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
                     ret = [self->_vvdb executeUpdate:sql];
                 }
-                else{
+                if(!ret){
+                    *rollback = YES;
                     VVLog(2, @"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
                 }
                 return @(ret);
-            } completion:nil];
+            }];
         }
     }
 }
