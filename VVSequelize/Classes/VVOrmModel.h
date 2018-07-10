@@ -109,7 +109,7 @@
  @param object 要新增的数据对象,对象或字典
  @return 是否新增成功
  */
--(BOOL)insertOne:(id)object;
+-(BOOL)insertOne:(nonnull id)object;
 
 /**
  新增多条数据
@@ -119,7 +119,7 @@
  @note 每条数据依次插入
  @warning 若insert大量数据,请放入事务中进行操作
  */
--(NSUInteger)insertMulti:(NSArray *)objects;
+-(NSUInteger)insertMulti:(nullable NSArray *)objects;
 
 @end
 
@@ -132,8 +132,8 @@
  @param values 要设置的数据,格式为{"field1":data1,"field2":data2,...}
  @return 是否更新成功
  */
-- (BOOL)update:(NSDictionary *)condition
-        values:(NSDictionary *)values;
+- (BOOL)update:(nullable NSDictionary *)condition
+        values:(nonnull NSDictionary *)values;
 
 /**
  更新一条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
@@ -141,7 +141,7 @@
  @param object 要更新的数据,对象或数组
  @return 是否更新成功
  */
-- (BOOL)updateOne:(id)object;
+- (BOOL)updateOne:(nonnull id)object;
 
 /**
  更新一条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
@@ -149,7 +149,7 @@
  @param object 要更新的数据
  @return 是否更新或插入成功
  */
-- (BOOL)upsertOne:(id)object;
+- (BOOL)upsertOne:(nonnull id)object;
 
 /**
  更新多条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
@@ -159,7 +159,7 @@
  @note 每条数据依次更新
  @warning 若update大量数据,请放入事务中进行操作
  */
-- (NSUInteger)updateMulti:(NSArray *)objects;
+- (NSUInteger)updateMulti:(nullable NSArray *)objects;
 
 /**
  更新多条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
@@ -169,7 +169,7 @@
  @note 每条数据依次更新或插入
  @warning 若upsert大量数据,请放入事务中进行操作
  */
-- (NSUInteger)upsertMulti:(NSArray *)objects;
+- (NSUInteger)upsertMulti:(nullable NSArray *)objects;
 
 /**
  将某个字段的值增加某个数值
@@ -180,7 +180,7 @@
  @return 是否增加成功
  */
 - (BOOL)increase:(nullable NSDictionary *)condition
-           field:(NSString *)field
+           field:(nonnull NSString *)field
            value:(NSInteger)value;
 
 @end
@@ -195,7 +195,7 @@
  
  定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (nullable id)findOneByPKVal:(id)PKVal;
+- (nullable id)findOneByPKVal:(nonnull id)PKVal;
 
 /**
  查询一条数据
@@ -208,6 +208,18 @@
  */
 - (nullable id)findOne:(nullable NSDictionary *)condition;
 
+/**
+ 查询一条数据
+ 
+ @param condition 查询条件,格式详见VVSqlGenerator
+ @param orderBy 排序方式
+ @return 找到的数据
+ @note 若定义了VVSequelize的对象模型互转block,返回对象,否则返回字典
+ 
+ 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
+ */
+- (nullable id)findOne:(nullable NSDictionary *)condition
+               orderBy:(nullable NSDictionary *)orderBy;
 
 /**
  根据条件查询所有数据
@@ -260,7 +272,7 @@
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 数据条数
  */
-- (NSInteger)count:(NSDictionary *)condition;
+- (NSInteger)count:(nullable NSDictionary *)condition;
 
 
 /**
@@ -269,7 +281,7 @@
  @param object 数据对象
  @return 是否存在
  */
-- (BOOL)isExist:(id)object;
+- (BOOL)isExist:(nonnull id)object;
 
 /**
  根据条件查询数据和数据数量.数量只根据查询条件获取,不受range限制.
@@ -280,8 +292,8 @@
  @return 数据和数据数量,格式为{"count":100,list:[object]}
  @note 若定义了VVSequelize的对象模型互转block,list为对象数组,否则为字典数组
  */
-- (NSDictionary *)findAndCount:(NSDictionary *)condition
-                       orderBy:(NSDictionary *)orderBy
+- (NSDictionary *)findAndCount:(nullable NSDictionary *)condition
+                       orderBy:(nullable NSDictionary *)orderBy
                          range:(NSRange)range;
 
 /**
@@ -298,7 +310,7 @@
  @param field 字段名
  @return 最大值.因Text也可以计算最大值,故返回值为id类型
  */
-- (id)max:(NSString *)field;
+- (id)max:(nonnull NSString *)field;
 
 /**
  获取某个字段的最小值
@@ -306,7 +318,7 @@
  @param field 字段名
  @return 最小值.因Text也可以计算最小值,故返回值为id类型
  */
-- (id)min:(NSString *)field;
+- (id)min:(nonnull NSString *)field;
 
 /**
  获取某个字段的求和
@@ -314,7 +326,7 @@
  @param field 字段名
  @return 求和
  */
-- (id)sum:(NSString *)field;
+- (id)sum:(nonnull NSString *)field;
 
 @end
 
@@ -334,7 +346,7 @@
  @param object 要删除的数据
  @return 是否删除成功
  */
-- (BOOL)deleteOne:(id)object;
+- (BOOL)deleteOne:(nonnull id)object;
 
 /**
  删除多条数据
@@ -342,7 +354,7 @@
  @param objects 要删除的数据
  @return 是否删除成功
  */
-- (BOOL)deleteMulti:(NSArray *)objects;
+- (BOOL)deleteMulti:(nullable NSArray *)objects;
 
 
 /**
@@ -351,7 +363,7 @@
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 是否删除成功
  */
-- (BOOL)delete:(NSDictionary *)condition;
+- (BOOL)delete:(nullable NSDictionary *)condition;
 
 @end
 

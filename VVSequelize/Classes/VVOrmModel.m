@@ -514,6 +514,12 @@
     return array.count > 0 ? array.firstObject : nil;
 }
 
+- (id)findOne:(NSDictionary *)condition
+      orderBy:(NSDictionary *)orderBy{
+    NSArray *array = [self findAll:condition orderBy:orderBy range:NSMakeRange(0, 1)];
+    return array.count > 0 ? array.firstObject : nil;
+}
+
 - (NSArray *)findAll:(NSDictionary *)condition{
     return [self findAll:condition orderBy:nil range:VVRangeAll];
 }
@@ -660,6 +666,7 @@
 }
 
 - (BOOL)deleteMulti:(NSArray *)objects{
+    if(objects.count == 0) return YES;
     if(self.isDropped) {[self createOrModifyTable];}
     if(!VVSequelize.objectsToKeyValuesArray) return NO;
     NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
