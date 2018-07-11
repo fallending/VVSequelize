@@ -41,7 +41,7 @@ static NSInteger _loglevel = 0;
         va_start(args, fmt);
         NSString *string = fmt? [[NSString alloc] initWithFormat:fmt locale:[NSLocale currentLocale] arguments:args]:fmt;
         va_end(args);
-        NSLog(@"%@", string);
+        NSLog(@"VVSequelize: %@", string);
     }
 }
 
