@@ -402,7 +402,7 @@
         if(_atTime){
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
             [keyString appendFormat:@"\"%@\",",kVsCreateAt];
-            [valString appendFormat:@"?, "];
+            [valString appendFormat:@"?,"];
             [values addObject:@(now)];
             [keyString appendFormat:@"\"%@\",",kVsUpdateAt];
             [valString appendFormat:@"?,"];
