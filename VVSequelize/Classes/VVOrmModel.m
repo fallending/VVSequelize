@@ -447,7 +447,7 @@
             [objs addObject:@(now)];
         }
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
-        NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@",_tableName,setString,where];
+        NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
         return [_vvdb executeUpdate:sql values:objs];
     }
     return NO;
