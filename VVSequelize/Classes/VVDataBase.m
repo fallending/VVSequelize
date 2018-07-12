@@ -98,7 +98,7 @@
         }
         [array addObject:dic];
     }
-    VVLog(2, @"query result: %@",array);
+    VVLog(2, @"query result: %@",[self descriptionsOfDictionryArray:array]);
     return array;
 }
 
@@ -111,7 +111,7 @@
 
 - (BOOL)executeUpdate:(NSString *)sql
                values:(nonnull NSArray *)values{
-    VVLog(1,@"execute: %@\nvalues: %@",sql,values);
+    VVLog(1,@"execute: %@\nvalues: %@",sql,[self descriptionsOfArray:values]);
     BOOL ret = [self.fmdb executeUpdate:sql withArgumentsInArray:values];
     VVLog(2, @"execute result: %@",@(ret));
     return ret;
@@ -171,5 +171,48 @@
     }
     [self open];
 }
+
+//MARK: - Private
+- (NSArray *)descriptionsOfArray:(NSArray *)array{
+    if(VVSequelize.loglevel < 1) return nil;
+    NSMutableArray *descriptions = [NSMutableArray arrayWithCapacity:0];
+    for (id val in array) {
+        NSString *description = nil;
+        if([val isKindOfClass:NSData.class]){
+            NSData *data = val;
+            description =[NSString stringWithFormat:@"Data<%@ bytes>",@(data.length)];
+        }
+        else{
+            description = [val description];
+        }
+        if(description.length > 100) description = [description substringToIndex:100];
+        [descriptions addObject:description];
+    }
+    return descriptions;
+}
+
+- (NSArray *)descriptionsOfDictionryArray:(NSArray<NSDictionary *> *)array{
+    if(VVSequelize.loglevel < 2) return nil;
+    NSMutableArray *descriptions = [NSMutableArray arrayWithCapacity:0];
+    for (NSDictionary *dic in array) {
+        NSMutableDictionary *descDic = [NSMutableDictionary dictionaryWithCapacity:0];
+        for (NSString *key in dic.allKeys) {
+            id val = dic[key];
+            NSString *description = nil;
+            if([val isKindOfClass:NSData.class]){
+                NSData *data = val;
+                description =[NSString stringWithFormat:@"Data<%@ bytes>",@(data.length)];
+            }
+            else{
+                description = [val description];
+            }
+            if(description.length > 100) description = [description substringToIndex:100];
+            descDic[key] = description;
+        }
+        [descriptions addObject:descDic];
+    }
+    return descriptions;
+}
+
 
 @end
