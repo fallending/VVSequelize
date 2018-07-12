@@ -109,6 +109,13 @@
     return ret;
 }
 
+- (BOOL)executeUpdate:(NSString *)sql
+               values:(nonnull NSArray *)values{
+    VVLog(1,@"execute: %@\nvalues: %@",sql,values);
+    BOOL ret = [self.fmdb executeUpdate:sql withArgumentsInArray:values];
+    VVLog(2, @"execute result: %@",@(ret));
+    return ret;
+}
 
 //MARK: - 线程安全操作
 - (id)inQueue:(id (^)(void))block{

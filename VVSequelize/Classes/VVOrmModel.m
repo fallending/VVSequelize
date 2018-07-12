@@ -390,24 +390,28 @@
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] != 0) return NO;
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
+    NSMutableArray *values = [NSMutableArray arrayWithCapacity:0];
     [dic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         if(key && obj && [self.fields containsObject:key]){
             [keyString appendFormat:@"\"%@\",",key];
-            [valString appendFormat:@"\"%@\",",obj];
+            [valString appendFormat:@"?,"];
+            [values addObject:obj];
         }
     }];
     if(keyString.length > 1 && valString.length > 1){
         if(_atTime){
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
             [keyString appendFormat:@"\"%@\",",kVsCreateAt];
-            [valString appendFormat:@"\"%@\",",@(now)];
+            [valString appendFormat:@"?, "];
+            [values addObject:@(now)];
             [keyString appendFormat:@"\"%@\",",kVsUpdateAt];
-            [valString appendFormat:@"\"%@\",",@(now)];
+            [valString appendFormat:@"?,"];
+            [values addObject:@(now)];
         }
         [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
         [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",_tableName,keyString,valString];
-        return [_vvdb executeUpdate:sql];
+        return [_vvdb executeUpdate:sql values:values];
     }
     return NO;
 }
@@ -429,19 +433,22 @@
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSMutableString *setString = [NSMutableString stringWithCapacity:0];
+    NSMutableArray *objs = [NSMutableArray arrayWithCapacity:0];
     [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         if(key && obj && [self.fields containsObject:key]){
-            [setString appendFormat:@"\"%@\" = \"%@\",",key,obj];
+            [setString appendFormat:@"\"%@\" = ?,",key];
+            [objs addObject:obj];
         }
     }];
     if (setString.length > 1) {
         if(_atTime){
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-            [setString appendFormat:@"\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
+            [setString appendFormat:@"\"%@\" = ?,",kVsUpdateAt];
+            [objs addObject:@(now)];
         }
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@",_tableName,setString,where];
-        return [_vvdb executeUpdate:sql];
+        return [_vvdb executeUpdate:sql values:objs];
     }
     return NO;
 }

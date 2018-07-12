@@ -42,7 +42,7 @@
 //MARK: - 原始SQL语句
 
 /**
- 原始SQL查询
+ 执行SQL查询语句
  
  @param sql sql语句
  @return 查询结果,json数组
@@ -50,7 +50,7 @@
 - (NSArray *)executeQuery:(nonnull NSString *)sql;
 
 /**
- 原始SQL查询
+ 执行SQL查询语句
 
  @param sql sql语句
  @param blobFields BLOB类型的字段,查询结果中应转换成NSData类型
@@ -61,12 +61,23 @@
 
 
 /**
- 原始SQL更新
+ 执行SQL更新语句
 
  @param sql sql语句
  @return 是否更新成功
  */
 - (BOOL)executeUpdate:(nonnull NSString *)sql;
+
+/**
+ 执行SQL更新语句
+ 
+ @param sql sql语句
+ @param values 对应sql语句中`?`的值
+ @return 是否更新成功
+ @note 主要针对插入数据时,可能有NSData类型的值,所以插入语句中的values对为(?,?,?,..)格式,由FMDB处理
+ */
+- (BOOL)executeUpdate:(NSString *)sql
+               values:(nonnull NSArray *)values;
 
 //MARK: - 线程安全操作
 /**
