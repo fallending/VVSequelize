@@ -83,11 +83,20 @@
 
 //MARK: - 原始SQL语句
 - (NSArray *)executeQuery:(NSString *)sql{
+    return [self executeQuery:sql blobFields:nil];
+}
+
+- (NSArray *)executeQuery:(NSString *)sql
+               blobFields:(nullable NSArray<NSString *> *)blobFields{
     VVLog(1,@"query: %@",sql);
     FMResultSet *set = [self.fmdb executeQuery:sql];
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     while ([set next]) {
-        [array addObject:set.resultDictionary];
+        NSMutableDictionary *dic = set.resultDictionary.mutableCopy;
+        for (NSString *field in blobFields) {
+            dic[field] = [set dataForColumn:field];
+        }
+        [array addObject:dic];
     }
     VVLog(2, @"query result: %@",array);
     return array;

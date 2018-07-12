@@ -43,11 +43,21 @@
 
 /**
  原始SQL查询
-
+ 
  @param sql sql语句
  @return 查询结果,json数组
  */
-- (NSArray *)executeQuery:(NSString *)sql;
+- (NSArray *)executeQuery:(nonnull NSString *)sql;
+
+/**
+ 原始SQL查询
+
+ @param sql sql语句
+ @param blobFields BLOB类型的字段,查询结果中应转换成NSData类型
+ @return 查询结果,json数组
+ */
+- (NSArray *)executeQuery:(nonnull NSString *)sql
+               blobFields:(nullable NSArray<NSString *> *)blobFields;
 
 
 /**
@@ -56,7 +66,7 @@
  @param sql sql语句
  @return 是否更新成功
  */
-- (BOOL)executeUpdate:(NSString *)sql;
+- (BOOL)executeUpdate:(nonnull NSString *)sql;
 
 //MARK: - 线程安全操作
 /**

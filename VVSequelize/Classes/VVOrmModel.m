@@ -58,6 +58,7 @@
 @property (nonatomic, strong) VVDataBase *vvdb;
 @property (nonatomic, copy  ) NSString *tableName;
 @property (nonatomic, copy  ) NSArray *fields;
+@property (nonatomic, copy  ) NSArray *blobs;
 @property (nonatomic, copy  ) NSArray *manuals;
 @property (nonatomic, copy  ) NSArray *excludes;
 @property (nonatomic        ) Class cls;
@@ -271,6 +272,12 @@
     // 定义的数据库类可能使用vv_pkid作为主键,并且需要在外部使用
     [classColumns removeObjectForKey:kVsPkid];
     self.fields = classColumns.allKeys;
+    // 获取BLOB类型的字段
+    NSMutableArray *blobs = [NSMutableArray arrayWithCapacity:0];
+    for (VVOrmSchemaItem *item in classColumns.allValues) {
+        if([item.type isEqualToString:VVSqlTypeBlob]) [blobs addObject:item.name];
+    }
+    self.blobs = blobs;
     NSAssert1(classColumns.count > 0, @"No need to create a table : %@", _tableName);
     
     // 检查数据表是否存在
@@ -550,13 +557,12 @@
     NSString *order = [VVSqlGenerator orderBy:orderBy];
     NSString *limit = [VVSqlGenerator limit:range];
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM \"%@\"%@%@%@ ", fieldsStr, _tableName,where,order,limit];
-    NSArray *jsonArray = [_vvdb executeQuery:sql];
+    NSArray *jsonArray = [_vvdb executeQuery:sql blobFields:self.blobs];
     if ([fieldsStr isEqualToString:@"*"] && VVSequelize.keyValuesArrayToObjects) {
         return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
     }
     return jsonArray;
 }
-
 
 - (NSInteger)count:(NSDictionary *)condition{
     if(self.isDropped) {[self createOrModifyTable];}
