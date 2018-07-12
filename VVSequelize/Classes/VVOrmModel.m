@@ -228,16 +228,16 @@
     if(!cls) return nil;
     NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
     VVDataBase   *db = vvdb ? vvdb : VVDataBase.defalutDb;
-    NSString *poolKey = [db.dbPath stringByAppendingString:tbname];
+    NSString *poolKey = [db.dbPath stringByAppendingPathComponent:tbname];
     NSRange range = [poolKey rangeOfString:NSHomeDirectory()];
     if(range.location != NSNotFound){
         // 使用相对路径作为Key
         poolKey = [poolKey substringFromIndex:range.location + range.length];
     }
     VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:poolKey];
-    if(!model){
-        model = [[VVOrmModel alloc] init];
-    }
+    VVLog(2,@"poolKey: %@, model: %@",poolKey,model);
+    if(model) return model;
+    model = [[VVOrmModel alloc] init];
     model.cls = cls;
     model.tableName = tbname;
     model.vvdb = db;
