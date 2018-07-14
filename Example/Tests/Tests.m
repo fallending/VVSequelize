@@ -24,7 +24,6 @@
 {
     [super setUp];
     VVSequelize.loglevel = 2;
-    /*
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
     }];
@@ -54,7 +53,7 @@
                                            tableName:@"mobiles"
                                             dataBase:self.vvdb
                                               atTime:YES];
-     */
+     
 }
 
 - (void)tearDown
@@ -232,11 +231,12 @@
 }
 
 - (void)testObjDic{
+    NSDate *now = [NSDate date];
     VVTestPerson *person = [VVTestPerson new];
     person.idcard = @"123123";
     person.name = @"zhangsan";
     person.age = 19;
-    person.birth = [NSDate date];
+    person.birth = now;
     person.mobile = @"123123123";
     VVTestMobile *mobile = [VVTestMobile new];
     mobile.mobile = [NSString stringWithFormat:@"1%02i%04i%04i",arc4random_uniform(99),arc4random_uniform(9999),arc4random_uniform(9999)];
@@ -257,6 +257,7 @@
     NSLog(@"dic: %@",oneDic);
     VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
     NSLog(@"obj: %@",nOne);
+//    NSLog(@"now: %@",now);
 }
 
 @end

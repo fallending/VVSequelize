@@ -110,6 +110,7 @@
         }
         dic[propName] = value;
     }
+    free(props);
     return dic;
 }
 
@@ -180,10 +181,10 @@
             if(cls) _mapper[name] = cls;
         }
     }
+    free(props);
     [[VVMapperPool shared].defaultPool setObject:_mapper forKey:className];
     return _mapper;
 }
-
 
 /**
  Array/Set中需要转换的模型类
