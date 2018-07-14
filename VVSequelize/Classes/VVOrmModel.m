@@ -381,11 +381,13 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
     else {
-        return NO;
+        if(VVSequelize.objectToKeyValues){
+            dic = VVSequelize.objectToKeyValues(_cls,object);
+        }
+        else{
+            dic = [object vv_keyValues];
+        }
     }
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] != 0) return NO;
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
@@ -458,11 +460,13 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
     else {
-        return NO;
+        if(VVSequelize.objectToKeyValues){
+            dic = VVSequelize.objectToKeyValues(_cls,object);
+        }
+        else{
+            dic = [object vv_keyValues];
+        }
     }
     if(!dic[_primaryKey]) return NO;
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] == 0) return NO;
@@ -565,8 +569,13 @@
     NSString *limit = [VVSqlGenerator limit:range];
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM \"%@\"%@%@%@ ", fieldsStr, _tableName,where,order,limit];
     NSArray *jsonArray = [_vvdb executeQuery:sql blobFields:self.blobs];
-    if ([fieldsStr isEqualToString:@"*"] && VVSequelize.keyValuesArrayToObjects) {
-        return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
+    if ([fieldsStr isEqualToString:@"*"]){
+        if(VVSequelize.keyValuesArrayToObjects){
+            return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
+        }
+        else{
+            return [_cls vv_objectsWithKeyValuesArray:jsonArray];
+        }
     }
     return jsonArray;
 }
@@ -590,11 +599,13 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
-    else {
-        return NO;
+    else{
+        if(VVSequelize.objectToKeyValues){
+            dic = VVSequelize.objectToKeyValues(_cls,object);
+        }
+        else{
+            dic = [object vv_keyValues];
+        }
     }
     if(!dic[_primaryKey]) return NO;
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] == 0) return NO;
@@ -664,11 +675,13 @@
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
     }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
-    else {
-        return NO;
+    else{
+        if(VVSequelize.objectToKeyValues){
+            dic = VVSequelize.objectToKeyValues(_cls,object);
+        }
+        else{
+            dic = [object vv_keyValues];
+        }
     }
     id pkid = dic[_primaryKey];
     if(!pkid) return NO;
@@ -681,8 +694,13 @@
 - (BOOL)deleteMulti:(NSArray *)objects{
     if(objects.count == 0) return YES;
     if(self.isDropped) {[self createOrModifyTable];}
-    if(!VVSequelize.objectsToKeyValuesArray) return NO;
-    NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
+    NSArray *array = nil;
+    if(VVSequelize.objectsToKeyValuesArray){
+        array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
+    }
+    else{
+        array = [_cls vv_keyValuesArrayWithObjects:objects];
+    }
     NSMutableArray *pkids = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in array) {
         id pkid = dic[_primaryKey];

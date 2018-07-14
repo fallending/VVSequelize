@@ -39,3 +39,14 @@
 */
 
 @end
+
+@interface VVTestOne : NSObject
+@property (nonatomic, assign) NSInteger oneId;      ///< id
+@property (nonatomic, strong) VVTestPerson *person; ///< person
+@property (nonatomic, strong) NSArray *mobiles;     ///< mobile
+@property (nonatomic, strong) NSSet *friends;       ///< friends
+@property (nonatomic, copy  ) NSString *flag;       ///< flag
+@property (nonatomic, strong) NSDictionary *dic;    ///< flag
+@property (nonatomic, strong) NSArray *arr;         ///< flag
+
+@end

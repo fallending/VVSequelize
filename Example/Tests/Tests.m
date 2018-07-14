@@ -24,6 +24,7 @@
 {
     [super setUp];
     VVSequelize.loglevel = 2;
+    /*
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
     }];
@@ -53,6 +54,7 @@
                                            tableName:@"mobiles"
                                             dataBase:self.vvdb
                                               atTime:YES];
+     */
 }
 
 - (void)tearDown
@@ -227,6 +229,34 @@
     NSDictionary *dic = person.mj_keyValues;
     NSLog(@"%@",dic);
 //    XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
+}
+
+- (void)testObjDic{
+    VVTestPerson *person = [VVTestPerson new];
+    person.idcard = @"123123";
+    person.name = @"zhangsan";
+    person.age = 19;
+    person.birth = [NSDate date];
+    person.mobile = @"123123123";
+    VVTestMobile *mobile = [VVTestMobile new];
+    mobile.mobile = [NSString stringWithFormat:@"1%02i%04i%04i",arc4random_uniform(99),arc4random_uniform(9999),arc4random_uniform(9999)];
+    mobile.province = @"四川";
+    mobile.city = @"成都";
+    mobile.industry = @"IT";
+    mobile.relative = arc4random_uniform(100) * 1.0 / 100.0;
+    VVTestOne *one = [VVTestOne new];
+    one.oneId = 1;
+    one.person = person;
+    one.mobiles = @[mobile];
+    one.friends = [NSSet setWithArray:@[person]];
+    one.flag = @"hahaha";
+    one.dic = @{@"a":@(1),@"b":@(2)};
+    one.arr = @[@(1),@(2),@(3)];
+    
+    NSDictionary *oneDic = one.vv_keyValues;
+    NSLog(@"dic: %@",oneDic);
+    VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
+    NSLog(@"obj: %@",nOne);
 }
 
 @end

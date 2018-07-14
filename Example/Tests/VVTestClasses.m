@@ -15,19 +15,13 @@
 
 @implementation VVTestPerson
 
-//+ (NSMutableArray *)mj_totalIgnoredPropertyNames{
-//    return @[@"birth"].mutableCopy;
-//}
+@end
 
-- (id)mj_newValueFromOldValue:(id)oldValue property:(MJProperty *)property{
-    if([property.name isEqualToString:@"birth"]){
-        if (oldValue && [oldValue isKindOfClass:[NSDate class]]) {
-            NSDate *date = oldValue;
-            return @([date timeIntervalSince1970]);
-        }
-        return @(0);
-    }
-    return oldValue;
+@implementation VVTestOne
+
++ (NSDictionary *)mj_objectClassInArray{
+    return @{@"mobiles":VVTestMobile.class,@"friends":@"VVTestPerson"};
 }
 
 @end
+

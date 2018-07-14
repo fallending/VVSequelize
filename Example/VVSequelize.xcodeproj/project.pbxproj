@@ -257,6 +257,13 @@
 				LastUpgradeCheck = 0940;
 				ORGANIZATIONNAME = "Valo Lee";
 				TargetAttributes = {
+					6003F589195388D20070C39A = {
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 0;
+							};
+						};
+					};
 					6003F5AD195388D20070C39A = {
 						TestTargetID = 6003F589195388D20070C39A;
 					};
