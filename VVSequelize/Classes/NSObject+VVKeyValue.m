@@ -1,11 +1,11 @@
 //
-//  NSObject+VVSequelize.m
+//  NSObject+VVKeyValue.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/7/13.
 //
 
-#import "NSObject+VVSequelize.h"
+#import "NSObject+VVKeyValue.h"
 #import "VVSequelize.h"
 #import <objc/runtime.h>
 
@@ -64,7 +64,7 @@
 
 @end
 
-@implementation NSObject (VVSequelize)
+@implementation NSObject (VVKeyValue)
 
 - (NSDictionary *)vv_keyValues{
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
@@ -199,7 +199,7 @@
     NSDictionary *tempDic = nil;
     NSArray *mapperSelectors = @[@"mj_objectClassInArray",      // MJExtension
                                  @"modelCustomPropertyMapper",  // YYModel
-                                 @"vv_collectionMapper"];       // VVSequelize
+                                 @"vv_collectionMapper"];       // VVKeyValue
     for (NSString *selectorString in mapperSelectors) {
         SEL mapperSelector = NSSelectorFromString(selectorString);
         if ([self respondsToSelector:mapperSelector]) {

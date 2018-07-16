@@ -1,5 +1,5 @@
 //
-//  NSObject+VVSequelize.h
+//  NSObject+VVKeyValue.h
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/7/13.
@@ -18,11 +18,11 @@
 @end
 
 /**
- NSObject和NSDictionary/NSArray互转
+ NSObject和NSDictionary/NSArray互转.主要应用于VVSequelize.
  
- @note 只支持基础转换,无(字段名映射,黑白名单等)高级功能.
+ @note 只支持基础转换,无(字段名映射,黑白名单等)高级功能,暂不考虑高效率问题.
  */
-@interface NSObject (VVSequelize)
+@interface NSObject (VVKeyValue)
 
 /**
  将对象转换为字典

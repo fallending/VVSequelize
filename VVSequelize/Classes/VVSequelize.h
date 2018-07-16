@@ -10,7 +10,7 @@
 #import "VVOrmModel.h"
 #import "VVSqlGenerator.h"
 #import "VVCipherHelper.h"
-#import "NSObject+VVSequelize.h"
+#import "NSObject+VVKeyValue.h"
 
 #ifdef DEBUG
 #define VVLog(level, ...) [VVSequelize VVVerbose:(level) format:__VA_ARGS__]
@@ -26,8 +26,8 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
 
 /**
  基于FMDB的ORM封装
- @todo 目前`NSObject+VVSequelize`尚不完善,建议对象模型互转使用其他稳定的第三方库,例如:YYModel,MJExtension
- @attention 若设置了对象模型互转Block,则使用设置的方法,否则使用`NSObject+VVSequelize`中定义的方法.
+ @todo 目前`NSObject+VVKeyValue`尚不完善,建议对象模型互转使用其他稳定的第三方库,例如:YYModel,MJExtension
+ @attention 若设置了对象模型互转Block,则使用设置的方法,否则使用`NSObject+VVKeyValue`中定义的方法.
  @warning 若项目中使用的对象模型互转定义了字典key和模型属性名的映射关系,则此处应设置另一个模型转对象的方式.
  
  例如:项目中使用MJExtension,且要存储数据的类里定义了`mj_replacedKeyFromPropertyName`,那么此处应设置YYModel作为模型转对象的方式
