@@ -123,10 +123,10 @@
         id value = keyValues[key];
         Class cls = mapper[key];
         if(cls){
-            if([self isKindOfClass:[NSString class]]
-               || [self isKindOfClass:[NSNumber class]]
-               || [self isKindOfClass:[NSDictionary class]]
-               || [self isKindOfClass:[NSData class]]){
+            if([cls isEqual:[NSString class]]
+               || [cls isEqual:[NSNumber class]]
+               || [cls isEqual:[NSDictionary class]]
+               || [cls isEqual:[NSData class]]){
                 // do nothing
             }
             else if([cls isEqual:[NSDate class]]){
