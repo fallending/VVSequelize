@@ -73,18 +73,12 @@
     for(int i = 0;i < propsCount; i++){
         objc_property_t prop = props[i];
         NSString *propName = [NSString stringWithUTF8String:property_getName(prop)];//获得属性的名称
-        id value = nil;
-        @try {
-            value = [self valueForKey:propName];
-        }
-        @catch (NSException *exception) {
-            VVLog(2, @"exception : %@", exception);
-        }
+        id value = [self valueForKey:propName];
         if([value isKindOfClass:[NSNull class]]){
             value = nil;
         }
         else if([value isKindOfClass:[NSArray class]]
-                ||[value isKindOfClass:[NSSet class]]){
+                || [value isKindOfClass:[NSSet class]]){
             NSArray *tempArray = value;
             if([value isKindOfClass:[NSSet class]]){
                 NSSet *set = value;
@@ -97,15 +91,6 @@
             }
             value = array;
         }
-//        else if([value isKindOfClass:[NSDictionary class]]){
-//            NSDictionary *tempdic = value;
-//            NSMutableDictionary *subdic = [NSMutableDictionary dictionaryWithCapacity:0];
-//            for (NSString *key in tempdic.allKeys) {
-//                NSAssert([key isKindOfClass:NSString.class], @"不支持非NSString类型的Key");
-//                subdic[key] = [tempdic[key] vv_value];
-//            }
-//            value = subdic;
-//        }
         else{
             value = [value vv_value];
         }
@@ -123,13 +108,7 @@
         id value = keyValues[key];
         Class cls = mapper[key];
         if(cls){
-            if([cls isEqual:[NSString class]]
-               || [cls isEqual:[NSNumber class]]
-               || [cls isEqual:[NSDictionary class]]
-               || [cls isEqual:[NSData class]]){
-                // do nothing
-            }
-            else if([cls isEqual:[NSDate class]]){
+            if([cls isEqual:[NSDate class]]){
                 if([value isKindOfClass:[NSNumber class]] ||
                    [value isKindOfClass:[NSString class]]){
                     NSTimeInterval interval = [value doubleValue];
@@ -155,6 +134,9 @@
                         NSArray *tempArray = [subCls vv_objectsWithKeyValuesArray:jsonObj];
                         value = [cls isEqual:[NSSet class]]? [NSSet setWithArray:tempArray] : tempArray;
                     }
+                }
+                else if([cls isEqual:[NSDictionary class]]){
+                    if(jsonObj && [jsonObj isKindOfClass:[NSDictionary class]]) value = jsonObj;
                 }
                 else if(jsonObj && [jsonObj isKindOfClass:[NSDictionary class]]){
                     value = [cls vv_objectWithKeyValues:jsonObj];
@@ -200,7 +182,11 @@
             NSArray *temp = [attrs componentsSeparatedByString:@"\""];
             NSString *classname = temp[1];
             Class cls = NSClassFromString(classname);
-            if(cls) _mapper[name] = cls;
+            if(cls && !([cls isEqual:[NSString class]]
+                        || [cls isEqual:[NSNumber class]]
+                        || [cls isEqual:[NSData class]])) {
+                _mapper[name] = cls;
+            }
         }
     }
     free(props);
