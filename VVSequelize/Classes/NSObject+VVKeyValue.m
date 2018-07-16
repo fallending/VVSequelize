@@ -123,7 +123,13 @@
         id value = keyValues[key];
         Class cls = mapper[key];
         if(cls){
-            if([cls isEqual:[NSDate class]]){
+            if([self isKindOfClass:[NSString class]]
+               || [self isKindOfClass:[NSNumber class]]
+               || [self isKindOfClass:[NSDictionary class]]
+               || [self isKindOfClass:[NSData class]]){
+                // do nothing
+            }
+            else if([cls isEqual:[NSDate class]]){
                 if([value isKindOfClass:[NSNumber class]] ||
                    [value isKindOfClass:[NSString class]]){
                     NSTimeInterval interval = [value doubleValue];
