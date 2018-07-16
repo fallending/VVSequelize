@@ -80,8 +80,8 @@
         @catch (NSException *exception) {
             VVLog(2, @"exception : %@", exception);
         }
-        if(value == nil){
-            value = [NSNull null];
+        if([value isKindOfClass:[NSNull class]]){
+            value = nil;
         }
         else if([value isKindOfClass:[NSArray class]]
                 ||[value isKindOfClass:[NSSet class]]){
@@ -92,7 +92,8 @@
             }
             NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
             for (NSObject *obj in tempArray) {
-                [array addObject:[obj vv_value]];
+                id val = [obj vv_value];
+                if(val) [array addObject:val];
             }
             value = array;
         }
@@ -141,7 +142,9 @@
                 }
             }
         }
-        [obj setValue:value forKey:key];
+        if(!([value isKindOfClass:[NSNull class]] || value == nil)){
+            [obj setValue:value forKey:key];
+        }
     }
     return obj;
 }
@@ -225,9 +228,11 @@
 }
 
 - (id)vv_value{
-    if([self isKindOfClass:[NSString class]]
+    if([self isKindOfClass:[NSNull class]]){
+        return nil;
+    }
+    else if([self isKindOfClass:[NSString class]]
        || [self isKindOfClass:[NSNumber class]]
-       || [self isKindOfClass:[NSNull class]]
        || [self isKindOfClass:[NSDictionary class]]
        || [self isKindOfClass:[NSData class]]){
         return self;
@@ -253,6 +258,6 @@
 
 - (id)valueForUndefinedKey:(NSString *)key{
     VVLog(1,@"valueForUndefinedKey: %@",key);
-    return [NSNull null];
+    return nil;
 }
 @end
