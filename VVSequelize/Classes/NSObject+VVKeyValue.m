@@ -133,12 +133,25 @@
                     value = nil;
                 }
             }
-            else if([cls isEqual:[NSArray class]]
-                    || [cls isEqual:[NSSet class]]){
-                Class subCls = custommapper[key];
-                if(subCls){
-                    NSArray *tempArr = [cls isEqual:[NSSet class]] ? [value allObjects] : value;
-                    value = [subCls vv_objectsWithKeyValuesArray:tempArr];
+            else {
+                id jsonObj = nil;
+                value = nil;
+                if([value isKindOfClass:[NSString class]]){
+                    NSData *data = [[NSData alloc] initWithBase64EncodedString:value options:0];
+                    if(data){
+                        jsonObj = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    }
+                }
+                if([cls isEqual:[NSArray class]]
+                   || [cls isEqual:[NSSet class]]){
+                    Class subCls = custommapper[key];
+                    if(subCls && jsonObj && [jsonObj isKindOfClass:[NSArray class]]){
+                        NSArray *tempArray = [subCls vv_objectsWithKeyValuesArray:jsonObj];
+                        value = [cls isEqual:[NSSet class]]? [NSSet setWithArray:tempArray] : tempArray;
+                    }
+                }
+                else if(jsonObj && [jsonObj isKindOfClass:[NSDictionary class]]){
+                    value = [cls vv_objectWithKeyValues:jsonObj];
                 }
             }
         }
