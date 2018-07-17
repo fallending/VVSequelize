@@ -50,3 +50,29 @@
 @property (nonatomic, strong) NSArray *arr;         ///< flag
 
 @end
+
+typedef union TestUnion{
+    uint8_t num;
+    char    ch;
+} VVTestUnion;
+
+typedef struct TestStruct {
+    uint8_t num;
+    char    ch;
+} VVTestStruct;
+
+@interface VVTestMix : NSObject
+@property (nonatomic, assign) NSInteger cnum;
+@property (nonatomic, strong) NSValue *val;
+@property (nonatomic, strong) NSNumber *num;
+@property (nonatomic, strong) NSDecimalNumber *decNum;
+@property (nonatomic, assign) SEL selector;
+@property (nonatomic, assign) CGSize size;
+@property (nonatomic, assign) CGPoint point;
+@property (nonatomic, assign) VVTestUnion un;
+@property (nonatomic, assign) VVTestStruct stru;
+@property (nonatomic, assign) char *str;
+@property (nonatomic, assign) void *unknown;
+@property (nonatomic, assign) char sa;
+
+@end

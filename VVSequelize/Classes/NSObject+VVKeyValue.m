@@ -7,7 +7,32 @@
 
 #import "NSObject+VVKeyValue.h"
 #import "VVSequelize.h"
-#import <objc/runtime.h>
+#import "VVClassInfo.h"
+
+@interface NSData (VVKeyValue)
+
++ (NSData *)dataWithValue:(NSValue*)value;
+
++ (NSData *)dataWithNumber:(NSNumber*)number;
+
+@end
+
+@implementation NSData (VVKeyValue)
++ (NSData *)dataWithValue:(NSValue*)value{
+    NSUInteger size;
+    const char* encoding = [value objCType];
+    NSGetSizeAndAlignment(encoding, &size, NULL);
+    void* ptr = malloc(size);
+    [value getValue:ptr];
+    NSData* data = [NSData dataWithBytes:ptr length:size];
+    free(ptr);
+    return data;
+}
+
++ (NSData *)dataWithNumber:(NSNumber*)number{
+    return [NSData dataWithValue:(NSValue*)number];
+}
+@end
 
 @interface VVMapper : NSObject
 @property (nonatomic, copy) NSString *pk;
@@ -20,89 +45,29 @@
 
 @end
 
-
-@interface VVMapperPool : NSObject
-
-/**
- 存储模型中,字段与类的映射关系
- 
- @return 映射关系, 格式为{class:{field1:class1,field2,class2,...}}
- @note 直接通过Runtime反射获取类名.
- */
-@property (nonatomic, strong) NSMutableDictionary *defaultPool;
-
-/**
- 存储模型中,NSArray/NSSet等集合类型中的对象的对应的类
- 
- @return 映射关系, 格式为{class:{arrayField:arrayObjClass,setField,setOjbClass,...}}
- @note 第一次调用[obj vv_keyValues]时,会将映射关系存储在customPool中.
- @attention NSArray/NSSet集合中必须是同一种类型的数据
- */
-@property (nonatomic, strong) NSMutableDictionary *customPool;
-
-@end
-
-@implementation VVMapperPool
-
-+ (instancetype)shared{
-    static VVMapperPool *_shared;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _shared = [[VVMapperPool alloc] init];
-    });
-    return _shared;
-}
-
-- (instancetype)init{
-    self = [super init];
-    if (self) {
-        _defaultPool = [NSMutableDictionary dictionaryWithCapacity:0];
-        _customPool = [NSMutableDictionary dictionaryWithCapacity:0];
-    }
-    return self;
-}
-
-@end
-
 @implementation NSObject (VVKeyValue)
 
 - (NSDictionary *)vv_keyValues{
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+    VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
     unsigned int propsCount;
     objc_property_t *props = class_copyPropertyList([self class], &propsCount);//获得属性列表
     for(int i = 0;i < propsCount; i++){
         objc_property_t prop = props[i];
         NSString *propName = [NSString stringWithUTF8String:property_getName(prop)];//获得属性的名称
-        id value = [self valueForKey:propName];
-        if([value isKindOfClass:[NSNull class]]){
-            value = nil;
-        }
-        else if([value isKindOfClass:[NSArray class]]
-                || [value isKindOfClass:[NSSet class]]){
-            NSArray *tempArray = value;
-            if([value isKindOfClass:[NSSet class]]){
-                NSSet *set = value;
-                tempArray = set.allObjects;
-            }
-            NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-            for (NSObject *obj in tempArray) {
-                id val = [obj vv_value];
-                if(val) [array addObject:val];
-            }
-            value = array;
-        }
-        else{
-            value = [value vv_value];
-        }
-        dic[propName] = value;
+        VVPropertyInfo *properyInfo = info.propertyInfos[propName];
+        dic[propName] = [self valueForProperty:properyInfo];
     }
-    free(props);
+    if(props){
+        free(props);
+        props = NULL;
+    }
     return dic;
 }
 
 + (instancetype)vv_objectWithKeyValues:(NSDictionary<NSString *, id> *)keyValues{
     NSObject *obj = [[self alloc] init];
-    NSDictionary *mapper = [self mapper];
+    NSDictionary *mapper = nil; //TODO: [self mapper];
     NSDictionary *custommapper = [self customMapper];
     for (NSString *key in keyValues.allKeys) {
         id value = keyValues[key];
@@ -167,33 +132,6 @@
 }
 
 //MARK: - Private
-+ (NSDictionary *)mapper{
-    NSString *className = NSStringFromClass(self);
-    NSMutableDictionary *_mapper = [[VVMapperPool shared].defaultPool objectForKey:className];
-    if(_mapper) return _mapper;
-    _mapper = [NSMutableDictionary dictionaryWithCapacity:0];
-    unsigned int propsCount;
-    objc_property_t *props = class_copyPropertyList(self, &propsCount);//获得属性列表
-    for(int i = 0;i < propsCount; i++){
-        objc_property_t prop = props[i];
-        NSString *name = [NSString stringWithUTF8String:property_getName(prop)];//名称
-        NSString *attrs = [NSString stringWithUTF8String:property_getAttributes(prop)];//属性
-        if([attrs hasPrefix:@"T@\""]){
-            NSArray *temp = [attrs componentsSeparatedByString:@"\""];
-            NSString *classname = temp[1];
-            Class cls = NSClassFromString(classname);
-            if(cls && !([cls isEqual:[NSString class]]
-                        || [cls isEqual:[NSNumber class]]
-                        || [cls isEqual:[NSData class]])) {
-                _mapper[name] = cls;
-            }
-        }
-    }
-    free(props);
-    [[VVMapperPool shared].defaultPool setObject:_mapper forKey:className];
-    return _mapper;
-}
-
 /**
  Array/Set中需要转换的模型类
 
@@ -202,7 +140,12 @@
  */
 + (NSDictionary *)customMapper{
     NSString *className = NSStringFromClass(self);
-    NSMutableDictionary *_mapper = [[VVMapperPool shared].customPool objectForKey:className];
+    static NSMutableDictionary *_mapperPool;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _mapperPool = [NSMutableDictionary dictionaryWithCapacity:0];
+    });
+    NSMutableDictionary *_mapper = [_mapperPool objectForKey:className];
     if(_mapper) return _mapper;
     NSDictionary *tempDic = nil;
     NSArray *mapperSelectors = @[@"mj_objectClassInArray",      // MJExtension
@@ -228,29 +171,95 @@
         _mapper[key] = [val isKindOfClass:NSString.class] ? NSClassFromString(val) : val;
     }
     if(_mapper.count == 0) return nil;
-    [[VVMapperPool shared].customPool setObject:_mapper forKey:className];
+    [_mapperPool setObject:_mapper forKey:className];
     return _mapper;
 }
 
-- (id)vv_value{
-    if([self isKindOfClass:[NSNull class]]){
-        return nil;
-    }
-    else if([self isKindOfClass:[NSString class]]
-       || [self isKindOfClass:[NSNumber class]]
-       || [self isKindOfClass:[NSDictionary class]]
-       || [self isKindOfClass:[NSData class]]){
-        return self;
-    }
-    else if([self isKindOfClass:[NSDate class]]){
-        NSDate *date = (NSDate *)self;
-        return @([date timeIntervalSince1970]);
-    }
-    else{
-        return self.vv_keyValues;
+- (id)vv_targetValue{
+    VVEncodingNSType nstype = VVClassGetNSType(self.class);
+    switch (nstype) {
+        case VVEncodingTypeNSDate: //NSDate转换为NSTimeInterval
+            return @([(NSDate *)self timeIntervalSince1970]);
+            
+        case VVEncodingTypeNSURL:  //NSURL转换为字符串
+            return [(NSURL *)self relativeString];
+
+        case VVEncodingTypeNSArray:
+        case VVEncodingTypeNSMutableArray:
+        case VVEncodingTypeNSSet:
+        case VVEncodingTypeNSMutableSet:
+        {
+            id<NSFastEnumeration> colletion = (id<NSFastEnumeration>)self;
+            NSMutableArray *vals = [NSMutableArray arrayWithCapacity:0];
+            for (id obj in colletion) {
+                id subval = [obj vv_targetValue];
+                if(subval) [vals addObject:subval];
+            }
+            return vals;
+        }
+
+        case VVEncodingTypeNSDictionary:
+        case VVEncodingTypeNSMutableDictionary:
+        {
+            NSDictionary *dic = (NSDictionary *)self;
+            NSMutableDictionary *vals = [NSMutableDictionary dictionaryWithCapacity:0];
+            for (NSString *key in dic.allKeys) {
+                vals[key] = [dic[key] vv_targetValue];
+            }
+            return vals;
+        }
+            
+        case VVEncodingTypeNSValue:{
+            return [NSData dataWithValue:(NSValue *)self];
+        }
+
+        case VVEncodingTypeNSUnknown:{
+            return [self vv_keyValues];
+        }
+            
+        default:
+            return self;
     }
 }
 
+- (id)valueForProperty:(VVPropertyInfo *)properytyInfo {
+    id value = [self valueForKey:properytyInfo.name];
+    if([value isKindOfClass:[NSNull class]]) return nil;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    switch (properytyInfo.type) {
+        case VVEncodingTypeCNumber:
+            return value;
+            
+        case VVEncodingTypeCString:{
+            char *str = (char *)(__bridge void *)[self performSelector:properytyInfo.getter];
+            return [NSString stringWithCString:str encoding:NSUTF8StringEncoding];
+        }
+
+        case VVEncodingTypeSEL:{
+            SEL selector = (__bridge void *)[self performSelector:properytyInfo.getter];
+            if(selector) return NSStringFromSelector(selector);
+        }
+
+        case VVEncodingTypeStruct:
+            return [NSData dataWithValue:value];
+
+        case VVEncodingTypeUnion:{
+            void *t = (__bridge void *)[self performSelector:properytyInfo.getter];
+            const char *objCType = [properytyInfo.typeEncoding cStringUsingEncoding:NSUTF8StringEncoding];
+            NSValue *val = [NSValue value:t withObjCType:objCType];
+            return [NSData dataWithValue:val];
+        }
+
+        case VVEncodingTypeObject:
+            return [value vv_targetValue];
+            
+        default:
+            break;
+    }
+#pragma clang diagnostic pop
+    return nil;
+}
 
 - (void)setValue:(id)value forUndefinedKey:(NSString *)key{
     // do Nothing

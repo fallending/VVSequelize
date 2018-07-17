@@ -10,6 +10,7 @@
 #import "MJExtension.h"
 #import "YYModel.h"
 #import <VVSequelize/VVSequelize.h>
+#import <VVSequelize/VVClassInfo.h>
 
 @import XCTest;
 
@@ -23,6 +24,7 @@
 - (void)setUp
 {
     [super setUp];
+    /*
     VVSequelize.loglevel = 2;
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
@@ -53,6 +55,7 @@
                                            tableName:@"mobiles"
                                             dataBase:self.vvdb
                                               atTime:YES];
+     */
      
 }
 
@@ -260,5 +263,34 @@
 //    NSLog(@"now: %@",now);
 }
 
+
+- (void)testTemp{
+    NSLog(@"struct: %s , union: %s ",@encode(VVTestStruct),@encode(VVTestUnion));
+    NSLog(@"NSValue: %s , NSNumber: %s ",@encode(NSValue),@encode(NSNumber));
+    VVClassInfo *info = [VVClassInfo classInfoWithClass:VVTestMix.class];
+    NSLog(@"info: %@",info);
+    VVTestMix *mix = [VVTestMix new];
+    mix.num = @(10);
+    mix.cnum = 9;
+    mix.val = [NSValue valueWithRange:NSMakeRange(0, 20)];
+    mix.decNum = [NSDecimalNumber decimalNumberWithString:@"2.53"];
+    mix.size = CGSizeMake(90, 30);
+    mix.point = CGPointMake(5, 75);
+//    VVTestUnion un;
+//    un.ch = 'a';
+//    mix.un =  un;
+    VVTestStruct stru;
+    stru.ch = 'b';
+    stru.num = 8;
+    mix.stru = stru;
+    NSString *temp = @"hahaha";
+    char *str = (char *)[temp cStringUsingEncoding:NSUTF8StringEncoding];
+    mix.str = str;
+    mix.sa = 'b';
+    mix.unknown = (void *)str;
+    mix.selector = NSSelectorFromString(@"help:");
+    
+    NSLog(@"mix: %@", mix.vv_keyValues);
+}
 @end
 

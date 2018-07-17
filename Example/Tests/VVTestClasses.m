@@ -25,3 +25,6 @@
 
 @end
 
+@implementation VVTestMix
+
+@end
