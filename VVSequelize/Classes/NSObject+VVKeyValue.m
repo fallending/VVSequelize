@@ -175,6 +175,13 @@
     return _mapper;
 }
 
+
+/**
+ 生成当前对象存储时的数据类型
+
+ @return 存储的数据
+ @note NSData->Blob, NSURL->String, Array->JsonString, Dictionary->JsonString, NSValue->Blob, OtherClass->JsonString
+ */
 - (id)vv_targetValue{
     VVEncodingNSType nstype = VVClassGetNSType(self.class);
     switch (nstype) {
@@ -222,6 +229,13 @@
     }
 }
 
+/**
+ 根据属性生成要存储的数据类型
+
+ @param properytyInfo 属性信息
+ @return 存储的数据
+ @note SEL->String, Struct->Blob, Union->Blob, CNumber->Number
+ */
 - (id)valueForProperty:(VVPropertyInfo *)properytyInfo {
     id value = [self valueForKey:properytyInfo.name];
     if([value isKindOfClass:[NSNull class]]) return nil;
