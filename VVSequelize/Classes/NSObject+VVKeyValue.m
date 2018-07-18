@@ -241,6 +241,7 @@
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
     switch (propertyInfo.type) {
         case VVEncodingTypeCNumber:
+        case VVEncodingTypeCRealNumber:
             return value;
             
         case VVEncodingTypeCString:{
@@ -286,6 +287,7 @@
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
     switch (propertyInfo.type) {
         case VVEncodingTypeCNumber:
+        case VVEncodingTypeCRealNumber:
             [self setValue:value forKey:propertyName];
             break;
             

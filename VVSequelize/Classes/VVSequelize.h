@@ -52,4 +52,10 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
 @property (nonatomic, copy, class) VVObjectToKeyValues       objectToKeyValues;        ///< 对象转字典
 @property (nonatomic, copy, class) VVObjectsToKeyValuesArray objectsToKeyValuesArray;  ///< 对象数组转字典数组
 
+
+/**
+ 设置使用NSObject+VVKeyValue
+ */
++ (void)useVVKeyValue;
+
 @end

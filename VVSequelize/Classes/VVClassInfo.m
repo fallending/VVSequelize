@@ -64,9 +64,9 @@ static OS_ALWAYS_INLINE VVEncodingType VVGetEncodingType(const char *typeEncodin
         case 'L': return VVEncodingTypeCNumber;
         case 'q': return VVEncodingTypeCNumber;
         case 'Q': return VVEncodingTypeCNumber;
-        case 'f': return VVEncodingTypeCNumber;
-        case 'd': return VVEncodingTypeCNumber;
-        case 'D': return VVEncodingTypeCNumber;
+        case 'f': return VVEncodingTypeCRealNumber;
+        case 'd': return VVEncodingTypeCRealNumber;
+        case 'D': return VVEncodingTypeCRealNumber;
         case '#': return VVEncodingTypeClass;
         case ':': return VVEncodingTypeSEL;
         case '*': return VVEncodingTypeCString;

@@ -12,6 +12,7 @@ typedef NS_ENUM(NSUInteger, VVEncodingType) {
     VVEncodingTypeUnknown = 0,  ///< unknown
     VVEncodingTypeVoid,         ///< void
     VVEncodingTypeCNumber,      ///< bool /char / unsigned char ....
+    VVEncodingTypeCRealNumber,  ///< float / double ..
     VVEncodingTypeObject,       ///< id
     VVEncodingTypeClass,        ///< Class
     VVEncodingTypeSEL,          ///< SEL
