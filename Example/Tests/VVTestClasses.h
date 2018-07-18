@@ -52,7 +52,7 @@
 @end
 
 typedef union TestUnion{
-    uint8_t num;
+    uint32_t num;
     char    ch;
 } VVTestUnion;
 

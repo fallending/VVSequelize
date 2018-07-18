@@ -265,10 +265,6 @@
 
 
 - (void)testTemp{
-    NSLog(@"struct: %s , union: %s ",@encode(VVTestStruct),@encode(VVTestUnion));
-    NSLog(@"NSValue: %s , NSNumber: %s ",@encode(NSValue),@encode(NSNumber));
-    VVClassInfo *info = [VVClassInfo classInfoWithClass:VVTestMix.class];
-    NSLog(@"info: %@",info);
     VVTestMix *mix = [VVTestMix new];
     mix.num = @(10);
     mix.cnum = 9;
@@ -276,21 +272,33 @@
     mix.decNum = [NSDecimalNumber decimalNumberWithString:@"2.53"];
     mix.size = CGSizeMake(90, 30);
     mix.point = CGPointMake(5, 75);
-//    VVTestUnion un;
-//    un.ch = 'a';
-//    mix.un =  un;
+    VVTestUnion un;
+    un.num = 65535;
+    mix.un =  un;
     VVTestStruct stru;
-    stru.ch = 'b';
+    stru.ch = 'x';
     stru.num = 8;
     mix.stru = stru;
     NSString *temp = @"hahaha";
-    char *str = (char *)[temp cStringUsingEncoding:NSUTF8StringEncoding];
+    char *str = (char *)[temp UTF8String];
     mix.str = str;
     mix.sa = 'b';
     mix.unknown = (void *)str;
     mix.selector = NSSelectorFromString(@"help:");
-    
-    NSLog(@"mix: %@", mix.vv_keyValues);
+    NSDictionary *mixkvs = mix.vv_keyValues;
+    NSLog(@"mix: %@", mixkvs);
+    VVTestMix *mix2 = [VVTestMix vv_objectWithKeyValues:mixkvs];
+    NSLog(@"mix2: %@",mix2);
+}
+
+- (void)testTemp2{
+    VVTestUnion un;
+    un.ch = 3;
+
+    NSValue *value = [NSValue valueWithBytes:&un objCType:@encode(VVTestUnion)];
+    VVTestUnion ne;
+    [value getValue:&ne];
+    NSLog(@"value: %@",value);
 }
 @end
 

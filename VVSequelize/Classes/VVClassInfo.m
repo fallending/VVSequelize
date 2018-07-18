@@ -224,7 +224,7 @@ VVEncodingNSType VVClassGetNSType(Class cls) {
         _metaCls = objc_getMetaClass(class_getName(cls));
     }
     _name = NSStringFromClass(cls);
-    [self updatePropertyInfos];
+    [self updateInfos];
     return self;
 }
 
@@ -253,7 +253,7 @@ VVEncodingNSType VVClassGetNSType(Class cls) {
     return info;
 }
 
-- (void)updatePropertyInfos {
+- (void)updateInfos {
     NSMutableDictionary *propertyInfos = [NSMutableDictionary dictionaryWithCapacity:0];
     unsigned int propertyCount = 0;
     objc_property_t *properties = class_copyPropertyList(self.cls, &propertyCount);

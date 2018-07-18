@@ -8,12 +8,15 @@
 #import "NSObject+VVKeyValue.h"
 #import "VVSequelize.h"
 #import "VVClassInfo.h"
+#import <objc/message.h>
 
 @interface NSData (VVKeyValue)
 
 + (NSData *)dataWithValue:(NSValue*)value;
 
 + (NSData *)dataWithNumber:(NSNumber*)number;
+
++ (NSData *)dataWithDescription:(NSString *)dataDescription;
 
 @end
 
@@ -32,16 +35,48 @@
 + (NSData *)dataWithNumber:(NSNumber*)number{
     return [NSData dataWithValue:(NSValue*)number];
 }
+
++ (NSData *)dataWithDescription:(NSString *)dataDescription {
+    NSString *newStr = [dataDescription stringByReplacingOccurrencesOfString:@" " withString:@""]; //去掉空格
+    NSString *replaceString = [newStr substringWithRange:NSMakeRange(1, newStr.length-2)]; //去掉<>符号
+    const char *hexChar = [replaceString UTF8String]; //转换为 char 字符串
+    Byte *bt = malloc(sizeof(Byte)*(replaceString.length/2)); // 开辟空间 用来存放 转换后的byte
+    char tmpChar[3] = {'\0','\0','\0'};
+    int btIndex = 0;
+    for (int i=0; i<replaceString.length; i += 2) {
+        tmpChar[0] = hexChar[i];
+        tmpChar[1] = hexChar[i+1];
+        bt[btIndex] = strtoul(tmpChar, NULL, 16); // 将 hexstring 转换为 byte 的c方法 16 为16进制
+        btIndex ++;
+    }
+    NSData *data = [NSData dataWithBytes:bt length:btIndex]; //创建 nsdata 对象
+    free(bt); //释放空间
+    return data;
+}
+
 @end
 
-@interface VVMapper : NSObject
-@property (nonatomic, copy) NSString *pk;
-@property (nonatomic, copy) NSString *className;
-@property (nonatomic, copy) NSString *field;
-@property (nonatomic, copy) NSString *fieldClass;
+@interface NSValue (VVKeyValue)
+
+- (NSString *)vv_encodedString;
+
++ (instancetype)vv_decodedWithString:(NSString *)encodedString;
+
 @end
 
-@implementation VVMapper
+@implementation NSValue (VVKeyValue)
+- (NSString *)vv_encodedString{
+    NSData *data = [NSData dataWithValue:self];
+    return [NSString stringWithFormat:@"%s|%@",self.objCType,data];
+}
+
++ (instancetype)vv_decodedWithString:(NSString *)encodedString{
+    NSArray *array = [encodedString componentsSeparatedByString:@"|"];
+    if(array.count != 2) return nil;
+    NSData *data = [NSData dataWithDescription:array[1]];
+    char *objCType = (char *)[array[0] UTF8String];
+    return [NSValue valueWithBytes:data.bytes objCType:objCType];
+}
 
 @end
 
@@ -67,49 +102,11 @@
 
 + (instancetype)vv_objectWithKeyValues:(NSDictionary<NSString *, id> *)keyValues{
     NSObject *obj = [[self alloc] init];
-    NSDictionary *mapper = nil; //TODO: [self mapper];
-    NSDictionary *custommapper = [self customMapper];
+    VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
     for (NSString *key in keyValues.allKeys) {
-        id value = keyValues[key];
-        Class cls = mapper[key];
-        if(cls){
-            if([cls isEqual:[NSDate class]]){
-                if([value isKindOfClass:[NSNumber class]] ||
-                   [value isKindOfClass:[NSString class]]){
-                    NSTimeInterval interval = [value doubleValue];
-                    value = [NSDate dateWithTimeIntervalSince1970:interval];
-                }
-                else if(![value isKindOfClass:[NSDate class]]){
-                    value = nil;
-                }
-            }
-            else {
-                id jsonObj = nil;
-                value = nil;
-                if([value isKindOfClass:[NSString class]]){
-                    NSData *data = [[NSData alloc] initWithBase64EncodedString:value options:0];
-                    if(data){
-                        jsonObj = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-                    }
-                }
-                if([cls isEqual:[NSArray class]]
-                   || [cls isEqual:[NSSet class]]){
-                    Class subCls = custommapper[key];
-                    if(subCls && jsonObj && [jsonObj isKindOfClass:[NSArray class]]){
-                        NSArray *tempArray = [subCls vv_objectsWithKeyValuesArray:jsonObj];
-                        value = [cls isEqual:[NSSet class]]? [NSSet setWithArray:tempArray] : tempArray;
-                    }
-                }
-                else if([cls isEqual:[NSDictionary class]]){
-                    if(jsonObj && [jsonObj isKindOfClass:[NSDictionary class]]) value = jsonObj;
-                }
-                else if(jsonObj && [jsonObj isKindOfClass:[NSDictionary class]]){
-                    value = [cls vv_objectWithKeyValues:jsonObj];
-                }
-            }
-        }
-        if(!([value isKindOfClass:[NSNull class]] || value == nil)){
-            [obj setValue:value forKey:key];
+        VVPropertyInfo *propertyInfo = info.propertyInfos[key];
+        if (propertyInfo) {
+            [obj setValue:keyValues[key] forProperty:propertyInfo];
         }
     }
     return obj;
@@ -217,7 +214,8 @@
         }
             
         case VVEncodingTypeNSValue:{
-            return [NSData dataWithValue:(NSValue *)self];
+            NSValue *val = (NSValue *)self;
+            return [val vv_encodedString];
         }
 
         case VVEncodingTypeNSUnknown:{
@@ -232,37 +230,38 @@
 /**
  根据属性生成要存储的数据类型
 
- @param properytyInfo 属性信息
+ @param propertyInfo 属性信息
  @return 存储的数据
  @note SEL->String, Struct->Blob, Union->Blob, CNumber->Number
  */
-- (id)valueForProperty:(VVPropertyInfo *)properytyInfo {
-    id value = [self valueForKey:properytyInfo.name];
+- (id)valueForProperty:(VVPropertyInfo *)propertyInfo {
+    id value = [self valueForKey:propertyInfo.name];
     if([value isKindOfClass:[NSNull class]]) return nil;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-    switch (properytyInfo.type) {
+    switch (propertyInfo.type) {
         case VVEncodingTypeCNumber:
             return value;
             
         case VVEncodingTypeCString:{
-            char *str = (char *)(__bridge void *)[self performSelector:properytyInfo.getter];
+            char *str = (char *)(__bridge void *)[self performSelector:propertyInfo.getter];
             return [NSString stringWithCString:str encoding:NSUTF8StringEncoding];
         }
 
         case VVEncodingTypeSEL:{
-            SEL selector = (__bridge void *)[self performSelector:properytyInfo.getter];
+            SEL selector = (__bridge void *)[self performSelector:propertyInfo.getter];
             if(selector) return NSStringFromSelector(selector);
         }
 
-        case VVEncodingTypeStruct:
-            return [NSData dataWithValue:value];
+        case VVEncodingTypeStruct:{
+            return [(NSValue *)value vv_encodedString];
+        }
 
         case VVEncodingTypeUnion:{
-            void *t = (__bridge void *)[self performSelector:properytyInfo.getter];
-            const char *objCType = [properytyInfo.typeEncoding cStringUsingEncoding:NSUTF8StringEncoding];
-            NSValue *val = [NSValue value:t withObjCType:objCType];
-            return [NSData dataWithValue:val];
+            size_t t = ((size_t (*)(id, SEL))(void *) objc_msgSend)(self, propertyInfo.getter);
+            const char *objCType = [propertyInfo.typeEncoding UTF8String];
+            NSValue *val = [NSValue valueWithBytes:&t objCType:objCType];
+            return [val vv_encodedString];
         }
 
         case VVEncodingTypeObject:
@@ -273,6 +272,159 @@
     }
 #pragma clang diagnostic pop
     return nil;
+}
+
+/**
+ 将存储的数据转换为原数据
+
+ @param propertyInfo 属性信息
+ */
+- (void)setValue:(id)value forProperty:(VVPropertyInfo *)propertyInfo {
+    NSString *propertyName = propertyInfo.name;
+    if(value == nil || [value isKindOfClass:[NSNull class]]) return;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    switch (propertyInfo.type) {
+        case VVEncodingTypeCNumber:
+            [self setValue:value forKey:propertyName];
+            break;
+            
+        case VVEncodingTypeCString:
+            if([value isKindOfClass:[NSString class]]){
+                const char *str = [(NSString *)value UTF8String];
+                ((void (*)(id, SEL, const char *))(void *) objc_msgSend)(self, propertyInfo.setter, str);
+            }
+            break;
+            
+        case VVEncodingTypeSEL:
+            if([value isKindOfClass:[NSString class]]){
+                SEL selector = NSSelectorFromString(value);
+                ((void (*)(id, SEL, void *))(void *) objc_msgSend)(self, propertyInfo.setter, (void *)selector);
+            }
+            break;
+            
+        case VVEncodingTypeStruct:
+            if([value isKindOfClass:[NSString class]]) {
+                NSValue *val = [NSValue vv_decodedWithString:value];
+                [self setValue:val forKey:propertyName];
+            }
+            break;
+            
+        case VVEncodingTypeUnion:
+            if([value isKindOfClass:[NSString class]]) {
+                NSValue *val = [NSValue vv_decodedWithString:value];
+                size_t t;
+                [val getValue:&t];
+                ((void (*)(id, SEL, size_t))(void *) objc_msgSend)(self, propertyInfo.setter, t);
+            }
+            break;
+
+        case VVEncodingTypeObject:{
+            VVEncodingNSType nstype = propertyInfo.nsType;
+            switch (nstype) {
+                case VVEncodingTypeNSDate: //NSDate转换为NSTimeInterval
+                    if([value isKindOfClass:[NSNumber class]]){
+                        NSTimeInterval interval = [(NSNumber *)value doubleValue];
+                        NSDate *date = [NSDate dateWithTimeIntervalSince1970:interval];
+                        [self setValue:date forKey:propertyName];
+                    }
+                    else if([value isKindOfClass:[NSDate class]]){
+                        [self setValue:value forKey:propertyName];
+                    }
+                    break;
+                    
+                case VVEncodingTypeNSURL:  //NSURL转换为字符串
+                    if([value isKindOfClass:[NSNumber class]]){
+                        NSURL *url = [NSURL URLWithString:value];
+                        if(url) [self setValue:url forKey:propertyName];
+                    }
+                    break;
+                    
+                case VVEncodingTypeNSArray:
+                case VVEncodingTypeNSMutableArray:
+                {
+                    NSArray *tempArray = nil;
+                    if([value isKindOfClass:[NSArray class]]) tempArray = value;
+                    else if([value isKindOfClass:[NSString class]]){
+                        NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
+                        tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    }
+                    if(tempArray && [tempArray isKindOfClass:[NSArray class]]){
+                        NSDictionary *mapper = [[self class] customMapper];
+                        Class cls = mapper[propertyName];
+                        NSArray *array = cls ? [cls vv_objectsWithKeyValuesArray:tempArray] : tempArray;
+                        [self setValue:array forKey:propertyName];
+                    }
+                } break;
+                
+                case VVEncodingTypeNSSet:
+                case VVEncodingTypeNSMutableSet:
+                {
+                    NSArray *tempArray = nil;
+                    if([value isKindOfClass:[NSArray class]]) tempArray = value;
+                    else if([value isKindOfClass:[NSString class]]){
+                        NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
+                        tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    }
+                    if(tempArray && [tempArray isKindOfClass:[NSArray class]]){
+                        NSDictionary *mapper = [[self class] customMapper];
+                        Class cls = mapper[propertyName];
+                        NSArray *array = cls ? [cls vv_objectsWithKeyValuesArray:tempArray] : tempArray;
+                        NSMutableSet *set = [NSMutableSet setWithArray:array];
+                        [self setValue:set forKey:propertyName];
+                    }
+                } break;
+
+                case VVEncodingTypeNSDictionary:
+                case VVEncodingTypeNSMutableDictionary:
+                {
+                    NSDictionary *tempDic = nil;
+                    if([value isKindOfClass:[NSDictionary class]]) tempDic = value;
+                    else if([value isKindOfClass:[NSString class]]){
+                        NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
+                        tempDic = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    }
+                    NSMutableDictionary *dic = [tempDic mutableCopy];
+                    [self setValue:dic forKey:propertyName];
+                }
+                    
+                case VVEncodingTypeNSValue:
+                    if([value isKindOfClass:[NSString class]]) {
+                        NSValue *val = [NSValue vv_decodedWithString:value];
+                        [self setValue:val forKey:propertyName];
+                    }
+                    break;
+                    
+                case VVEncodingTypeNSUnknown:{
+                    Class cls = propertyInfo.cls;
+                    if(!cls){
+                        NSDictionary *mapper = [[self class] customMapper];
+                        cls = mapper[propertyName];
+                    }
+                    if(cls){
+                        if([value isKindOfClass:[NSDictionary class]]){
+                            id obj = [cls vv_objectWithKeyValues:value];
+                            if(obj) [self setValue:obj forKey:propertyName];
+                        }
+                        else if([value isKindOfClass:cls]){
+                            [self setValue:value forKey:propertyName];
+                        }
+                    }
+                }
+                
+                case VVEncodingTypeNSUndefined:
+                    break;
+                    
+                default:
+                    [self setValue:value forKey:propertyName];
+                    break;
+            }
+        } break;
+            
+        default:
+            break;
+    }
+#pragma clang diagnostic pop
 }
 
 - (void)setValue:(id)value forUndefinedKey:(NSString *)key{
