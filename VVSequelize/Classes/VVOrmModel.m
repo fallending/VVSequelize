@@ -123,10 +123,10 @@
     }
     NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:0];
     VVClassInfo *classInfo = [VVClassInfo classInfoWithClass:_cls];
-    for (VVPropertyInfo *propertyInfo in classInfo.propertyInfos) {
-        VVOrmSchemaItem *column = manualColumns[propertyInfo.name] ? manualColumns[propertyInfo.name] : [VVOrmSchemaItem new];
-        column.name = propertyInfo.name;
-        column.type = [self sqliteTypeForPropertyInfo:propertyInfo];
+    for (NSString *propertyName in classInfo.propertyInfos) {
+        VVOrmSchemaItem *column = manualColumns[propertyName] ? manualColumns[propertyName] : [VVOrmSchemaItem new];
+        column.name = propertyName;
+        column.type = [self sqliteTypeForPropertyInfo:classInfo.propertyInfos[propertyName]];
         dic[column.name] = column;
     }
     return dic;

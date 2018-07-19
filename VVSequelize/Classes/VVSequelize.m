@@ -92,7 +92,7 @@ static NSInteger _loglevel = 0;
         return [cls vv_objectWithKeyValues:dic];
     }];
     [VVSequelize setKeyValuesArrayToObjects:^NSArray *(Class cls, NSArray *dicArray) {
-        return [NSArray vv_objectsWithKeyValuesArray:dicArray];
+        return [cls vv_objectsWithKeyValuesArray:dicArray];
     }];
     [VVSequelize setObjectToKeyValues:^id(Class cls, id object) {
         return [object vv_keyValues];

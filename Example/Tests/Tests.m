@@ -24,8 +24,9 @@
 - (void)setUp
 {
     [super setUp];
-    /*
+    
     VVSequelize.loglevel = 2;
+    /*
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
     }];
@@ -38,6 +39,9 @@
     [VVSequelize setObjectsToKeyValuesArray:^NSArray *(Class cls, NSArray *objects) {
         return [cls mj_keyValuesArrayWithObjectArray:objects];
     }];
+     */
+    
+    [VVSequelize useVVKeyValue];
     
     NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
     NSString *targetPath = [path stringByAppendingPathComponent:@"mobiles.sqlite"];
@@ -54,9 +58,7 @@
                                             excludes:nil
                                            tableName:@"mobiles"
                                             dataBase:self.vvdb
-                                              atTime:YES];
-     */
-     
+                                              logAt:YES];
 }
 
 - (void)tearDown
@@ -186,7 +188,7 @@
                                                     excludes:nil
                                                    tableName:@"persons"
                                                     dataBase:nil
-                                                      atTime:YES];
+                                                      logAt:YES];
     NSUInteger maxrowid = [personModel1 maxRowid];
 //    NSLog(@"%@", personModel);
     NSLog(@"maxrowid: %@", @(maxrowid));
@@ -222,13 +224,14 @@
 
 - (void)testExample
 {
+    NSDate *now = [NSDate date];
     VVTestPerson *person = [VVTestPerson new];
     person.idcard = @"123123";
     person.name = @"zhangsan";
     person.age = 19;
-    person.birth = [NSDate date];
+    person.birth = now;
     person.mobile = @"123123123";
-    NSDictionary *dic = person.mj_keyValues;
+    NSDictionary *dic = person.vv_keyValues;
     NSLog(@"%@",dic);
 //    XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
 }
