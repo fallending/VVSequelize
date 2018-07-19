@@ -70,7 +70,7 @@ self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
                                         excludes:nil
                                        tableName:@"mobiles"
                                         dataBase:self.vvdb
-                                          atTime:YES];
+                                          logAt:YES];
 
 ```
 3. 使用ORM模型进行增删改查等操作.示例如下

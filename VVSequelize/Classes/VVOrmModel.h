@@ -81,7 +81,7 @@
  @param excludes 不存入数据表的字段名
  @param tableName 表名,nil表示使用cls类名
  @param vvdb 数据库,nil表示使用默认数据库
- @param atTime 是否将vv_createAt,vv_updateAt添加至每条数据,用于记录插入时间,更新时间,默认为YES
+ @param logAt 是否将vv_createAt,vv_updateAt添加至每条数据,用于记录插入时间,更新时间,默认为YES
  @return ORM模型
  @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
@@ -90,7 +90,7 @@
                          excludes:(nullable NSArray *)excludes
                         tableName:(nullable NSString *)tableName
                          dataBase:(nullable VVDataBase *)vvdb
-                           atTime:(BOOL)atTime;
+                            logAt:(BOOL)logAt;
 
 /**
  检查数据表是否存在
@@ -105,7 +105,7 @@
 
 /**
  新增一条数据,对象或字典
-
+ 
  @param object 要新增的数据对象,对象或字典
  @return 是否新增成功
  */
@@ -113,7 +113,7 @@
 
 /**
  新增多条数据
-
+ 
  @param objects 要新增的数据,数据/字典/混合数组
  @return 新增成功的条数
  @note 每条数据依次插入
@@ -224,7 +224,6 @@
  */
 - (NSArray *)findAll:(nullable NSDictionary *)condition;
 
-
 /**
  根据条件查询数据
  
@@ -253,6 +252,23 @@
              orderBy:(nullable NSDictionary *)orderBy
                range:(NSRange)range;
 
+/**
+ 根据条件查询数据
+ 
+ @param condition 查询条件,格式详见VVSqlGenerator
+ @param fields 指定查询的字段
+ @param orderBy 排序方式
+ @param range 数据范围,用于翻页,range.length为0时,查询所有数据
+ @param jsonResult 是否强制返回JsonOjbects.YES-强制返回JsonObject,NO-根据fields参数确定返回结果
+ @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
+ @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
+ @attention 若使用VVKeyValue作为对象/字典互转工具,某些数据转成字典后为NSData的描述字符串,不能直接使用.
+ */
+- (NSArray *)findAll:(nullable NSDictionary *)condition
+              fields:(nullable NSArray<NSString *> *)fields
+             orderBy:(nullable NSDictionary *)orderBy
+               range:(NSRange)range
+          jsonResult:(BOOL)jsonResult;
 
 /**
  根据条件统计数据条数
@@ -261,7 +277,6 @@
  @return 数据条数
  */
 - (NSInteger)count:(nullable NSDictionary *)condition;
-
 
 /**
  检查数据库中是否保存有某个数据
@@ -285,7 +300,7 @@
 
 /**
  最大行号`max(rowid)`
-
+ 
  @return 最大行号
  @discussion 此处取`max(rowid)`可以做唯一值, `max(rowid) + 1`为下一条将插入的数据的自动主键值.
  */
@@ -342,7 +357,6 @@
  @return 是否删除成功
  */
 - (BOOL)deleteMulti:(nullable NSArray *)objects;
-
 
 /**
  根据条件删除数据

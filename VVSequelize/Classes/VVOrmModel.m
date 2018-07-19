@@ -64,7 +64,7 @@
 @property (nonatomic, copy  ) NSArray *excludes;
 @property (nonatomic        ) Class cls;
 @property (nonatomic, copy  ) NSString *primaryKey;
-@property (nonatomic, assign) BOOL atTime;
+@property (nonatomic, assign) BOOL logAt;
 
 @property (nonatomic, assign) BOOL isDropped; ///< ormModel对应的表是否被drop
 
@@ -215,7 +215,7 @@
         VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
         [manuals addObject:column];
     }
-    return [self ormModelWithClass:cls manuals:manuals excludes:nil tableName:tableName dataBase:db atTime:YES];
+    return [self ormModelWithClass:cls manuals:manuals excludes:nil tableName:tableName dataBase:db logAt:YES];
 }
 
 + (instancetype)ormModelWithClass:(Class)cls
@@ -223,7 +223,7 @@
                          excludes:(NSArray *)excludes
                         tableName:(NSString *)tableName
                          dataBase:(VVDataBase *)vvdb
-                           atTime:(BOOL)atTime{
+logAt:(BOOL)logAt{
     if(!cls) return nil;
     NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
     VVDataBase   *db = vvdb ? vvdb : VVDataBase.defalutDb;
@@ -242,7 +242,7 @@
     model.vvdb = db;
     model.manuals = manuals;
     model.excludes = excludes;
-    model.atTime = atTime;
+    model.logAt = logAt;
     [model createOrModifyTable];
     [[VVOrmModel modelPool] setObject:model forKey:poolKey];
     return model;
@@ -315,7 +315,7 @@
             if(column.unique) [uniqueColumns addObject:column];
             if(column.pk) _primaryKey = column.name;
         }
-        if(_atTime){
+        if(_logAt){
             [columnsString appendFormat:@"\"%@\" REAL,",kVsCreateAt]; //创建时间
             [columnsString appendFormat:@"\"%@\" REAL,",kVsUpdateAt]; //修改时间
         }
@@ -398,7 +398,7 @@
         }
     }];
     if(keyString.length > 1 && valString.length > 1){
-        if(_atTime){
+        if(_logAt){
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
             [keyString appendFormat:@"\"%@\",",kVsCreateAt];
             [valString appendFormat:@"?,"];
@@ -440,7 +440,7 @@
         }
     }];
     if (setString.length > 1) {
-        if(_atTime){
+        if(_logAt){
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
             [setString appendFormat:@"\"%@\" = ?,",kVsUpdateAt];
             [objs addObject:@(now)];
@@ -503,7 +503,7 @@
     if(self.isDropped) {[self createOrModifyTable];}
     NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\" %@ %@",
                                   field, field, value > 0 ? @"+": @"-", @(ABS(value))];
-    if(_atTime){
+    if(_logAt){
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
         [setString appendFormat:@",\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
     }
@@ -543,10 +543,18 @@
     return [self findAll:condition fields:nil orderBy:orderBy range:range];
 }
 
+- (NSArray *)findAll:(nullable NSDictionary *)condition
+              fields:(nullable NSArray<NSString *> *)fields
+             orderBy:(nullable NSDictionary *)orderBy
+               range:(NSRange)range{
+    return [self findAll:condition fields:fields orderBy:orderBy range:range jsonResult:NO];
+}
+
 - (NSArray *)findAll:(NSDictionary *)condition
               fields:(NSArray<NSString *> *)fields
              orderBy:(NSDictionary *)orderBy
-               range:(NSRange)range{
+               range:(NSRange)range
+          jsonResult:(BOOL)jsonResult{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *fieldsStr = @"*";
     if(fields.count > 0){
@@ -564,6 +572,7 @@
     NSString *limit = [VVSqlGenerator limit:range];
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM \"%@\"%@%@%@ ", fieldsStr, _tableName,where,order,limit];
     NSArray *jsonArray = [_vvdb executeQuery:sql blobFields:self.blobs];
+    if(jsonResult) return jsonArray;
     if ([fieldsStr isEqualToString:@"*"] && VVSequelize.keyValuesArrayToObjects) {
         return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
     }
