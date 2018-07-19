@@ -26,11 +26,12 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
 
 /**
  基于FMDB的ORM封装
- @todo 目前`NSObject+VVKeyValue`尚不完善,建议对象模型互转使用其他稳定的第三方库,例如:YYModel,MJExtension
- @attention 若设置了对象模型互转Block,则使用设置的方法,否则使用`NSObject+VVKeyValue`中定义的方法.
- @warning 若项目中使用的对象模型互转定义了字典key和模型属性名的映射关系,则此处应设置另一个模型转对象的方式.
- 
- 例如:项目中使用MJExtension,且要存储数据的类里定义了`mj_replacedKeyFromPropertyName`,那么此处应设置YYModel作为模型转对象的方式
+ @todo `NSObject+VVKeyValue`正在完善中,建议对象/字典互转工具使用其他稳定的第三方库,例如:YYModel,MJExtension
+ @attention 调用`+useVVKeyValue`方法设置使用自带的对象/字典互转工具, 或者依次设置对象/字典互转的4个Block.
+            多次设置,只会使用最后设置的方法.若不设置,查询结果为字典[数组],且某些直接操作对象的方法会直接返回NO.
+ @warning 若项目中使用的对象/字典互转工具定义了字典key和模型属性名的映射关系,则此处应设置另一个对象/字典互转工具.
+          例如:项目中使用MJExtension,且要存储数据的类里定义了`mj_replacedKeyFromPropertyName`,
+              那么此处应调用`+useVVKeyValue`或设置YYModel作为对象/字典互转工具
  */
 @interface VVSequelize : NSObject
 
@@ -46,7 +47,7 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
 + (void)VVVerbose:(NSUInteger)level
            format:(NSString *)fmt, ...;
 
-//MARK: - 对象模型互转
+//MARK: - 对象/字典互转
 @property (nonatomic, copy, class) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
 @property (nonatomic, copy, class) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
 @property (nonatomic, copy, class) VVObjectToKeyValues       objectToKeyValues;        ///< 对象转字典
