@@ -10,18 +10,8 @@
 #import "VVClassInfo.h"
 #import <objc/message.h>
 
-@interface NSData (VVKeyValue)
-
-+ (NSData *)dataWithValue:(NSValue*)value;
-
-+ (NSData *)dataWithNumber:(NSNumber*)number;
-
-+ (NSData *)dataWithDescription:(NSString *)dataDescription;
-
-@end
-
 @implementation NSData (VVKeyValue)
-+ (NSData *)dataWithValue:(NSValue*)value{
++ (NSData *)dataWithValue:(NSValue *)value{
     NSUInteger size;
     const char* encoding = [value objCType];
     NSGetSizeAndAlignment(encoding, &size, NULL);
@@ -32,25 +22,25 @@
     return data;
 }
 
-+ (NSData *)dataWithNumber:(NSNumber*)number{
++ (NSData *)dataWithNumber:(NSNumber *)number{
     return [NSData dataWithValue:(NSValue*)number];
 }
 
 + (NSData *)dataWithDescription:(NSString *)dataDescription {
     NSString *newStr = [dataDescription stringByReplacingOccurrencesOfString:@" " withString:@""]; //去掉空格
-    NSString *replaceString = [newStr substringWithRange:NSMakeRange(1, newStr.length-2)]; //去掉<>符号
+    NSString *replaceString = [newStr substringWithRange:NSMakeRange(1, newStr.length - 2)]; //去掉<>符号
     const char *hexChar = [replaceString UTF8String]; //转换为 char 字符串
-    Byte *bt = malloc(sizeof(Byte)*(replaceString.length/2)); // 开辟空间 用来存放 转换后的byte
+    Byte *byte = malloc(sizeof(Byte) * (replaceString.length / 2)); // 开辟空间 用来存放 转换后的byte
     char tmpChar[3] = {'\0','\0','\0'};
     int btIndex = 0;
-    for (int i=0; i<replaceString.length; i += 2) {
+    for (int i = 0; i< replaceString.length; i += 2) {
         tmpChar[0] = hexChar[i];
-        tmpChar[1] = hexChar[i+1];
-        bt[btIndex] = strtoul(tmpChar, NULL, 16); // 将 hexstring 转换为 byte 的c方法 16 为16进制
+        tmpChar[1] = hexChar[i + 1];
+        byte[btIndex] = strtoul(tmpChar, NULL, 16); // 将 hexstring 转换为 byte 的c方法 16 为16进制
         btIndex ++;
     }
-    NSData *data = [NSData dataWithBytes:bt length:btIndex]; //创建 nsdata 对象
-    free(bt); //释放空间
+    NSData *data = [NSData dataWithBytes:byte length:btIndex]; //创建 nsdata 对象
+    free(byte); //释放空间
     return data;
 }
 
@@ -66,16 +56,59 @@
 
 @implementation NSValue (VVKeyValue)
 - (NSString *)vv_encodedString{
+    NSString *convertStr = @"<unconvertable>";
+    NSString *typeEncoding = [NSString stringWithUTF8String:self.objCType];
+    VVStructType structType = VVStructGetType(typeEncoding);
+    switch (structType) {
+        case VVStructTypeNSRange: convertStr = NSStringFromRange(self.rangeValue); break;
+        case VVStructTypeCGPoint: convertStr = NSStringFromCGPoint(self.CGPointValue); break;
+        case VVStructTypeCGVector: convertStr = NSStringFromCGVector(self.CGVectorValue); break;
+        case VVStructTypeCGSize: convertStr = NSStringFromCGSize(self.CGSizeValue); break;
+        case VVStructTypeCGRect: convertStr = NSStringFromCGRect(self.CGRectValue); break;
+        case VVStructTypeCGAffineTransform: convertStr = NSStringFromCGAffineTransform(self.CGAffineTransformValue); break;
+        case VVStructTypeUIEdgeInsets: convertStr = NSStringFromUIEdgeInsets(self.UIEdgeInsetsValue); break;
+        case VVStructTypeUIOffset: convertStr = NSStringFromUIOffset(self.UIOffsetValue); break;
+        case VVStructTypeNSDirectionalEdgeInsets:
+            if (@available(iOS 11.0, *)) {
+                convertStr = NSStringFromDirectionalEdgeInsets(self.directionalEdgeInsetsValue);
+            }
+            break;
+        default: break;
+    }
     NSData *data = [NSData dataWithValue:self];
-    return [NSString stringWithFormat:@"%s|%@",self.objCType,data];
+    return [NSString stringWithFormat:@"%@|%@|%@",typeEncoding,convertStr,data];
 }
 
 + (instancetype)vv_decodedWithString:(NSString *)encodedString{
     NSArray *array = [encodedString componentsSeparatedByString:@"|"];
-    if(array.count != 2) return nil;
-    NSData *data = [NSData dataWithDescription:array[1]];
+    if(array.count != 3) return nil;
+    NSData *data = [NSData dataWithDescription:array[2]];
     char *objCType = (char *)[array[0] UTF8String];
     return [NSValue valueWithBytes:data.bytes objCType:objCType];
+}
+
+@end
+
+@implementation NSDate (VVKeyValue)
+
++ (NSDateFormatter *)vv_dateFormater{
+    static NSDateFormatter *_dateFormater;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _dateFormater = [[NSDateFormatter alloc] init];
+        _dateFormater.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+        _dateFormater.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
+        _dateFormater.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
+    });
+    return _dateFormater;
+}
+
+- (NSString *)vv_dateString{
+    return [[NSDate vv_dateFormater] stringFromDate: self];
+}
+
++ (instancetype)vv_dateWithString:(NSString *)dateString{
+    return [[NSDate vv_dateFormater] dateFromString:dateString];
 }
 
 @end
@@ -183,7 +216,7 @@
     VVEncodingNSType nstype = VVClassGetNSType(self.class);
     switch (nstype) {
         case VVEncodingTypeNSDate: //NSDate转换为NSTimeInterval
-            return @([(NSDate *)self timeIntervalSince1970]);
+            return [(NSDate *)self vv_dateString];
             
         case VVEncodingTypeNSURL:  //NSURL转换为字符串
             return [(NSURL *)self relativeString];
@@ -325,15 +358,16 @@
             VVEncodingNSType nstype = propertyInfo.nsType;
             switch (nstype) {
                 case VVEncodingTypeNSDate: //NSDate转换为NSTimeInterval
-                    if([value isKindOfClass:[NSNumber class]]){
-                        NSTimeInterval interval = [(NSNumber *)value doubleValue];
-                        NSDate *date = [NSDate dateWithTimeIntervalSince1970:interval];
-                        [self setValue:date forKey:propertyName];
+                {
+                    NSDate *date = nil;
+                    if([value isKindOfClass:[NSDate class]]){
+                        date = value;
                     }
-                    else if([value isKindOfClass:[NSDate class]]){
-                        [self setValue:value forKey:propertyName];
+                    else if([value isKindOfClass:[NSString class]]){
+                        date = [NSDate vv_dateWithString:value];
                     }
-                    break;
+                    if(date) [self setValue:date forKey:propertyName];
+                } break;
                     
                 case VVEncodingTypeNSURL:  //NSURL转换为字符串
                     if([value isKindOfClass:[NSNumber class]]){

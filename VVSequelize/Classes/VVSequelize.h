@@ -12,10 +12,8 @@
 #import "VVCipherHelper.h"
 #import "NSObject+VVKeyValue.h"
 
-#ifdef DEBUG
+#ifndef VVLog
 #define VVLog(level, ...) [VVSequelize VVVerbose:(level) format:__VA_ARGS__]
-#else
-#define VVLog(level, ...)
 #endif
 
 typedef id(^VVKeyValuesToObject)(Class,NSDictionary *);
@@ -35,8 +33,23 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
  */
 @interface VVSequelize : NSObject
 
-//MARK: - 调试信息打印
-@property (nonatomic, assign, class) NSInteger loglevel; ///< 是否打印调试信息,0-不打印,1-仅打印sql,2-打印每次sql结果
+//MARK: - 全局设置
+
+/**
+ 设置调试信息打印等级
+ 
+ @brief 0-不打印,1-仅打印sql,2-打印每次sql结果
+ @attention 若外部定义了VVLog, 则本设置无效.
+ */
+@property (nonatomic, assign, class) NSInteger loglevel;
+
+//MARK: - 对象/字典互转
+@property (nonatomic, copy, class) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
+@property (nonatomic, copy, class) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
+@property (nonatomic, copy, class) VVObjectToKeyValues       objectToKeyValues;        ///< 对象转字典
+@property (nonatomic, copy, class) VVObjectsToKeyValuesArray objectsToKeyValuesArray;  ///< 对象数组转字典数组
+
+//MARK: - 全局方法
 
 /**
  打印调试信息,通过loglevel控制
@@ -47,11 +60,6 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
 + (void)VVVerbose:(NSUInteger)level
            format:(NSString *)fmt, ...;
 
-//MARK: - 对象/字典互转
-@property (nonatomic, copy, class) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
-@property (nonatomic, copy, class) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
-@property (nonatomic, copy, class) VVObjectToKeyValues       objectToKeyValues;        ///< 对象转字典
-@property (nonatomic, copy, class) VVObjectsToKeyValuesArray objectsToKeyValuesArray;  ///< 对象数组转字典数组
 
 
 /**

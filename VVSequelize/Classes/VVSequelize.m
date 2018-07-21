@@ -7,9 +7,10 @@
 
 #import "VVSequelize.h"
 
-static NSInteger _loglevel = 0;
-
 @interface VVSequelizeInnerPrivate: NSObject
+
+@property (nonatomic, assign) NSInteger loglevel;        ///< 调试信息
+@property (nonatomic, assign) BOOL      readability;     ///< DB数据可读性
 
 @property (nonatomic, copy) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
 @property (nonatomic, copy) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
@@ -33,24 +34,14 @@ static NSInteger _loglevel = 0;
     return _innerPrivate;
 }
 
-//MARK: - 调试信息打印
-+ (void)VVVerbose:(NSUInteger)level
-           format:(NSString *)fmt, ...{
-    if(_loglevel > 0 && _loglevel >= level){
-        va_list args;
-        va_start(args, fmt);
-        NSString *string = fmt? [[NSString alloc] initWithFormat:fmt locale:[NSLocale currentLocale] arguments:args]:fmt;
-        va_end(args);
-        NSLog(@"VVSequelize->%@", string);
-    }
-}
+//MARK: - 全局设置
 
 + (NSInteger)loglevel{
-    return _loglevel;
+    return [[self class] innerPrivate].loglevel;
 }
 
 + (void)setLoglevel:(NSInteger)loglevel{
-    _loglevel = loglevel;
+    [[self class] innerPrivate].loglevel = loglevel;
 }
 
 //MARK: - 对象和字典互转
@@ -101,4 +92,18 @@ static NSInteger _loglevel = 0;
         return [cls vv_keyValuesArrayWithObjects:objects];
     }];
 }
+
+//MARK: - 调试信息打印
++ (void)VVVerbose:(NSUInteger)level
+           format:(NSString *)fmt, ...{
+    NSInteger loglevel = [[self class] innerPrivate].loglevel;
+    if(loglevel > 0 && loglevel >= level){
+        va_list args;
+        va_start(args, fmt);
+        NSString *string = fmt? [[NSString alloc] initWithFormat:fmt locale:[NSLocale currentLocale] arguments:args]:fmt;
+        va_end(args);
+        NSLog(@"VVSequelize->%@", string);
+    }
+}
+
 @end

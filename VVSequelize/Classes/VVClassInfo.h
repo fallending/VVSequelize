@@ -44,7 +44,21 @@ typedef NS_ENUM (NSUInteger, VVEncodingNSType) {
     VVEncodingTypeNSUnknown = 999,
 };
 
+typedef NS_ENUM (NSUInteger, VVStructType) {
+    VVStructTypeUnknown = 0,
+    VVStructTypeNSRange,
+    VVStructTypeCGPoint,
+    VVStructTypeCGVector,
+    VVStructTypeCGSize,
+    VVStructTypeCGRect,
+    VVStructTypeCGAffineTransform,
+    VVStructTypeUIEdgeInsets,
+    VVStructTypeUIOffset,
+    VVStructTypeNSDirectionalEdgeInsets,
+};
+
 FOUNDATION_EXPORT VVEncodingNSType VVClassGetNSType(Class cls);
+FOUNDATION_EXPORT VVStructType VVStructGetType(NSString *typeEncodeing);
 
 typedef NS_OPTIONS(NSUInteger, VVPropertyKeyword) {
     VVPropertyKeywordReadonly     = 1 << 0, ///< readonly

@@ -172,7 +172,6 @@
             break;
         case VVEncodingTypeObject:{
             switch (propertyInfo.nsType) {
-                case VVEncodingTypeNSDate:
                 case VVEncodingTypeNSNumber:
                 case VVEncodingTypeNSDecimalNumber:
                     type = VVSqlTypeReal;

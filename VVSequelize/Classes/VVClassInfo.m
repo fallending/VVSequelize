@@ -104,6 +104,24 @@ VVEncodingNSType VVClassGetNSType(Class cls) {
     return VVEncodingTypeNSUnknown;
 }
 
+
+VVStructType VVStructGetType(NSString *typeEncodeing) {
+    if (typeEncodeing.length == 0) return VVStructTypeUnknown;
+    const char *encoding = [typeEncodeing UTF8String];
+    if(strcmp(encoding, @encode(NSRange)) == 0) return VVStructTypeNSRange;
+    if(strcmp(encoding, @encode(CGPoint)) == 0) return VVStructTypeCGPoint;
+    if(strcmp(encoding, @encode(CGVector)) == 0) return VVStructTypeCGVector;
+    if(strcmp(encoding, @encode(CGSize)) == 0) return VVStructTypeCGSize;
+    if(strcmp(encoding, @encode(CGRect)) == 0) return VVStructTypeCGRect;
+    if(strcmp(encoding, @encode(CGAffineTransform)) == 0) return VVStructTypeCGAffineTransform;
+    if(strcmp(encoding, @encode(UIEdgeInsets)) == 0) return VVStructTypeUIEdgeInsets;
+    if(strcmp(encoding, @encode(UIOffset)) == 0) return VVStructTypeUIOffset;
+    if (@available(iOS 11.0, *)) {
+        if(strcmp(encoding, @encode(NSDirectionalEdgeInsets)) == 0) return VVStructTypeNSDirectionalEdgeInsets;
+    }
+    return VVStructTypeUnknown;
+}
+
 @implementation VVPropertyInfo
 - (instancetype)initWithProperty:(objc_property_t)property {
     if (!property) return nil;
