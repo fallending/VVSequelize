@@ -45,7 +45,7 @@ end
 
 此处主要列出一些基本用户,详细用法请阅读代码注释.
 
-1. 设置NSDictionary/NSArray和Object互转. 也可不设置, 则某些操作只能支持 NSDictionary 和 NSArray<NSDictionary *>; _自带和第三方请二选一,谁最后设置就使用谁_, 设置方法如下:
+1. 设置NSDictionary/NSArray和Object互转. 也可不设置, 则某些操作只能支持 NSDictionary 和 NSArray<NSDictionary *>; __自带和第三方请二选一,谁最后设置就使用谁__, 设置方法如下:
 ```objc
 // 设置使用自带的字典/对象互转工具
 [VVSequelize useVVKeyValue];
