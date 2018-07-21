@@ -48,6 +48,7 @@ end
 1. 设置NSDictionary/NSArray和Object互转. 可不设置, 则某些操作只能支持NSDictionary和NSArray<NSDictionary *>
     设置方法如下:
 ```objc
+// __自带和第三方请二选一,谁最后设置就使用谁__
 // 设置使用自带的字典/对象互转工具
 [VVSequelize useVVKeyValue];
 
@@ -65,7 +66,7 @@ end
     return [cls mj_keyValuesArrayWithObjectArray:objects];
 }];
 ```
-__特别注意__
+__特别注意:__
 一般项目中使用对象/字典互转工具时,基本都会存在对象属性名和字典的字段名不一致的情况, 会进行重新映射. 这时使用本工具,__请务必设置另一个对象/字典互转工具__,或者是本项目自带的对象/字典互转工具.
 比如项目中用的`YYModel`,那么使用本工具时,请使用`MJExtension`或者自带的`VVKeyValue`,除非你的要保存数据库的类未作任何对象属性名和字典的字段名的映射.
 
