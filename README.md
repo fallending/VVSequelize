@@ -20,7 +20,7 @@ it, simply add the following line to your Podfile:
 ```ruby
 pod 'VVSequelize', :git => 'https://github.com/pozi119/VVSequelize.git'
 ```
-如果要在Podfile中是使用```use_frameworks!```, 需要在 Podfile 结尾加上hook,为 FMDB 添加头文件搜索路径,解决FMDB编译失败的问题.
+如果要在Podfile中是使用`use_frameworks!`, 需要在 Podfile 结尾加上hook,为 FMDB 添加头文件搜索路径,解决FMDB编译失败的问题.
 ```ruby
 
 target 'targetxxxx' do
@@ -42,9 +42,16 @@ end
 ```
 
 ## Usage
+
+此处主要列出一些基本用户,详细用法请阅读代码注释.
+
 1. 设置NSDictionary/NSArray和Object互转. 可不设置, 则某些操作只能支持NSDictionary和NSArray<NSDictionary *>
     设置方法如下:
 ```objc
+// 设置使用自带的字典/对象互转工具
+[VVSequelize useVVKeyValue];
+
+// 使用第三方的字典/互转工具
 [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
     return [cls mj_objectWithKeyValues:dic];
 }];
@@ -58,6 +65,9 @@ end
     return [cls mj_keyValuesArrayWithObjectArray:objects];
 }];
 ```
+__特别注意__
+一般项目中使用对象/字典互转工具时,基本都会存在对象属性名和字典的字段名不一致的情况, 会进行重新映射. 这时使用本工具,__请务必设置另一个对象/字典互转工具__,或者是本项目自带的对象/字典互转工具.
+比如项目中用的`YYModel`,那么使用本工具时,请使用`MJExtension`或者自带的`VVKeyValue`,除非你的要保存数据库的类未作任何对象属性名和字典的字段名的映射.
 
 2. 定义ORM模型. 可自定义表名,各字段的参数,不保存的字段, 存放的数据库文件,是否记录创建和更新时间等.  
     生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
