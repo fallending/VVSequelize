@@ -54,6 +54,7 @@ typedef NS_ENUM (NSUInteger, VVStructType) {
     VVStructTypeCGAffineTransform,
     VVStructTypeUIEdgeInsets,
     VVStructTypeUIOffset,
+    VVStructTypeCLLocationCoordinate2D,
     VVStructTypeNSDirectionalEdgeInsets,
 };
 

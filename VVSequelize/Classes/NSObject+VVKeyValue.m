@@ -10,6 +10,21 @@
 #import "VVClassInfo.h"
 #import <objc/message.h>
 
+NSString *NSStringFromCoordinate2D(CLLocationCoordinate2D coordinate2D){
+    return [NSString stringWithFormat:@"{%f,%f}",coordinate2D.latitude,coordinate2D.longitude];
+}
+
+CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
+    if([string hasPrefix:@"{"] && [string hasSuffix:@"}"]){
+        NSString *content = [string substringWithRange:NSMakeRange(1, string.length - 2)];
+        NSArray *array = [content componentsSeparatedByString:@","];
+        if (array.count == 2) {
+            return CLLocationCoordinate2DMake([array[0] doubleValue],[array[1] doubleValue]);
+        }
+    }
+    return CLLocationCoordinate2DMake(0, 0);
+}
+
 @implementation NSData (VVKeyValue)
 + (NSData *)dataWithValue:(NSValue *)value{
     NSUInteger size;
@@ -46,14 +61,6 @@
 
 @end
 
-@interface NSValue (VVKeyValue)
-
-- (NSString *)vv_encodedString;
-
-+ (instancetype)vv_decodedWithString:(NSString *)encodedString;
-
-@end
-
 @implementation NSValue (VVKeyValue)
 - (NSString *)vv_encodedString{
     NSString *convertStr = @"<unconvertable>";
@@ -68,6 +75,7 @@
         case VVStructTypeCGAffineTransform: convertStr = NSStringFromCGAffineTransform(self.CGAffineTransformValue); break;
         case VVStructTypeUIEdgeInsets: convertStr = NSStringFromUIEdgeInsets(self.UIEdgeInsetsValue); break;
         case VVStructTypeUIOffset: convertStr = NSStringFromUIOffset(self.UIOffsetValue); break;
+        case VVStructTypeCLLocationCoordinate2D: convertStr = NSStringFromCoordinate2D(self.coordinate2DValue); break;
         case VVStructTypeNSDirectionalEdgeInsets:
             if (@available(iOS 11.0, *)) {
                 convertStr = NSStringFromDirectionalEdgeInsets(self.directionalEdgeInsetsValue);
@@ -85,6 +93,22 @@
     NSData *data = [NSData dataWithDescription:array[2]];
     char *objCType = (char *)[array[0] UTF8String];
     return [NSValue valueWithBytes:data.bytes objCType:objCType];
+}
+
+- (CLLocationCoordinate2D)coordinate2DValue{
+    CLLocationCoordinate2D coordinate2D = CLLocationCoordinate2DMake(0, 0);
+    if (@available(iOS 11.0, *)) {
+        NSUInteger size;
+        NSGetSizeAndAlignment(@encode(CLLocationCoordinate2D), &size, NULL);
+        [self getValue:&coordinate2D size:size];
+    } else {
+        [self getValue:&coordinate2D];
+    }
+    return coordinate2D;
+}
+
++ (NSValue *)valueWithCoordinate2D:(CLLocationCoordinate2D)coordinate2D{
+    return [NSValue valueWithBytes:&coordinate2D objCType:@encode(CLLocationCoordinate2D)];
 }
 
 @end

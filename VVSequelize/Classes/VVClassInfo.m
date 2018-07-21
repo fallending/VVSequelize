@@ -6,6 +6,7 @@
 //
 
 #import "VVClassInfo.h"
+#import <CoreLocation/CLLocation.h>
 
 static OS_ALWAYS_INLINE VVEncodingType VVGetEncodingType(const char *typeEncoding, VVPropertyQualifier *qualifier)  {
     char *type = (char *)typeEncoding;
@@ -116,6 +117,7 @@ VVStructType VVStructGetType(NSString *typeEncodeing) {
     if(strcmp(encoding, @encode(CGAffineTransform)) == 0) return VVStructTypeCGAffineTransform;
     if(strcmp(encoding, @encode(UIEdgeInsets)) == 0) return VVStructTypeUIEdgeInsets;
     if(strcmp(encoding, @encode(UIOffset)) == 0) return VVStructTypeUIOffset;
+    if(strcmp(encoding, @encode(CLLocationCoordinate2D)) == 0) return VVStructTypeCLLocationCoordinate2D;
     if (@available(iOS 11.0, *)) {
         if(strcmp(encoding, @encode(NSDirectionalEdgeInsets)) == 0) return VVStructTypeNSDirectionalEdgeInsets;
     }

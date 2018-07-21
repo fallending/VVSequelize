@@ -6,6 +6,23 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <CoreLocation/CLLocation.h>
+
+/**
+ 将经纬度数据转换为字符串,格式为 {latitude,longitude}
+
+ @param coordinate2D 经纬度数据
+ @return 经纬度字符串
+ */
+FOUNDATION_EXPORT NSString *NSStringFromCoordinate2D(CLLocationCoordinate2D coordinate2D);
+
+/**
+ 将经纬度字符串转换为经纬度数据
+
+ @param string 经纬度字符串,格式为 {latitude,longitude}
+ @return 经纬度数据
+ */
+FOUNDATION_EXPORT CLLocationCoordinate2D Coordinate2DFromString(NSString *string);
 
 @interface NSData (VVKeyValue)
 
@@ -32,6 +49,40 @@
  @return NSData对象
  */
 + (NSData *)dataWithDescription:(NSString *)dataDescription;
+
+@end
+
+@interface NSValue (VVKeyValue)
+
+/**
+ 将NSValue编码成字符串,格式为: <ObjCType>|<valueString>|<Data String>
+
+ @return 编码字符串
+ */
+- (NSString *)vv_encodedString;
+
+/**
+ 将NSValue的编码字符串解码
+
+ @param encodedString 编码字符串,格式为: <ObjCType>|<valueString>|<Data String>
+ @return NSValue对象
+ */
++ (instancetype)vv_decodedWithString:(NSString *)encodedString;
+
+/**
+ 将经纬度数据包装的NSValue解包
+
+ @return 经纬度数据
+ */
+- (CLLocationCoordinate2D)coordinate2DValue;
+
+/**
+ 将经纬度数据包装为NSValue
+
+ @param coordinate2D 经纬度
+ @return NSValue对象
+ */
++ (NSValue *)valueWithCoordinate2D:(CLLocationCoordinate2D)coordinate2D;
 
 @end
 

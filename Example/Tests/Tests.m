@@ -11,6 +11,7 @@
 #import "YYModel.h"
 #import <VVSequelize/VVSequelize.h>
 #import <VVSequelize/VVClassInfo.h>
+#import <CoreLocation/CoreLocation.h>
 
 @import XCTest;
 
@@ -297,11 +298,17 @@
 - (void)testTemp2{
     VVTestUnion un;
     un.ch = 3;
-
     NSValue *value = [NSValue valueWithBytes:&un objCType:@encode(VVTestUnion)];
     VVTestUnion ne;
     [value getValue:&ne];
     NSLog(@"value: %@",value);
+    CLLocationCoordinate2D coordinate2D = CLLocationCoordinate2DMake(30.546887, 104.064271);
+    NSValue *value1 = [NSValue valueWithCoordinate2D:coordinate2D];
+    CLLocationCoordinate2D coordinate2D1 = value1.coordinate2DValue;
+    NSString *string = NSStringFromCoordinate2D(coordinate2D);
+    CLLocationCoordinate2D coordinate2D2 = Coordinate2DFromString(@"{adads3.0,n5.2vn}");
+
+    NSLog(@"string: %@, coordinate2D1: {%f,%f}, coordinate2D2: {%f,%f}",string,coordinate2D1.latitude,coordinate2D1.longitude,coordinate2D2.latitude,coordinate2D2.longitude);
 }
 @end
 
