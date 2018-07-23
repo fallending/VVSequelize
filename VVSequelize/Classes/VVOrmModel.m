@@ -222,7 +222,7 @@
                          excludes:(NSArray *)excludes
                         tableName:(NSString *)tableName
                          dataBase:(VVDataBase *)vvdb
-logAt:(BOOL)logAt{
+                            logAt:(BOOL)logAt{
     if(!cls) return nil;
     NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(cls);
     VVDataBase   *db = vvdb ? vvdb : VVDataBase.defalutDb;
@@ -235,12 +235,22 @@ logAt:(BOOL)logAt{
     VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:poolKey];
     VVLog(2,@"poolKey: %@, model: %@",poolKey,model);
     if(model) return model;
+    NSArray *ignores = nil;
+    if([cls respondsToSelector:@selector(vv_ignoreProperties)]){
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        ignores = [cls performSelector:@selector(vv_ignoreProperties)];
+#pragma clang diagnostic pop
+    }
+    NSMutableSet *tempExcludes = [NSMutableSet setWithCapacity:0];
+    [tempExcludes addObjectsFromArray:excludes];
+    [tempExcludes addObjectsFromArray:ignores];
     model = [[VVOrmModel alloc] init];
     model.cls = cls;
     model.tableName = tbname;
     model.vvdb = db;
     model.manuals = manuals;
-    model.excludes = excludes;
+    model.excludes = tempExcludes.allObjects;
     model.logAt = logAt;
     [model createOrModifyTable];
     [[VVOrmModel modelPool] setObject:model forKey:poolKey];
