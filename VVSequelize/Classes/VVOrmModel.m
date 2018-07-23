@@ -205,16 +205,25 @@
     return [self ormModelWithClass:cls primaryKey:primaryKey tableName:nil dataBase:nil];
 }
 
+
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey
                         tableName:(NSString *)tableName
-                         dataBase:(VVDataBase *)db{
+                         dataBase:(VVDataBase *)vvdb{
+    return [self ormModelWithClass:cls primaryKey:primaryKey excludes:nil tableName:tableName dataBase:vvdb];
+}
+
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(NSString *)primaryKey
+                         excludes:(NSArray *)excludes
+                        tableName:(NSString *)tableName
+                         dataBase:(VVDataBase *)vvdb{
     NSMutableArray *manuals = [NSMutableArray arrayWithCapacity:0];
     if(primaryKey && primaryKey.length > 0){
         VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
         [manuals addObject:column];
     }
-    return [self ormModelWithClass:cls manuals:manuals excludes:nil tableName:tableName dataBase:db logAt:YES];
+    return [self ormModelWithClass:cls manuals:manuals excludes:excludes tableName:tableName dataBase:vvdb logAt:YES];
 }
 
 + (instancetype)ormModelWithClass:(Class)cls
@@ -235,22 +244,12 @@
     VVOrmModel *model = [[VVOrmModel modelPool] objectForKey:poolKey];
     VVLog(2,@"poolKey: %@, model: %@",poolKey,model);
     if(model) return model;
-    NSArray *ignores = nil;
-    if([cls respondsToSelector:@selector(vv_ignoreProperties)]){
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        ignores = [cls performSelector:@selector(vv_ignoreProperties)];
-#pragma clang diagnostic pop
-    }
-    NSMutableSet *tempExcludes = [NSMutableSet setWithCapacity:0];
-    [tempExcludes addObjectsFromArray:excludes];
-    [tempExcludes addObjectsFromArray:ignores];
     model = [[VVOrmModel alloc] init];
     model.cls = cls;
     model.tableName = tbname;
     model.vvdb = db;
     model.manuals = manuals;
-    model.excludes = tempExcludes.allObjects;
+    model.excludes = excludes;
     model.logAt = logAt;
     [model createOrModifyTable];
     [[VVOrmModel modelPool] setObject:model forKey:poolKey];

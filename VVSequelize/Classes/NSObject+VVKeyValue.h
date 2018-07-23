@@ -121,7 +121,7 @@ FOUNDATION_EXPORT CLLocationCoordinate2D Coordinate2DFromString(NSString *string
 
  @return 属性名数组
  */
-+ (nullable NSArray<NSString *> *)vv_ignoreProperties;
++ (nullable NSArray<NSString *> *)vv_ignoredProperties;
 
 @end
 

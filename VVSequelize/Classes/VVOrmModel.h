@@ -55,7 +55,7 @@
  @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
 + (instancetype)ormModelWithClass:(Class)cls
-                       primaryKey:(NSString *)primaryKey;
+                       primaryKey:(nullable NSString *)primaryKey;
 
 
 /**
@@ -69,7 +69,24 @@
  @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
 + (instancetype)ormModelWithClass:(Class)cls
-                       primaryKey:(NSString *)primaryKey
+                       primaryKey:(nullable NSString *)primaryKey
+                        tableName:(nullable NSString *)tableName
+                         dataBase:(nullable VVDataBase *)vvdb;
+
+/**
+ 定义ORM模型.使用自动主键,无额外选项.
+ 
+ @param cls 模型(Class)
+ @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
+ @param excludes 不存入数据表的字段名
+ @param tableName 表名,nil表示使用cls类名
+ @param vvdb 数据库,nil表示使用默认数据库
+ @return ORM模型
+ @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
+ */
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(nullable NSString *)primaryKey
+                         excludes:(nullable NSArray *)excludes
                         tableName:(nullable NSString *)tableName
                          dataBase:(nullable VVDataBase *)vvdb;
 

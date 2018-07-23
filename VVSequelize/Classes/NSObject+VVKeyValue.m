@@ -160,13 +160,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 - (NSDictionary *)vv_keyValues{
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
-    NSArray *ignores = nil;
-    if([[self class] respondsToSelector:@selector(vv_ignoreProperties)]){
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        ignores = [[self class] performSelector:@selector(vv_ignoreProperties)];
-#pragma clang diagnostic pop
-    }
+    NSArray *ignores = [[self class] ignoreProperties];
     unsigned int propsCount;
     objc_property_t *props = class_copyPropertyList([self class], &propsCount);//获得属性列表
     for(int i = 0;i < propsCount; i++){
@@ -186,13 +180,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 + (instancetype)vv_objectWithKeyValues:(NSDictionary<NSString *, id> *)keyValues{
     NSObject *obj = [[self alloc] init];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
-    NSArray *ignores = nil;
-    if([[self class] respondsToSelector:@selector(vv_ignoreProperties)]){
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        ignores = [[self class] performSelector:@selector(vv_ignoreProperties)];
-#pragma clang diagnostic pop
-    }
+    NSArray *ignores = [self ignoreProperties];
     for (NSString *key in keyValues.allKeys) {
         VVPropertyInfo *propertyInfo = info.propertyInfos[key];
         if (propertyInfo && ![ignores containsObject:propertyInfo.name]) {
@@ -223,7 +211,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
  Array/Set中需要转换的模型类
  
  @return Array/Set属性名和类的映射关系
- @note 若项目中使用了MJExtension,YYModel这二个常用的库,优先使用它们的映射关系,否则使用当前库定义的映射关系.
+ @note 依次遍历VVKeyValue,MJExtension,YYModel的映射关系,只使用最先获取到的结果.
  */
 + (NSDictionary *)customMapper{
     NSString *className = NSStringFromClass(self);
@@ -234,11 +222,11 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
     });
     NSMutableDictionary *_mapper = [_mapperPool objectForKey:className];
     if(_mapper) return _mapper;
-    NSDictionary *tempDic = nil;
-    NSArray *mapperSelectors = @[@"mj_objectClassInArray",      // MJExtension
-                                 @"modelCustomPropertyMapper",  // YYModel
-                                 @"vv_collectionMapper"];       // VVKeyValue
-    for (NSString *selectorString in mapperSelectors) {
+    NSDictionary *tempDic = [NSDictionary dictionary];
+    NSArray *selectors = @[@"vv_collectionMapper",        // VVKeyValue
+                                 @"mj_objectClassInArray",      // MJExtension
+                                 @"modelCustomPropertyMapper"]; // YYModel
+    for (NSString *selectorString in selectors) {
         SEL mapperSelector = NSSelectorFromString(selectorString);
         if ([self respondsToSelector:mapperSelector]) {
 #pragma clang diagnostic push
@@ -251,17 +239,50 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
             }
         }
     }
-    if(!tempDic) return nil;
     _mapper = [NSMutableDictionary dictionaryWithCapacity:0];
     for (NSString *key in tempDic.allKeys) {
         id val = tempDic[key];
         _mapper[key] = [val isKindOfClass:NSString.class] ? NSClassFromString(val) : val;
     }
-    if(_mapper.count == 0) return nil;
     [_mapperPool setObject:_mapper forKey:className];
     return _mapper;
 }
 
+/**
+ 对象/字典转换中不转换的属性
+ 
+ @return 黑名单数组
+ @note 依次遍历VVKeyValue,MJExtension,YYModel的黑名单,只使用最先获取到的结果.
+ */
++ (NSArray *)ignoreProperties{
+    NSString *className = NSStringFromClass(self);
+    static NSMutableDictionary *_ignoresPool;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _ignoresPool = [NSMutableDictionary dictionaryWithCapacity:0];
+    });
+    NSArray *_ignores = [_ignoresPool objectForKey:className];
+    if(_ignores) return _ignores;
+    NSArray *ignores = [NSArray array];
+    NSArray *selectors = @[@"vv_ignoredProperties",         // VVKeyValue
+                           @"mj_ignoredPropertyNames",      // MJExtension
+                           @"modelPropertyBlacklist"];      // YYModel
+    for (NSString *selectorString in selectors) {
+        SEL mapperSelector = NSSelectorFromString(selectorString);
+        if ([self respondsToSelector:mapperSelector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+            NSArray *array = [self performSelector:mapperSelector];
+#pragma clang diagnostic pop
+            if(array && [array isKindOfClass:[NSArray class]]){
+                ignores = array;
+                break;
+            }
+        }
+    }
+    [_ignoresPool setObject:ignores forKey:className];
+    return ignores;
+}
 
 /**
  生成当前对象存储时的数据类型
