@@ -27,7 +27,7 @@
     [super setUp];
     
     VVSequelize.loglevel = 2;
-    /*
+#if 0
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
     }];
@@ -40,9 +40,9 @@
     [VVSequelize setObjectsToKeyValuesArray:^NSArray *(Class cls, NSArray *objects) {
         return [cls mj_keyValuesArrayWithObjectArray:objects];
     }];
-     */
-    
+#else
     [VVSequelize useVVKeyValue];
+#endif
     
     NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
     NSString *targetPath = [path stringByAppendingPathComponent:@"mobiles.sqlite"];
@@ -237,7 +237,7 @@
 //    XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
 }
 
-- (void)testObjDic{
+- (void)testObjEmbed{
     NSDate *now = [NSDate date];
     VVTestPerson *person = [VVTestPerson new];
     person.idcard = @"123123";
@@ -260,15 +260,18 @@
     one.dic = @{@"a":@(1),@"b":@(2)};
     one.arr = @[@(1),@(2),@(3)];
     
-    NSDictionary *oneDic = one.vv_keyValues;
-    NSLog(@"dic: %@",oneDic);
-    VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
-    NSLog(@"obj: %@",nOne);
-//    NSLog(@"now: %@",now);
+//    NSDictionary *oneDic = one.vv_keyValues;
+//    NSLog(@"dic: %@",oneDic);
+//    VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
+//    NSLog(@"obj: %@",nOne);
+    VVOrmModel *orm = [VVOrmModel ormModelWithClass:VVTestOne.class primaryKey:@"oneId"];
+    [orm upsertOne:one];
+    VVTestOne *mOne = [orm findOne:nil];
+    NSLog(@"mOne: %@",mOne);
 }
 
 
-- (void)testTemp{
+- (void)testMixDataTypes{
     VVTestMix *mix = [VVTestMix new];
     mix.num = @(10);
     mix.cnum = 9;
@@ -293,9 +296,14 @@
     NSLog(@"mix: %@", mixkvs);
     VVTestMix *mix2 = [VVTestMix vv_objectWithKeyValues:mixkvs];
     NSLog(@"mix2: %@",mix2);
+    VVOrmModel *orm = [VVOrmModel ormModelWithClass:VVTestMix.class primaryKey:@"num"];
+    [orm upsertOne:mix];
+    VVTestMix *mix3 = [orm findOne:nil];
+    NSLog(@"mix3: %@",mix3);
+
 }
 
-- (void)testTemp2{
+- (void)testUnion{
     VVTestUnion un;
     un.ch = 3;
     NSValue *value = [NSValue valueWithBytes:&un objCType:@encode(VVTestUnion)];
@@ -309,6 +317,20 @@
     CLLocationCoordinate2D coordinate2D2 = Coordinate2DFromString(@"{adads3.0,n5.2vn}");
 
     NSLog(@"string: %@, coordinate2D1: {%f,%f}, coordinate2D2: {%f,%f}",string,coordinate2D1.latitude,coordinate2D1.longitude,coordinate2D2.latitude,coordinate2D2.longitude);
+}
+
+- (void)testColletionDescription{
+    NSArray *array1 = @[@(1),@(2),@(3)];
+    NSArray *array2 = @[@"1",@"2",@"3",array1];
+    NSDictionary *dic3 = @{@"a":@(1),@"b":@(2),@"c":@(3)};
+    NSSet *set4 = [NSSet setWithArray:array1];
+    NSString *string5 = @"hahaha";
+    id val1 = [array1 vv_dbStoreValue];
+    id val2 = [array2 vv_dbStoreValue];
+    id val3 = [dic3 vv_dbStoreValue];
+    id val4 = [set4 vv_dbStoreValue];
+    id val5 = [string5 vv_dbStoreValue];
+    NSLog(@"%@",val1);
 }
 @end
 

@@ -139,6 +139,24 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 
 @implementation NSObject (VVKeyValue)
 
+- (id)vv_dbStoreValue{
+    if([self isKindOfClass:[NSString class]]
+       || [self isKindOfClass:[NSNumber class]]
+       || [self isKindOfClass:[NSData class]]){
+        return self;
+    }
+    id targetVal = [self vv_targetValue];
+    if([targetVal isKindOfClass:[NSString class]]){
+        return targetVal;
+    }
+    else if([targetVal isKindOfClass:[NSArray class]] || [targetVal isKindOfClass:[NSDictionary class]]){
+        NSData *data = [NSJSONSerialization dataWithJSONObject:targetVal options:0 error:nil];
+        if(data.length == 0) return nil;
+        return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
+    return [targetVal description];
+}
+
 - (NSDictionary *)vv_keyValues{
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
@@ -188,7 +206,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 //MARK: - Private
 /**
  Array/Set中需要转换的模型类
-
+ 
  @return Array/Set属性名和类的映射关系
  @note 若项目中使用了MJExtension,YYModel这二个常用的库,优先使用它们的映射关系,否则使用当前库定义的映射关系.
  */
@@ -232,7 +250,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 
 /**
  生成当前对象存储时的数据类型
-
+ 
  @return 存储的数据
  @note NSData->Blob, NSURL->String, Array->JsonString, Dictionary->JsonString, NSValue->Blob, OtherClass->JsonString
  */
@@ -244,7 +262,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
             
         case VVEncodingTypeNSURL:  //NSURL转换为字符串
             return [(NSURL *)self relativeString];
-
+            
         case VVEncodingTypeNSArray:
         case VVEncodingTypeNSMutableArray:
         case VVEncodingTypeNSSet:
@@ -258,7 +276,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
             }
             return vals;
         }
-
+            
         case VVEncodingTypeNSDictionary:
         case VVEncodingTypeNSMutableDictionary:
         {
@@ -274,7 +292,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
             NSValue *val = (NSValue *)self;
             return [val vv_encodedString];
         }
-
+            
         case VVEncodingTypeNSUnknown:{
             return [self vv_keyValues];
         }
@@ -286,7 +304,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 
 /**
  根据属性生成要存储的数据类型
-
+ 
  @param propertyInfo 属性信息
  @return 存储的数据
  @note SEL->String, Struct->Blob, Union->Blob, CNumber->Number
@@ -305,23 +323,23 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
             char *str = (char *)(__bridge void *)[self performSelector:propertyInfo.getter];
             return [NSString stringWithCString:str encoding:NSUTF8StringEncoding];
         }
-
+            
         case VVEncodingTypeSEL:{
             SEL selector = (__bridge void *)[self performSelector:propertyInfo.getter];
             if(selector) return NSStringFromSelector(selector);
         }
-
+            
         case VVEncodingTypeStruct:{
             return [(NSValue *)value vv_encodedString];
         }
-
+            
         case VVEncodingTypeUnion:{
             size_t t = ((size_t (*)(id, SEL))(void *) objc_msgSend)(self, propertyInfo.getter);
             const char *objCType = [propertyInfo.typeEncoding UTF8String];
             NSValue *val = [NSValue valueWithBytes:&t objCType:objCType];
             return [val vv_encodedString];
         }
-
+            
         case VVEncodingTypeObject:
             return [value vv_targetValue];
             
@@ -334,7 +352,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 
 /**
  将存储的数据转换为原数据
-
+ 
  @param propertyInfo 属性信息
  */
 - (void)setValue:(id)value forProperty:(VVPropertyInfo *)propertyInfo {
@@ -383,7 +401,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
                 ((void (*)(id, SEL, size_t))(void *) objc_msgSend)(self, propertyInfo.setter, t);
             }
             break;
-
+            
         case VVEncodingTypeObject:{
             VVEncodingNSType nstype = propertyInfo.nsType;
             switch (nstype) {
@@ -413,7 +431,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
                     if([value isKindOfClass:[NSArray class]]) tempArray = value;
                     else if([value isKindOfClass:[NSString class]]){
                         NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
-                        tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                        if(data.length > 0) tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
                     }
                     if(tempArray && [tempArray isKindOfClass:[NSArray class]]){
                         NSDictionary *mapper = [[self class] customMapper];
@@ -422,7 +440,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
                         [self setValue:array forKey:propertyName];
                     }
                 } break;
-                
+                    
                 case VVEncodingTypeNSSet:
                 case VVEncodingTypeNSMutableSet:
                 {
@@ -430,7 +448,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
                     if([value isKindOfClass:[NSArray class]]) tempArray = value;
                     else if([value isKindOfClass:[NSString class]]){
                         NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
-                        tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                        if(data.length > 0) tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
                     }
                     if(tempArray && [tempArray isKindOfClass:[NSArray class]]){
                         NSDictionary *mapper = [[self class] customMapper];
@@ -440,7 +458,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
                         [self setValue:set forKey:propertyName];
                     }
                 } break;
-
+                    
                 case VVEncodingTypeNSDictionary:
                 case VVEncodingTypeNSMutableDictionary:
                 {
@@ -448,11 +466,10 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
                     if([value isKindOfClass:[NSDictionary class]]) tempDic = value;
                     else if([value isKindOfClass:[NSString class]]){
                         NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
-                        tempDic = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                        if(data.length > 0) tempDic = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
                     }
-                    NSMutableDictionary *dic = [tempDic mutableCopy];
-                    [self setValue:dic forKey:propertyName];
-                }
+                    if(tempDic) [self setValue:[tempDic mutableCopy] forKey:propertyName];
+                } break;
                     
                 case VVEncodingTypeNSValue:
                     if([value isKindOfClass:[NSString class]]) {
@@ -472,12 +489,18 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
                             id obj = [cls vv_objectWithKeyValues:value];
                             if(obj) [self setValue:obj forKey:propertyName];
                         }
+                        if([value isKindOfClass:[NSString class]]){
+                            NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
+                            NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                            id obj = [cls vv_objectWithKeyValues:dic];
+                            if(obj) [self setValue:obj forKey:propertyName];
+                        }
                         else if([value isKindOfClass:cls]){
                             [self setValue:value forKey:propertyName];
                         }
                     }
-                }
-                
+                } break;
+                    
                 case VVEncodingTypeNSUndefined:
                     break;
                     

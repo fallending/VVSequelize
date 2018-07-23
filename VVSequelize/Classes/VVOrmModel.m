@@ -393,7 +393,7 @@ logAt:(BOOL)logAt{
         if(key && obj && [self.fields containsObject:key]){
             [keyString appendFormat:@"\"%@\",",key];
             [valString appendFormat:@"?,"];
-            [values addObject:obj];
+            [values addObject:[obj vv_dbStoreValue]];
         }
     }];
     if(keyString.length > 1 && valString.length > 1){
@@ -435,7 +435,7 @@ logAt:(BOOL)logAt{
     [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         if(key && obj && [self.fields containsObject:key]){
             [setString appendFormat:@"\"%@\" = ?,",key];
-            [objs addObject:obj];
+            [objs addObject:[obj vv_dbStoreValue]];
         }
     }];
     if (setString.length > 1) {

@@ -126,6 +126,13 @@ FOUNDATION_EXPORT CLLocationCoordinate2D Coordinate2DFromString(NSString *string
 @interface NSObject (VVKeyValue)
 
 /**
+ 生成用于存放数据库中的数据,便于取出时转换为对象
+
+ @return NSData/NSString/NSNumber
+ */
+- (id)vv_dbStoreValue;
+
+/**
  将对象转换为字典
 
  @return 对象对应的字典
