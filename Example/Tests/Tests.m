@@ -260,10 +260,10 @@
     one.dic = @{@"a":@(1),@"b":@(2)};
     one.arr = @[@(1),@(2),@(3)];
     
-//    NSDictionary *oneDic = one.vv_keyValues;
-//    NSLog(@"dic: %@",oneDic);
-//    VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
-//    NSLog(@"obj: %@",nOne);
+    NSDictionary *oneDic = one.vv_keyValues;
+    NSLog(@"dic: %@",oneDic);
+    VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
+    NSLog(@"obj: %@",nOne);
     VVOrmModel *orm = [VVOrmModel ormModelWithClass:VVTestOne.class primaryKey:@"oneId"];
     [orm upsertOne:one];
     VVTestOne *mOne = [orm findOne:nil];

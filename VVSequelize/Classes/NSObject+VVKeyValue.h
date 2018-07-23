@@ -116,6 +116,13 @@ FOUNDATION_EXPORT CLLocationCoordinate2D Coordinate2DFromString(NSString *string
  */
 + (nullable NSDictionary *)vv_collectionMapper;
 
+/**
+ 转换过程中需要忽略的属性名
+
+ @return 属性名数组
+ */
++ (nullable NSArray<NSString *> *)vv_ignoreProperties;
+
 @end
 
 /**

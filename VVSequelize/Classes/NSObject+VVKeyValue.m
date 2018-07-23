@@ -160,12 +160,20 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 - (NSDictionary *)vv_keyValues{
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
+    NSArray *ignores = nil;
+    if([[self class] respondsToSelector:@selector(vv_ignoreProperties)]){
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        ignores = [[self class] performSelector:@selector(vv_ignoreProperties)];
+#pragma clang diagnostic pop
+    }
     unsigned int propsCount;
     objc_property_t *props = class_copyPropertyList([self class], &propsCount);//获得属性列表
     for(int i = 0;i < propsCount; i++){
         objc_property_t prop = props[i];
         NSString *propName = [NSString stringWithUTF8String:property_getName(prop)];//获得属性的名称
         VVPropertyInfo *properyInfo = info.propertyInfos[propName];
+        if([ignores containsObject:propName]) continue;
         dic[propName] = [self valueForProperty:properyInfo];
     }
     if(props){
@@ -178,9 +186,16 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 + (instancetype)vv_objectWithKeyValues:(NSDictionary<NSString *, id> *)keyValues{
     NSObject *obj = [[self alloc] init];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
+    NSArray *ignores = nil;
+    if([[self class] respondsToSelector:@selector(vv_ignoreProperties)]){
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        ignores = [[self class] performSelector:@selector(vv_ignoreProperties)];
+#pragma clang diagnostic pop
+    }
     for (NSString *key in keyValues.allKeys) {
         VVPropertyInfo *propertyInfo = info.propertyInfos[key];
-        if (propertyInfo) {
+        if (propertyInfo && ![ignores containsObject:propertyInfo.name]) {
             [obj setValue:keyValues[key] forProperty:propertyInfo];
         }
     }

@@ -8,6 +8,7 @@
 
 #import "VVTestClasses.h"
 #import "MJExtension.h"
+#import <VVSequelize/VVSequelize.h>
 
 @implementation VVTestMobile
 
@@ -22,6 +23,11 @@
 + (NSDictionary *)mj_objectClassInArray{
     return @{@"mobiles":VVTestMobile.class,@"friends":@"VVTestPerson"};
 }
+
++ (nullable NSArray<NSString *> *)vv_ignoreProperties{
+    return @[@"dic"];
+}
+
 
 @end
 
