@@ -373,7 +373,13 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
             if([value isKindOfClass:[NSString class]]) {
                 NSValue *val = [NSValue vv_decodedWithString:value];
                 size_t t;
-                [val getValue:&t];
+                NSUInteger size;
+                NSGetSizeAndAlignment(val.objCType, &size, NULL);
+                if (@available(iOS 11.0, *)) {
+                    [val getValue:&t size:size];
+                } else {
+                    [val getValue:&t];
+                }
                 ((void (*)(id, SEL, size_t))(void *) objc_msgSend)(self, propertyInfo.setter, t);
             }
             break;
