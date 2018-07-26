@@ -19,7 +19,7 @@
 * [x] 子对象存储为Json字符串
 
 ## 安装
-目前最新版本号为0.1.5, 基本可食用.以后根据需求不定期更新
+目前最新版本号为0.1.5, 基本可食用,以后根据需求不定期更新.
 ```ruby
 pod 'VVSequelize'
 ```
@@ -52,10 +52,13 @@ end
 此处主要列出一些基本用法,详细用法请阅读代码注释.
 
 ### 设置`Dictionary/Object`互转工具  
-一般项目中使用`Dictionary/Object`互转工具时,基本都会存在对象属性名和字典的字段名不一致的情况, 会进行重新映射. 
-这时使用本工具,请务必设置另一个`Dictionary/Object`互转工具,或者是本项目自带的`VVKeyValue`.
-比如项目中用的`YYModel`,那么使用本工具时,请使用自带的`VVKeyValue`或者`MJExtension`
-此处建议使用`VVKeyValue`,经过多次修改,已经可用,且专门针对本数据库存储数据做了处理.
+一般项目中使用`Dictionary/Object`互转工具时,基本都会存在对象属性名和字典的字段名不一致的情况, 会进行重新映射.
+ 
+这时请务必设置另一个`Dictionary/Object`互转工具,或者是本项目自带的`VVKeyValue`.
+
+比如项目中用的`YYModel`,那么本工具中请使用自带的`VVKeyValue`或者`MJExtension`
+
+此处建议使用`VVKeyValue`,经过多次修改,已经可用,且专门针对本数据库存储数据做了处理,如果出现问题,请提**issue**,并使用第三方替代.
 
 设置方法如下:
 
@@ -80,7 +83,9 @@ end
 
 ### 定义ORM模型 
 可自定义表名,各字段的参数,不保存的字段, 存放的数据库文件,是否记录创建和更新时间等.
+
 生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
+
 示例如下:
 
 ```objc
@@ -94,8 +99,10 @@ self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
                                           logAt:YES];
 
 ```
+### 增删改查
+使用ORM模型进行增删改查等操作.
 
-使用ORM模型进行增删改查等操作.示例如下:
+示例如下:
 
 ```objc
 NSInteger count = [self.mobileModel count:nil];
@@ -106,6 +113,7 @@ NSArray *array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 
 
 ### 生成Where语句
 采用了类似sequelize.js的方式生成where语句.具体说明请参考```VVSqlGenerator.h```中的注释.
+
 示例如下:
 
 ```objc
