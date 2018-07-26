@@ -44,8 +44,9 @@ end
 ## 注意
 1. 请先设置`Dictionary/Object`互转工具,若不设置, 则大部分操作只能支持Dictionary.
 2. 子对象会保存成为Json字符串,子对象内的NSData也会保存为16进制字符串.
-3. 含有子对象时,请确保不会循环引用,否则`Dictionary/Object`互转会死循环,请将相应的循环引用加入互转黑名单.
+3. 含有子对象时,请确保不会循环引用,否则`Dictionary/Object`互转会死循环,请将相应的循环引用加入互转黑名单. 黑名单可使用`YYModel`和`MJExtension`的设置.
 4. VVKeyValue仅用于本工具,不适用常规的Json转对象.
+5. 集合类型(Array,Dictionary,Set)进行转换时
 
 ## 用法
 
@@ -58,7 +59,7 @@ end
 
 比如项目中用的`YYModel`,那么本工具中请使用自带的`VVKeyValue`或者`MJExtension`
 
-此处建议使用`VVKeyValue`,经过多次修改,已经可用,且专门针对本数据库存储数据做了处理,如果出现问题,请提**issue**,并使用第三方替代.
+此处建议使用`VVKeyValue`,经过多次修改,已经可用,且专门针对本数据库存储数据做了处理,如果出现问题,请提[issue](https://github.com/pozi119/VVSequelize/issues/new),并使用第三方替代.
 
 设置方法如下:
 
