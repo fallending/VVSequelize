@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.1.5'
+  s.version          = '0.1.6'
   s.summary          = '基于FMDB的ORM模型封装.'
   s.description      = <<-DESC
                        基于FMDB的ORM模型封装.

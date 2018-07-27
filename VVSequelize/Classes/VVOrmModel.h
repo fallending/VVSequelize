@@ -47,7 +47,7 @@
 @property (nonatomic, copy  , readonly) NSString *tableName; ///< 表名
 
 /**
- 定义ORM模型.使用默认数据库,默认表名.
+ 定义ORM模型,使用默认数据库,默认表名.
  
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
@@ -59,7 +59,7 @@
 
 
 /**
- 定义ORM模型.使用自动主键,无额外选项.
+ 定义ORM模型,可指定表名和数据库.
  
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
@@ -74,7 +74,7 @@
                          dataBase:(nullable VVDataBase *)vvdb;
 
 /**
- 定义ORM模型.使用自动主键,无额外选项.
+ 定义ORM模型,可指定不存储字段.
  
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
@@ -86,12 +86,31 @@
  */
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(nullable NSString *)primaryKey
-                         excludes:(nullable NSArray *)excludes
+                         excludes:(nullable NSArray<NSString *> *)excludes
                         tableName:(nullable NSString *)tableName
                          dataBase:(nullable VVDataBase *)vvdb;
 
 /**
- 定义ORM模型.可自动新增字段,##不会修改或删除原有字段##.
+ 定义ORM模型,可指定不存储字段和唯一性约束字段.
+ 
+ @param cls 模型(Class)
+ @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
+ @param uniques 唯一性约束的数据表字段名
+ @param excludes 不存入数据表的字段名
+ @param tableName 表名,nil表示使用cls类名
+ @param vvdb 数据库,nil表示使用默认数据库
+ @return ORM模型
+ @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
+ */
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(nullable NSString *)primaryKey
+                          uniques:(nullable NSArray<NSString *> *)uniques
+                         excludes:(nullable NSArray<NSString *> *)excludes
+                        tableName:(nullable NSString *)tableName
+                         dataBase:(nullable VVDataBase *)vvdb;
+
+/**
+ 定义ORM模型,完全自定义.
  
  @param cls 模型(Class)
  @param manuals 自定义各个字段的配置.格式为VVOrmSchemaItem数组,或可转换为VVOrmSchemaItem的json数组.
