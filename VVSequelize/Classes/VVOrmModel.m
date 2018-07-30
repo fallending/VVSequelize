@@ -215,13 +215,28 @@
 
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey
-                         excludes:(NSArray *)excludes
+                         excludes:(NSArray<NSString *> *)excludes
+                        tableName:(NSString *)tableName
+                         dataBase:(VVDataBase *)vvdb{
+    return [self ormModelWithClass:cls primaryKey:primaryKey uniques:nil excludes:excludes tableName:tableName dataBase:vvdb];
+}
+
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(NSString *)primaryKey
+                         uniques:(NSArray<NSString *> *)uniques
+                         excludes:(NSArray<NSString *> *)excludes
                         tableName:(NSString *)tableName
                          dataBase:(VVDataBase *)vvdb{
     NSMutableArray *manuals = [NSMutableArray arrayWithCapacity:0];
     if(primaryKey && primaryKey.length > 0){
         VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
         [manuals addObject:column];
+    }
+    if(uniques && uniques.count > 0){
+        for (NSString *unique in uniques) {
+            VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":unique,@"unique":@(YES)}];
+            [manuals addObject:column];
+        }
     }
     return [self ormModelWithClass:cls manuals:manuals excludes:excludes tableName:tableName dataBase:vvdb logAt:YES];
 }
@@ -435,7 +450,7 @@
 
 @implementation VVOrmModel (Update)
 
-- (BOOL)update:(id)condition
+- (BOOL)update:(NSDictionary *)condition
         values:(NSDictionary *)values{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
@@ -504,7 +519,7 @@
     return succCount;
 }
 
-- (BOOL)increase:(id)condition
+- (BOOL)increase:(NSDictionary *)condition
            field:(NSString *)field
            value:(NSInteger)value{
     if (value == 0) { return YES; }
@@ -530,37 +545,37 @@
     return [self findOne:@{_primaryKey:PKVal}];
 }
 
-- (id)findOne:(id)condition{
+- (id)findOne:(NSDictionary *)condition{
     NSArray *array = [self findAll:condition orderBy:nil range:NSMakeRange(0, 1)];
     return array.count > 0 ? array.firstObject : nil;
 }
 
-- (id)findOne:(id)condition
-      orderBy:(id)orderBy{
+- (id)findOne:(NSDictionary *)condition
+      orderBy:(NSArray *)orderBy{
     NSArray *array = [self findAll:condition orderBy:orderBy range:NSMakeRange(0, 1)];
     return array.count > 0 ? array.firstObject : nil;
 }
 
-- (NSArray *)findAll:(id)condition{
+- (NSArray *)findAll:(NSDictionary *)condition{
     return [self findAll:condition orderBy:nil range:VVRangeAll];
 }
 
-- (NSArray *)findAll:(id)condition
-             orderBy:(id)orderBy
+- (NSArray *)findAll:(NSDictionary *)condition
+             orderBy:(NSArray *)orderBy
                range:(NSRange)range{
     return [self findAll:condition fields:nil orderBy:orderBy range:range];
 }
 
-- (NSArray *)findAll:(id)condition
+- (NSArray *)findAll:(NSDictionary *)condition
               fields:(NSArray<NSString *> *)fields
-             orderBy:(id)orderBy
+             orderBy:(NSArray *)orderBy
                range:(NSRange)range{
     return [self findAll:condition fields:fields orderBy:orderBy range:range jsonResult:NO];
 }
 
-- (NSArray *)findAll:(id)condition
+- (NSArray *)findAll:(NSDictionary *)condition
               fields:(NSArray<NSString *> *)fields
-             orderBy:(id)orderBy
+             orderBy:(NSArray *)orderBy
                range:(NSRange)range
           jsonResult:(BOOL)jsonResult{
     if(self.isDropped) {[self createOrModifyTable];}
@@ -587,7 +602,7 @@
     return jsonArray;
 }
 
-- (NSInteger)count:(id)condition{
+- (NSInteger)count:(NSDictionary *)condition{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
@@ -618,8 +633,8 @@
     return [self count:condition] > 0;
 }
 
-- (NSDictionary *)findAndCount:(id)condition
-                       orderBy:(id)orderBy
+- (NSDictionary *)findAndCount:(NSDictionary *)condition
+                       orderBy:(NSArray *)orderBy
                          range:(NSRange)range{
     NSUInteger count = [self count:condition];
     NSArray *array = [self findAll:condition orderBy:orderBy range:range];
@@ -709,7 +724,7 @@
     return [_vvdb executeUpdate:sql];
 }
 
-- (BOOL)delete:(id)condition{
+- (BOOL)delete:(NSDictionary *)condition{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];

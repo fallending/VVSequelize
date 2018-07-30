@@ -22,14 +22,8 @@
 
 //MARK: - Where语句
 
-+ (NSString *)where:(id)condition{
-    NSString *where = nil;
-    if([condition isKindOfClass:NSString.class]){
-        where = condition;
-    }
-    else if([where isKindOfClass:NSDictionary.class]){
-        where = [[self class] key:nil _and:condition];
-    }
++ (NSString *)where:(NSDictionary *)condition{
+    NSString *where = [[self class] key:nil _and:condition];
     return where.length > 0 ? [NSString stringWithFormat:@" WHERE %@", where] : @"";
 }
 
@@ -192,26 +186,19 @@
 }
 
 //MARK: - Order语句
-+ (NSString *)orderBy:(id)orderBy{
++ (NSString *)orderBy:(NSArray *)orderBy{
     NSMutableString *orderString = [NSMutableString stringWithCapacity:0];
-    if([orderBy isKindOfClass:NSString.class]){
-        [orderString appendString:orderBy];
-    }
-    else if([orderBy isKindOfClass:NSArray.class]){
-        for (NSDictionary *dic in orderBy) {
-            if(dic.count == 1){
-                NSString *key = dic.allKeys.firstObject;
-                NSString *order = dic[key];
-                if ([order isEqualToString:kVsOrderAsc] || [order isEqualToString:kVsOrderDesc]) {
-                    [orderString appendFormat:@"\"%@\" %@,", key, order];
-                }
+    for (NSDictionary *dic in orderBy) {
+        if(dic.count == 1){
+            NSString *key = dic.allKeys.firstObject;
+            NSString *order = dic[key];
+            if ([order isEqualToString:kVsOrderAsc] || [order isEqualToString:kVsOrderDesc]) {
+                [orderString appendFormat:@"\"%@\" %@,", key, order];
             }
         }
-        if(orderString.length > 1){
-            [orderString deleteCharactersInRange:NSMakeRange(orderString.length - 1, 1)];
-        }
     }
-    if(orderString.length > 0){
+    if(orderString.length > 1){
+        [orderString deleteCharactersInRange:NSMakeRange(orderString.length - 1, 1)];
         return [NSString stringWithFormat:@" ORDER BY %@",orderString];
     }
     return @"";

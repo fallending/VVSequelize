@@ -47,7 +47,7 @@
 @property (nonatomic, copy  , readonly) NSString *tableName; ///< 表名
 
 /**
- 定义ORM模型.使用默认数据库,默认表名.
+ 定义ORM模型,使用默认数据库,默认表名.
  
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
@@ -59,7 +59,7 @@
 
 
 /**
- 定义ORM模型.使用自动主键,无额外选项.
+ 定义ORM模型,可指定表名和数据库.
  
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
@@ -74,7 +74,7 @@
                          dataBase:(nullable VVDataBase *)vvdb;
 
 /**
- 定义ORM模型.使用自动主键,无额外选项.
+ 定义ORM模型,可指定不存储字段.
  
  @param cls 模型(Class)
  @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
@@ -86,12 +86,31 @@
  */
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(nullable NSString *)primaryKey
-                         excludes:(nullable NSArray *)excludes
+                         excludes:(nullable NSArray<NSString *> *)excludes
                         tableName:(nullable NSString *)tableName
                          dataBase:(nullable VVDataBase *)vvdb;
 
 /**
- 定义ORM模型.可自动新增字段,##不会修改或删除原有字段##.
+ 定义ORM模型,可指定不存储字段和唯一性约束字段.
+ 
+ @param cls 模型(Class)
+ @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
+ @param uniques 唯一性约束的数据表字段名
+ @param excludes 不存入数据表的字段名
+ @param tableName 表名,nil表示使用cls类名
+ @param vvdb 数据库,nil表示使用默认数据库
+ @return ORM模型
+ @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
+ */
++ (instancetype)ormModelWithClass:(Class)cls
+                       primaryKey:(nullable NSString *)primaryKey
+                          uniques:(nullable NSArray<NSString *> *)uniques
+                         excludes:(nullable NSArray<NSString *> *)excludes
+                        tableName:(nullable NSString *)tableName
+                         dataBase:(nullable VVDataBase *)vvdb;
+
+/**
+ 定义ORM模型,完全自定义.
  
  @param cls 模型(Class)
  @param manuals 自定义各个字段的配置.格式为VVOrmSchemaItem数组,或可转换为VVOrmSchemaItem的json数组.
@@ -145,11 +164,11 @@
 /**
  根据条件更新数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @param values 要设置的数据,格式为{"field1":data1,"field2":data2,...}
  @return 是否更新成功
  */
-- (BOOL)update:(nullable id)condition
+- (BOOL)update:(nullable NSDictionary *)condition
         values:(nonnull NSDictionary *)values;
 
 /**
@@ -191,12 +210,12 @@
 /**
  将某个字段的值增加某个数值
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @param field 要更新的指端
  @param value 要增加的值,可为负数
  @return 是否增加成功
  */
-- (BOOL)increase:(nullable id)condition
+- (BOOL)increase:(nullable NSDictionary *)condition
            field:(nonnull NSString *)field
            value:(NSInteger)value;
 
@@ -215,85 +234,85 @@
 /**
  查询一条数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @return 查询结果,对象
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (nullable id)findOne:(nullable id)condition;
+- (nullable id)findOne:(nullable NSDictionary *)condition;
 
 /**
  查询一条数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
- @param orderBy 排序方式,NSString或NSArray<NSDictionary *>, 格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
+ @param orderBy 排序方式
  @return 查询结果,对象
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (nullable id)findOne:(nullable id)condition
-               orderBy:(nullable id)orderBy;
+- (nullable id)findOne:(nullable NSDictionary *)condition
+               orderBy:(nullable NSArray *)orderBy;
 
 /**
  根据条件查询所有数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @return 查询结果,对象数组
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (NSArray *)findAll:(nullable id)condition;
+- (NSArray *)findAll:(nullable NSDictionary *)condition;
 
 /**
  根据条件查询数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
- @param orderBy 排序方式,NSString或NSArray<NSDictionary *>, 格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
+ @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 查询结果,对象数组
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (NSArray *)findAll:(nullable id)condition
-             orderBy:(nullable id)orderBy
+- (NSArray *)findAll:(nullable NSDictionary *)condition
+             orderBy:(nullable NSArray *)orderBy
                range:(NSRange)range;
 
 /**
  根据条件查询数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @param fields 指定查询的字段
- @param orderBy 排序方式,NSString或NSArray<NSDictionary *>, 格式详见VVSqlGenerator
+ @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (NSArray *)findAll:(nullable id)condition
+- (NSArray *)findAll:(nullable NSDictionary *)condition
               fields:(nullable NSArray<NSString *> *)fields
-             orderBy:(nullable id)orderBy
+             orderBy:(nullable NSArray *)orderBy
                range:(NSRange)range;
 
 /**
  根据条件查询数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @param fields 指定查询的字段
- @param orderBy 排序方式,NSString或NSArray<NSDictionary *>, 格式详见VVSqlGenerator
+ @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @param jsonResult 是否强制返回JsonOjbects.YES-强制返回JsonObject,NO-根据fields参数确定返回结果
  @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  @attention 若使用VVKeyValue作为对象/字典互转工具,某些数据转成字典后为NSData的描述字符串,不能直接使用.
  */
-- (NSArray *)findAll:(nullable id)condition
+- (NSArray *)findAll:(nullable NSDictionary *)condition
               fields:(nullable NSArray<NSString *> *)fields
-             orderBy:(nullable id)orderBy
+             orderBy:(nullable NSArray *)orderBy
                range:(NSRange)range
           jsonResult:(BOOL)jsonResult;
 
 /**
  根据条件统计数据条数
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @return 数据条数
  */
-- (NSInteger)count:(nullable id)condition;
+- (NSInteger)count:(nullable NSDictionary *)condition;
 
 /**
  检查数据库中是否保存有某个数据
@@ -306,13 +325,13 @@
 /**
  根据条件查询数据和数据数量.数量只根据查询条件获取,不受range限制.
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
- @param orderBy 排序方式,NSString或NSArray<NSDictionary *>, 格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
+ @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 数据(对象数组)和数据数量,格式为{"count":100,list:[object]}
  */
-- (NSDictionary *)findAndCount:(nullable id)condition
-                       orderBy:(nullable id)orderBy
+- (NSDictionary *)findAndCount:(nullable NSDictionary *)condition
+                       orderBy:(nullable NSArray *)orderBy
                          range:(NSRange)range;
 
 /**
@@ -378,10 +397,10 @@
 /**
  根据条件删除数据
  
- @param condition 查询条件,NSString或NSDictionary,格式详见VVSqlGenerator
+ @param condition 查询条件,格式详见VVSqlGenerator
  @return 是否删除成功
  */
-- (BOOL)delete:(nullable id)condition;
+- (BOOL)delete:(nullable NSDictionary *)condition;
 
 @end
 

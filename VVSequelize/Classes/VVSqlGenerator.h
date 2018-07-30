@@ -68,21 +68,18 @@
  
  示例:
  
- @"\"age\" > 10" -> WHERE "age" > 10
-
- "name":"zhangsan", "age":26} -> WHERE ("name" = "zhangsan" AND "age" = "26")
+ "name":"zhangsan", "age":26} -> ("name" = "zhangsan" AND "age" = "26")
  
- "$or":[{"name":"zhangsan","age":26},{"age":30}]} -> WHERE (("name" = "zhangsan" AND "age" = "26") OR "age" = "30")
+ "$or":[{"name":"zhangsan","age":26},{"age":30}]} -> (("name" = "zhangsan" AND "age" = "26") OR "age" = "30")
  
- "age":{"$lt":(30)}} -> WHERE "age" < "30"
+ "age":{"$lt":(30)}} -> "age" < "30"
  
- "type":{"$in":["a","b","c"]}} -> WHERE "type" IN ("a","b","c")
+ "type":{"$in":["a","b","c"]}} -> "type" IN ("a","b","c")
  
  @param condition 自定义条件
  @return where语句
- @attention 直接传入NSString,不能带"WHERE"关键字
  */
-+ (NSString *)where:(id)condition;
++ (NSString *)where:(NSDictionary *)condition;
 
 
 /**
@@ -90,17 +87,14 @@
 
  示例:
  
- @"\"age\" ASC,\"score\" DESC" -> ORDER BY "age" ASC,"score" DESC
-
  [{"age":kVsOrderAsc},{"score":kVsOrderDesc}] -> ORDER BY "age" ASC,"score" DESC
  
  [{"age":"ASC"},{"score":"DESC"}] -> ORDER BY "age" ASC,"score" DESC
  
  @param orderBy 排序条件,NSString或NSArray<NSDictionary *>,数组中的dictionary仅有一组键值对.
  @return 排序语句
- @attention 直接传入NSString,不能带"ORDER BY"关键字
  */
-+ (NSString *)orderBy:(id)orderBy;
++ (NSString *)orderBy:(NSArray *)orderBy;
 
 
 /**
