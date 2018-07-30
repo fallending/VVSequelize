@@ -26,7 +26,7 @@
 {
     [super setUp];
     
-    VVSequelize.loglevel = 2;
+    VVSequelize.loglevel = 1;
 #if 0
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];
@@ -77,7 +77,7 @@
     NSLog(@"array:%@",array);
     array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
     NSLog(@"array:%@",array);
-    id obj = [self.mobileModel findOne:nil];
+    id obj = [self.mobileModel findOne:nil orderBy:@[@{@"mobile":kVsOrderDesc}]];
     NSLog(@"obj:%@",obj);
 }
 

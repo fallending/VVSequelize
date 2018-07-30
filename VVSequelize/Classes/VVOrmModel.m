@@ -435,7 +435,7 @@
 
 @implementation VVOrmModel (Update)
 
-- (BOOL)update:(NSDictionary *)condition
+- (BOOL)update:(id)condition
         values:(NSDictionary *)values{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
@@ -504,7 +504,7 @@
     return succCount;
 }
 
-- (BOOL)increase:(NSDictionary *)condition
+- (BOOL)increase:(id)condition
            field:(NSString *)field
            value:(NSInteger)value{
     if (value == 0) { return YES; }
@@ -530,37 +530,37 @@
     return [self findOne:@{_primaryKey:PKVal}];
 }
 
-- (id)findOne:(NSDictionary *)condition{
+- (id)findOne:(id)condition{
     NSArray *array = [self findAll:condition orderBy:nil range:NSMakeRange(0, 1)];
     return array.count > 0 ? array.firstObject : nil;
 }
 
-- (id)findOne:(NSDictionary *)condition
-      orderBy:(NSDictionary *)orderBy{
+- (id)findOne:(id)condition
+      orderBy:(id)orderBy{
     NSArray *array = [self findAll:condition orderBy:orderBy range:NSMakeRange(0, 1)];
     return array.count > 0 ? array.firstObject : nil;
 }
 
-- (NSArray *)findAll:(NSDictionary *)condition{
+- (NSArray *)findAll:(id)condition{
     return [self findAll:condition orderBy:nil range:VVRangeAll];
 }
 
-- (NSArray *)findAll:(NSDictionary *)condition
-             orderBy:(NSDictionary *)orderBy
+- (NSArray *)findAll:(id)condition
+             orderBy:(id)orderBy
                range:(NSRange)range{
     return [self findAll:condition fields:nil orderBy:orderBy range:range];
 }
 
-- (NSArray *)findAll:(nullable NSDictionary *)condition
-              fields:(nullable NSArray<NSString *> *)fields
-             orderBy:(nullable NSDictionary *)orderBy
+- (NSArray *)findAll:(id)condition
+              fields:(NSArray<NSString *> *)fields
+             orderBy:(id)orderBy
                range:(NSRange)range{
     return [self findAll:condition fields:fields orderBy:orderBy range:range jsonResult:NO];
 }
 
-- (NSArray *)findAll:(NSDictionary *)condition
+- (NSArray *)findAll:(id)condition
               fields:(NSArray<NSString *> *)fields
-             orderBy:(NSDictionary *)orderBy
+             orderBy:(id)orderBy
                range:(NSRange)range
           jsonResult:(BOOL)jsonResult{
     if(self.isDropped) {[self createOrModifyTable];}
@@ -587,7 +587,7 @@
     return jsonArray;
 }
 
-- (NSInteger)count:(NSDictionary *)condition{
+- (NSInteger)count:(id)condition{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
@@ -618,8 +618,8 @@
     return [self count:condition] > 0;
 }
 
-- (NSDictionary *)findAndCount:(NSDictionary *)condition
-                       orderBy:(NSDictionary *)orderBy
+- (NSDictionary *)findAndCount:(id)condition
+                       orderBy:(id)orderBy
                          range:(NSRange)range{
     NSUInteger count = [self count:condition];
     NSArray *array = [self findAll:condition orderBy:orderBy range:range];
@@ -709,7 +709,7 @@
     return [_vvdb executeUpdate:sql];
 }
 
-- (BOOL)delete:(NSDictionary *)condition{
+- (BOOL)delete:(id)condition{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
