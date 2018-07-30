@@ -149,8 +149,17 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
     if([targetVal isKindOfClass:[NSString class]]){
         return targetVal;
     }
-    else if([targetVal isKindOfClass:[NSArray class]] || [targetVal isKindOfClass:[NSDictionary class]]){
-        NSData *data = [NSJSONSerialization dataWithJSONObject:targetVal options:0 error:nil];
+    else if([targetVal isKindOfClass:[NSArray class]]){
+        NSArray *array = [[self class] convertArrayInlineDataToString:targetVal];
+        NSLog(@"targetVal:%@\narray:%@",targetVal,array);
+        NSData *data = [NSJSONSerialization dataWithJSONObject:array options:0 error:nil];
+        if(data.length == 0) return nil;
+        return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
+    else if([targetVal isKindOfClass:[NSDictionary class]]){
+        NSDictionary *dic = [[self class] convertDictionaryInlineDataToString:targetVal];
+        NSLog(@"targetVal:%@\ndic:%@",targetVal,dic);
+        NSData *data = [NSJSONSerialization dataWithJSONObject:dic options:0 error:nil];
         if(data.length == 0) return nil;
         return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     }
@@ -336,6 +345,45 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
         default:
             return self;
     }
+}
+
++ (NSArray *)convertArrayInlineDataToString:(NSArray *)array{
+    NSMutableArray *tempArray = [NSMutableArray arrayWithCapacity:0];
+    for (id obj in array) {
+        if([obj isKindOfClass:NSData.class]){
+            [tempArray addObject:[obj description]];
+        }
+        else if([obj isKindOfClass:NSArray.class]){
+            [tempArray addObject:[self convertArrayInlineDataToString:obj]];
+        }
+        else if([obj isKindOfClass:NSDictionary.class]){
+            [tempArray addObject:[self convertDictionaryInlineDataToString:obj]];
+        }
+        else{
+            [tempArray addObject:obj];
+        }
+    }
+    return tempArray;
+}
+
++ (NSDictionary *)convertDictionaryInlineDataToString:(NSDictionary *)dictionary{
+    NSMutableDictionary *tempdic = [NSMutableDictionary dictionaryWithCapacity:0];
+    for (NSString *key in dictionary) {
+        id obj = dictionary[key];
+        if([obj isKindOfClass:NSData.class]){
+            tempdic[key] = [obj description];
+        }
+        else if([obj isKindOfClass:NSArray.class]){
+            tempdic[key] =[self convertArrayInlineDataToString:obj];
+        }
+        else if([obj isKindOfClass:NSDictionary.class]){
+            tempdic[key] =[self convertDictionaryInlineDataToString:obj];
+        }
+        else{
+            tempdic[key] = obj;
+        }
+    }
+    return tempdic;
 }
 
 /**
