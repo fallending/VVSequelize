@@ -26,7 +26,7 @@
 {
     [super setUp];
     
-    VVSequelize.loglevel = 2;
+    VVSequelize.loglevel = 1;
 #if 0
     [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
         return [cls mj_objectWithKeyValues:dic];

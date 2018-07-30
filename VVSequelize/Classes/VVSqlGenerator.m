@@ -203,7 +203,7 @@
                 NSString *key = dic.allKeys.firstObject;
                 NSString *order = dic[key];
                 if ([order isEqualToString:kVsOrderAsc] || [order isEqualToString:kVsOrderDesc]) {
-                    [orderString appendFormat:@"%@ %@,", key, order];
+                    [orderString appendFormat:@"\"%@\" %@,", key, order];
                 }
             }
         }
