@@ -215,28 +215,13 @@
 
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey
-                         excludes:(NSArray<NSString *> *)excludes
-                        tableName:(NSString *)tableName
-                         dataBase:(VVDataBase *)vvdb{
-    return [self ormModelWithClass:cls primaryKey:primaryKey uniques:nil excludes:excludes tableName:tableName dataBase:vvdb];
-}
-
-+ (instancetype)ormModelWithClass:(Class)cls
-                       primaryKey:(NSString *)primaryKey
-                         uniques:(NSArray<NSString *> *)uniques
-                         excludes:(NSArray<NSString *> *)excludes
+                         excludes:(NSArray *)excludes
                         tableName:(NSString *)tableName
                          dataBase:(VVDataBase *)vvdb{
     NSMutableArray *manuals = [NSMutableArray arrayWithCapacity:0];
     if(primaryKey && primaryKey.length > 0){
         VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
         [manuals addObject:column];
-    }
-    if(uniques && uniques.count > 0){
-        for (NSString *unique in uniques) {
-            VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":unique,@"unique":@(YES)}];
-            [manuals addObject:column];
-        }
     }
     return [self ormModelWithClass:cls manuals:manuals excludes:excludes tableName:tableName dataBase:vvdb logAt:YES];
 }
