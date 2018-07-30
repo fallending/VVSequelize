@@ -77,7 +77,7 @@
     NSLog(@"array:%@",array);
     array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
     NSLog(@"array:%@",array);
-    id obj = [self.mobileModel findOne:nil];
+    id obj = [self.mobileModel findOne:nil orderBy:@[@{@"mobile":kVsOrderDesc}]];
     NSLog(@"obj:%@",obj);
 }
 
