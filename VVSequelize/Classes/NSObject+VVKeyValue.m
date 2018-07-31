@@ -151,14 +151,12 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
     }
     else if([targetVal isKindOfClass:[NSArray class]]){
         NSArray *array = [[self class] convertArrayInlineDataToString:targetVal];
-        NSLog(@"targetVal:%@\narray:%@",targetVal,array);
         NSData *data = [NSJSONSerialization dataWithJSONObject:array options:0 error:nil];
         if(data.length == 0) return nil;
         return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     }
     else if([targetVal isKindOfClass:[NSDictionary class]]){
         NSDictionary *dic = [[self class] convertDictionaryInlineDataToString:targetVal];
-        NSLog(@"targetVal:%@\ndic:%@",targetVal,dic);
         NSData *data = [NSJSONSerialization dataWithJSONObject:dic options:0 error:nil];
         if(data.length == 0) return nil;
         return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];

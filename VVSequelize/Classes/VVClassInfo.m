@@ -136,10 +136,8 @@ VVStructType VVStructGetType(NSString *typeEncodeing) {
     VVPropertyKeyword   keyword = 0;
     VVPropertyQualifier qualifier = 0;
     unsigned int attrCount;
-//    NSLog(@"name: %@",_name);
     objc_property_attribute_t *attrs = property_copyAttributeList(property, &attrCount);
     for (unsigned int i = 0; i < attrCount; i++) {
-//        NSLog(@"name: %s, value: %s",attrs[i].name, attrs[i].value);
         switch (attrs[i].name[0]) {
                 //MAKR: type & nsType
             case 'T': { // Type encoding
