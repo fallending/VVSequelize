@@ -22,9 +22,15 @@
 
 //MARK: - Where语句
 
-+ (NSString *)where:(NSDictionary *)condition{
-    NSString *where = [[self class] key:nil _and:condition];
-    return where.length > 0 ? [NSString stringWithFormat:@" WHERE %@", where] : @"";
++ (NSString *)where:(id)condition{
+    if([condition isKindOfClass:NSString.class] && [condition length] > 0){
+        return [NSString stringWithFormat:@" WHERE %@",condition];
+    }
+    else if([condition isKindOfClass:NSArray.class]){
+        NSString *where = [[self class] key:nil _and:condition];
+        return where.length > 0 ? [NSString stringWithFormat:@" WHERE %@", where] : @"";
+    }
+    return @"";
 }
 
 + (NSString *)key:(NSString *)key _operation:(NSString *)op value:(id)val{
@@ -188,20 +194,25 @@
 }
 
 //MARK: - Order语句
-+ (NSString *)orderBy:(NSArray *)orderBy{
-    NSMutableString *orderString = [NSMutableString stringWithCapacity:0];
-    for (NSDictionary *dic in orderBy) {
-        if(dic.count == 1){
-            NSString *key = dic.allKeys.firstObject;
-            NSString *order = dic[key];
-            if ([order isEqualToString:kVsOrderAsc] || [order isEqualToString:kVsOrderDesc]) {
-                [orderString appendFormat:@"\"%@\" %@,", key, order];
++ (NSString *)orderBy:(id)orderBy{
+    if([orderBy isKindOfClass:NSString.class] && [orderBy length] > 0){
+        return [NSString stringWithFormat:@" ORDER BY %@",orderBy];
+    }
+    else if([orderBy isKindOfClass:NSArray.class]){
+        NSMutableString *orderString = [NSMutableString stringWithCapacity:0];
+        for (NSDictionary *dic in orderBy) {
+            if(dic.count == 1){
+                NSString *key = dic.allKeys.firstObject;
+                NSString *order = dic[key];
+                if ([order isEqualToString:kVsOrderAsc] || [order isEqualToString:kVsOrderDesc]) {
+                    [orderString appendFormat:@"\"%@\" %@,", key, order];
+                }
             }
         }
-    }
-    if(orderString.length > 1){
-        [orderString deleteCharactersInRange:NSMakeRange(orderString.length - 1, 1)];
-        return [NSString stringWithFormat:@" ORDER BY %@",orderString];
+        if(orderString.length > 1){
+            [orderString deleteCharactersInRange:NSMakeRange(orderString.length - 1, 1)];
+            return [NSString stringWithFormat:@" ORDER BY %@",orderString];
+        }
     }
     return @"";
 }

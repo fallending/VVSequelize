@@ -168,7 +168,7 @@
  @param values 要设置的数据,格式为{"field1":data1,"field2":data2,...}
  @return 是否更新成功
  */
-- (BOOL)update:(nullable NSDictionary *)condition
+- (BOOL)update:(nullable id)condition
         values:(nonnull NSDictionary *)values;
 
 /**
@@ -215,7 +215,7 @@
  @param value 要增加的值,可为负数
  @return 是否增加成功
  */
-- (BOOL)increase:(nullable NSDictionary *)condition
+- (BOOL)increase:(nullable id)condition
            field:(nonnull NSString *)field
            value:(NSInteger)value;
 
@@ -238,7 +238,7 @@
  @return 查询结果,对象
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (nullable id)findOne:(nullable NSDictionary *)condition;
+- (nullable id)findOne:(nullable id)condition;
 
 /**
  查询一条数据
@@ -248,8 +248,8 @@
  @return 查询结果,对象
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (nullable id)findOne:(nullable NSDictionary *)condition
-               orderBy:(nullable NSArray *)orderBy;
+- (nullable id)findOne:(nullable id)condition
+               orderBy:(nullable id)orderBy;
 
 /**
  根据条件查询所有数据
@@ -258,7 +258,7 @@
  @return 查询结果,对象数组
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (NSArray *)findAll:(nullable NSDictionary *)condition;
+- (NSArray *)findAll:(nullable id)condition;
 
 /**
  根据条件查询数据
@@ -269,8 +269,8 @@
  @return 查询结果,对象数组
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (NSArray *)findAll:(nullable NSDictionary *)condition
-             orderBy:(nullable NSArray *)orderBy
+- (NSArray *)findAll:(nullable id)condition
+             orderBy:(nullable id)orderBy
                range:(NSRange)range;
 
 /**
@@ -283,9 +283,9 @@
  @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
-- (NSArray *)findAll:(nullable NSDictionary *)condition
+- (NSArray *)findAll:(nullable id)condition
               fields:(nullable NSArray<NSString *> *)fields
-             orderBy:(nullable NSArray *)orderBy
+             orderBy:(nullable id)orderBy
                range:(NSRange)range;
 
 /**
@@ -300,9 +300,9 @@
  @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  @attention 若使用VVKeyValue作为对象/字典互转工具,某些数据转成字典后为NSData的描述字符串,不能直接使用.
  */
-- (NSArray *)findAll:(nullable NSDictionary *)condition
+- (NSArray *)findAll:(nullable id)condition
               fields:(nullable NSArray<NSString *> *)fields
-             orderBy:(nullable NSArray *)orderBy
+             orderBy:(nullable id)orderBy
                range:(NSRange)range
           jsonResult:(BOOL)jsonResult;
 
@@ -312,7 +312,7 @@
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 数据条数
  */
-- (NSInteger)count:(nullable NSDictionary *)condition;
+- (NSInteger)count:(nullable id)condition;
 
 /**
  检查数据库中是否保存有某个数据
@@ -330,8 +330,8 @@
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 数据(对象数组)和数据数量,格式为{"count":100,list:[object]}
  */
-- (NSDictionary *)findAndCount:(nullable NSDictionary *)condition
-                       orderBy:(nullable NSArray *)orderBy
+- (NSDictionary *)findAndCount:(nullable id)condition
+                       orderBy:(nullable id)orderBy
                          range:(NSRange)range;
 
 /**
@@ -400,7 +400,7 @@
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 是否删除成功
  */
-- (BOOL)delete:(nullable NSDictionary *)condition;
+- (BOOL)delete:(nullable id)condition;
 
 @end
 

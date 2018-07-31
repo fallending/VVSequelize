@@ -68,18 +68,23 @@
  
  示例:
  
- "name":"zhangsan", "age":26} -> ("name" = "zhangsan" AND "age" = "26")
+ "name" = "zhangsan" ->   WHERE "name" = "zhangsan"
  
- "$or":[{"name":"zhangsan","age":26},{"age":30}]} -> (("name" = "zhangsan" AND "age" = "26") OR "age" = "30")
+ {"name":"zhangsan", "age":26} ->  WHERE ("name" = "zhangsan" AND "age" = "26")
  
- "age":{"$lt":(30)}} -> "age" < "30"
+ "$or":[{"name":"zhangsan","age":26},{"age":30}]} ->  WHERE (("name" = "zhangsan" AND "age" = "26") OR "age" = "30")
  
- "type":{"$in":["a","b","c"]}} -> "type" IN ("a","b","c")
+ "age":{"$lt":(30)}} ->  WHERE "age" < "30"
  
- @param condition 自定义条件
+ "type":{"$in":["a","b","c"]}} ->  WHERE "type" IN ("a","b","c")
+ 
+ "type":{"$in":[]}} ->  WHERE "type" IN ()
+
+ @param condition 自定义条件,可传入dictionary和string
  @return where语句
+ @attention 传入原始SQL语句时,只能传入where部分,且不能带`where`关键字; 原生语句应注意`关键字`和`值`用引号包含.
  */
-+ (NSString *)where:(NSDictionary *)condition;
++ (NSString *)where:(id)condition;
 
 
 /**
@@ -87,14 +92,17 @@
 
  示例:
  
+ "age" ASC,"score" DESC -> ORDER BY "age" ASC,"score" DESC
+ 
  [{"age":kVsOrderAsc},{"score":kVsOrderDesc}] -> ORDER BY "age" ASC,"score" DESC
  
  [{"age":"ASC"},{"score":"DESC"}] -> ORDER BY "age" ASC,"score" DESC
  
  @param orderBy 排序条件,NSString或NSArray<NSDictionary *>,数组中的dictionary仅有一组键值对.
  @return 排序语句
+ @attention 传入原始SQL语句时,只能传入order by部分,且不能带`order by`关键字; 原生语句应注意`关键字`和`值`用引号包含.
  */
-+ (NSString *)orderBy:(NSArray *)orderBy;
++ (NSString *)orderBy:(id)orderBy;
 
 
 /**
