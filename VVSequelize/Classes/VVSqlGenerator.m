@@ -161,8 +161,9 @@
     for (id val in array) {
         [inString appendFormat:@"\"%@\",",val];
     }
-    if (inString.length <= 1) return @"";
-    [inString deleteCharactersInRange:NSMakeRange(inString.length - 1, 1)];
+    if (inString.length >= 1){
+        [inString deleteCharactersInRange:NSMakeRange(inString.length - 1, 1)];
+    }
     return [NSString stringWithFormat:@"\"%@\" IN (%@)", key, inString];
 }
 
@@ -172,8 +173,9 @@
     for (id val in array) {
         [inString appendFormat:@"\"%@\",",val];
     }
-    if (inString.length <= 1) return @"";
-    [inString deleteCharactersInRange:NSMakeRange(inString.length - 1, 1)];
+    if (inString.length >= 1){
+        [inString deleteCharactersInRange:NSMakeRange(inString.length - 1, 1)];
+    }
     return [NSString stringWithFormat:@"\"%@\" NOT IN (%@)", key, inString];
 }
 
