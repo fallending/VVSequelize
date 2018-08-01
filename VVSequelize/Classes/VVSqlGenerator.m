@@ -26,7 +26,7 @@
     if([condition isKindOfClass:NSString.class] && [condition length] > 0){
         return [NSString stringWithFormat:@" WHERE %@",condition];
     }
-    else if([condition isKindOfClass:NSArray.class]){
+    else if([condition isKindOfClass:NSDictionary.class]){
         NSString *where = [[self class] key:nil _and:condition];
         return where.length > 0 ? [NSString stringWithFormat:@" WHERE %@", where] : @"";
     }

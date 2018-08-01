@@ -70,17 +70,14 @@
 
 - (void)testFind{
     NSArray *array = [self.mobileModel findAll:nil fields:@[@"mobile",@"city"] orderBy:nil range:NSMakeRange(0, 10)];
-    NSLog(@"array:%@",array);
     array = [self.mobileModel findAll:nil fields:nil orderBy:nil range:NSMakeRange(0, 10)];
-    NSLog(@"array:%@",array);
     array = [self.mobileModel findAll:nil fields:@[@"",@""] orderBy:nil range:NSMakeRange(0, 10)];
-    NSLog(@"array:%@",array);
     array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
-    NSLog(@"array:%@",array);
+    array = [self.mobileModel findAll:@{@"mobile":@{kVsOpGt:@(15000000000)}} orderBy:@[@{@"mobile":kVsOrderAsc},@{@"city":kVsOrderDesc}] range:NSMakeRange(0, 5)];
+    array = [self.mobileModel findAll:@"mobile > 15000000000" orderBy:@"mobile ASC,city DESC" range:NSMakeRange(0, 5)];
     id obj = [self.mobileModel findOne:nil orderBy:@[@{@"mobile":kVsOrderDesc},@{@"city":kVsOrderDesc}]];
-    NSLog(@"obj:%@",obj);
     obj = [self.mobileModel findOne:nil orderBy:@"mobile DESC,city ASC"];
-    NSLog(@"obj:%@",obj);
+    if(array && obj) {}
 }
 
 - (void)testInQueue{
