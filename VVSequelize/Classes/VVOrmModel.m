@@ -65,7 +65,7 @@
 @property (nonatomic        ) Class cls;
 @property (nonatomic, copy  ) NSString *primaryKey;
 @property (nonatomic, assign) BOOL logAt;
-
+@property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, assign) BOOL isDropped; ///< ormModel对应的表是否被drop
 
 @end
@@ -266,6 +266,12 @@
     model.manuals = manuals;
     model.excludes = excludes;
     model.logAt = logAt;
+    if(VVSequelize.useCache){
+        NSCache *cache = [[NSCache alloc] init];
+        cache.name = tbname;
+        cache.countLimit = 1000;
+        model.cache = cache;
+    }
     [model createOrModifyTable];
     [[VVOrmModel modelPool] setObject:model forKey:poolKey];
     return model;
@@ -423,6 +429,7 @@
         [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
         [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",_tableName,keyString,valString];
+        [_cache removeAllObjects];
         return [_vvdb executeUpdate:sql values:values];
     }
     return NO;
@@ -460,6 +467,7 @@
         }
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
+        [_cache removeAllObjects];
         return [_vvdb executeUpdate:sql values:objs];
     }
     return NO;
@@ -523,6 +531,7 @@
     [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
+    [_cache removeAllObjects];
     return [_vvdb executeUpdate:sql];
 }
 
@@ -584,19 +593,27 @@
     NSString *order = [VVSqlGenerator orderBy:orderBy];
     NSString *limit = [VVSqlGenerator limit:range];
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM \"%@\"%@%@%@ ", fieldsStr, _tableName,where,order,limit];
-    NSArray *jsonArray = [_vvdb executeQuery:sql blobFields:self.blobs];
-    if(jsonResult) return jsonArray;
-    if ([fieldsStr isEqualToString:@"*"] && VVSequelize.keyValuesArrayToObjects) {
-        return VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
+    NSArray *results = [_cache objectForKey:sql];
+    if(!results){
+        NSArray *jsonArray = [_vvdb executeQuery:sql blobFields:self.blobs];
+        results = jsonArray;
+        if(!jsonResult && [fieldsStr isEqualToString:@"*"] && VVSequelize.keyValuesArrayToObjects){
+            results = VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
+        }
+        [_cache setObject:results forKey:sql];
     }
-    return jsonArray;
+    return results;
 }
 
 - (NSInteger)count:(id)condition{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
-    NSArray *array = [_vvdb executeQuery:sql];
+    NSArray *array = [_cache objectForKey:sql];
+    if(!array){
+        array = [_vvdb executeQuery:sql];
+        [_cache setObject:array forKey:sql];
+    }
     NSInteger count = 0;
     if (array.count > 0) {
         NSDictionary *dic = array.firstObject;
@@ -660,7 +677,11 @@
          || [method isEqualToString:@"min"]
          || [method isEqualToString:@"sum"])) return nil;
     NSString *sql = [NSString stringWithFormat:@"SELECT %@(\"%@\") AS \"%@\" FROM \"%@\"", method, field, method, _tableName];
-    NSArray *array = [_vvdb executeQuery:sql];
+    NSArray *array = [_cache objectForKey:sql];
+    if(!array){
+        array = [_vvdb executeQuery:sql];
+        [_cache setObject:array forKey:sql];
+    }
     id result = nil;
     if(array.count > 0){
         NSDictionary *dic = array.firstObject;
@@ -675,6 +696,7 @@
 
 - (BOOL)drop{
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",_tableName];
+    [_cache removeAllObjects];
     _isDropped = [_vvdb executeUpdate:sql];
     return _isDropped;
 }
@@ -696,6 +718,7 @@
     if([_primaryKey isEqualToString:kVsPkid] && [pkid integerValue] == 0) return NO;
     NSString *where = [VVSqlGenerator where:@{_primaryKey:pkid}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
+    [_cache removeAllObjects];
     return [_vvdb executeUpdate:sql];
 }
 
@@ -711,6 +734,7 @@
     }
     NSString *where = [VVSqlGenerator where:@{_primaryKey:@{kVsOpIn:pkids}}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
+    [_cache removeAllObjects];
     return [_vvdb executeUpdate:sql];
 }
 
@@ -718,6 +742,7 @@
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
+    [_cache removeAllObjects];
     return [_vvdb executeUpdate:sql];
 }
 

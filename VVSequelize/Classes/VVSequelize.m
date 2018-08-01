@@ -10,7 +10,7 @@
 @interface VVSequelizeInnerPrivate: NSObject
 
 @property (nonatomic, assign) NSInteger loglevel;        ///< 调试信息
-@property (nonatomic, assign) BOOL      readability;     ///< DB数据可读性
+@property (nonatomic, assign) BOOL      useCache;        ///< 是否使用缓存
 
 @property (nonatomic, copy) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
 @property (nonatomic, copy) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
@@ -30,6 +30,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         _innerPrivate = [[VVSequelizeInnerPrivate alloc] init];
+        _innerPrivate.useCache = YES; //默认使用cache
     });
     return _innerPrivate;
 }
@@ -42,6 +43,14 @@
 
 + (void)setLoglevel:(NSInteger)loglevel{
     [[self class] innerPrivate].loglevel = loglevel;
+}
+
++ (BOOL)useCache{
+    return [[self class] innerPrivate].useCache;
+}
+
++(void)setUseCache:(BOOL)useCache{
+    [[self class] innerPrivate].useCache = useCache;
 }
 
 //MARK: - 对象和字典互转

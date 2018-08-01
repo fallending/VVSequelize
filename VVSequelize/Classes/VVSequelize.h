@@ -43,6 +43,8 @@ typedef id(^VVObjectsToKeyValuesArray)(Class,NSArray *);
  */
 @property (nonatomic, assign, class) NSInteger loglevel;
 
+@property (nonatomic, assign, class) BOOL useCache; ///< 是否使用缓存
+
 //MARK: - 对象/字典互转
 @property (nonatomic, copy, class) VVKeyValuesToObject       keyValuesToObject;        ///< 字典转对象
 @property (nonatomic, copy, class) VVKeyValuesArrayToObjects keyValuesArrayToObjects;  ///< 字典数组转对象数组
