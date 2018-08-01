@@ -18,8 +18,13 @@
 * [x] 数据存储,C类型支持: char *, struct, union
 * [x] 子对象存储为Json字符串
 
+## 改动(0.1.6)
+1. condition, orderBy可传入原生语句
+2. orderBy传入NSDictionary改为传入NSArray,处理多个排序的顺序问题
+3. 处理vv_dbStoreValue转换时,NSArray和NSDictionary包含NSData的问题
+
 ## 安装
-目前最新版本号为0.1.5, 基本可食用,以后根据需求不定期更新.
+目前版本基本可食用,以后根据需求不定期更新.
 ```ruby
 pod 'VVSequelize'
 ```
