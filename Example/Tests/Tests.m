@@ -329,7 +329,7 @@
     id val3 = [dic3 vv_dbStoreValue];
     id val4 = [set4 vv_dbStoreValue];
     id val5 = [string5 vv_dbStoreValue];
-    NSLog(@"%@",val1);
+    if(val1 && val2 && val3 && val4 && val5) {}
 }
 @end
 
