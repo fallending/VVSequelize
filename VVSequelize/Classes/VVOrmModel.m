@@ -303,7 +303,7 @@
     NSAssert1(classColumns.count > 0, @"No need to create a table : %@", _tableName);
     
     // 检查数据表是否存在
-    BOOL exist = [self isTableExist];
+    BOOL exist = [_vvdb isTableExist:_tableName];
     NSInteger changed = 0;
     // 若表存在,检查是否需要进行变更.如需变更,则将原数据表进行更名.
     NSString *tempTableName = [NSString stringWithFormat:@"%@_%@",_tableName, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
@@ -381,16 +381,6 @@
             }];
         }
     }
-}
-
-- (BOOL)isTableExist{
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",_tableName];
-    NSArray *array = [_vvdb executeQuery:sql];
-    for (NSDictionary *dic in array) {
-        NSInteger count = [dic[@"count"] integerValue];
-        return count > 0;
-    }
-    return NO;
 }
 
 @end

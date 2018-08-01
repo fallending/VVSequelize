@@ -79,6 +79,14 @@
 - (BOOL)executeUpdate:(NSString *)sql
                values:(nonnull NSArray *)values;
 
+/**
+ 检查数据表是否存在
+
+ @param tableName 表名
+ @return 是否存在
+ */
+- (BOOL)isTableExist:(NSString *)tableName;
+
 //MARK: - 线程安全操作
 /**
  线程安全操作

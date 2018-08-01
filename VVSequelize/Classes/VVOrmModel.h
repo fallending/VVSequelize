@@ -128,13 +128,6 @@
                          dataBase:(nullable VVDataBase *)vvdb
                             logAt:(BOOL)logAt;
 
-/**
- 检查数据表是否存在
- 
- @return 是否存在
- */
-- (BOOL)isTableExist;
-
 @end
 
 @interface VVOrmModel (Create)

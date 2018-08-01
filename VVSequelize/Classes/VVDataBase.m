@@ -117,6 +117,16 @@
     return ret;
 }
 
+- (BOOL)isTableExist:(NSString *)tableName{
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",tableName];
+    NSArray *array = [self executeQuery:sql];
+    for (NSDictionary *dic in array) {
+        NSInteger count = [dic[@"count"] integerValue];
+        return count > 0;
+    }
+    return NO;
+}
+
 //MARK: - 线程安全操作
 - (id)inQueue:(id (^)(void))block{
     __block id ret = nil;
