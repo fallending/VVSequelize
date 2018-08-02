@@ -17,10 +17,11 @@
 * [x] 数据存储,OC类型支持: NSData, NSURL, NSSelector, NSValue, NSDate, NSArray, NSDictionary, NSSet,...
 * [x] 数据存储,C类型支持: char *, struct, union
 * [x] 子对象存储为Json字符串
+* [x] OrmModel查询缓存
 
 ## 改动(0.1.7)
 1. 添加简单的缓存机制,在重复查询过多的情况下,可大幅减少查询次数.
-2. 新增resetOrmModelPool,在删除数据库文件并重新创建后使用.
+2. 新增`[VVOrmModel resetOrmModelPool]`,在删除数据库文件并重新创建后使用.
 
 ## 安装
 目前版本基本可食用,以后根据需求不定期更新.
@@ -70,7 +71,9 @@ end
 ```objc
 // 设置使用自带的字典/对象互转工具
 [VVSequelize useVVKeyValue];
-
+```
+在VVKeyValue出现问题时可使用第三方,但存储套嵌对象时也可能有问题:
+```objc
 // 使用第三方的字典/互转工具
 [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
     return [cls mj_objectWithKeyValues:dic];
