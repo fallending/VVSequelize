@@ -18,10 +18,9 @@
 * [x] 数据存储,C类型支持: char *, struct, union
 * [x] 子对象存储为Json字符串
 
-## 改动(0.1.6)
-1. condition, orderBy可传入原生语句
-2. orderBy传入NSDictionary改为传入NSArray,处理多个排序的顺序问题
-3. 处理vv_dbStoreValue转换时,NSArray和NSDictionary包含NSData的问题
+## 改动(0.1.7)
+1. 添加简单的缓存机制,在重复查询过多的情况下,可大幅减少查询次数.
+2. 新增resetOrmModelPool,在删除数据库文件并重新创建后使用.
 
 ## 安装
 目前版本基本可食用,以后根据需求不定期更新.
