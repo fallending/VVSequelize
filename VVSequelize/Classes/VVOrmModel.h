@@ -128,6 +128,13 @@
                          dataBase:(nullable VVDataBase *)vvdb
                             logAt:(BOOL)logAt;
 
+/**
+ 重置OrmModel Pool
+ 
+ @note 所有OrmModel将重新生成,通常在删除数据库文件后使用
+ */
++ (void)resetOrmModelPool;
+
 @end
 
 @interface VVOrmModel (Create)

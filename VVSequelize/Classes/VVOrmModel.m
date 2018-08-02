@@ -277,6 +277,13 @@
     return model;
 }
 
++ (void)resetOrmModelPool{
+    [[VVOrmModel modelPool] enumerateKeysAndObjectsUsingBlock:^(id key, VVOrmModel *orm, BOOL *stop) {
+        [orm.cache removeAllObjects];
+    }];
+    [[VVOrmModel modelPool] removeAllObjects];
+}
+
 /**
  根据参数,创建或修改表
  */

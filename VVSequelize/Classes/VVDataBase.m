@@ -71,6 +71,8 @@
         if (self) {
             _fmdbQueue = fmdbQueue;
             _fmdb = [fmdbQueue valueForKey:@"_db"];
+            _dbName = dbName;
+            _dbDir  = dirPath;
             _dbPath = dbPath;
             _userDefaultsKey = [NSString stringWithFormat:@"VVDBEncryptKey%@",relativePath];
             self.encryptKey = encryptKey;

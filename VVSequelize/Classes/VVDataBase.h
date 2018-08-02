@@ -8,8 +8,10 @@
 #import <Foundation/Foundation.h>
 
 @interface VVDataBase : NSObject
-@property (nonatomic, strong) NSString *dbPath;
-@property (nonatomic, strong) NSString *encryptKey;
+@property (nonatomic, strong) NSString *encryptKey;         ///< 加密Key,可设置
+@property (nonatomic, strong, readonly) NSString *dbPath;   ///< 数据库文件全路径
+@property (nonatomic, strong, readonly) NSString *dbName;   ///< 数据库文件名
+@property (nonatomic, strong, readonly) NSString *dbDir;    ///< 数据库文件所在目录名
 
 //MARK: - 创建数据库
 /**
