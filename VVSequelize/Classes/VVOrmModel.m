@@ -631,19 +631,10 @@
 
 - (BOOL)isExist:(id)object{
     if(self.isDropped) {[self createOrModifyTable];}
-    NSDictionary *dic = nil;
-    if([object isKindOfClass:[NSDictionary class]]) {
-        dic = object;
-    }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
-    else {
-        return NO;
-    }
-    if(!dic[_primaryKey]) return NO;
-    if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] == 0) return NO;
-    NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
+    id pk = [object valueForKey:_primaryKey];
+    if(!pk) return NO;
+    if([_primaryKey isEqualToString:kVsPkid] && [pk integerValue] == 0) return NO;
+    NSDictionary *condition = @{_primaryKey:pk};
     return [self count:condition] > 0;
 }
 
