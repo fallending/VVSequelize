@@ -10,15 +10,17 @@
 #import "VVSequelize.h"
 #import "VVClassInfo.h"
 
-#define kVsPkid         @"vv_pkid"
-#define kVsCreateAt     @"vv_createAt"
-#define kVsUpdateAt     @"vv_updateAt"
-
 #define VVSqlTypeInteger @"INTEGER"
 #define VVSqlTypeText    @"TEXT"
 #define VVSqlTypeBlob    @"BLOB"
 #define VVSqlTypeReal    @"REAL"
 
+NSNotificationName const VVOrmModelDataChangeNotification = @"VVOrmModelDataChangeNotification";
+NSNotificationName const VVOrmModelDataInsertNotification = @"VVOrmModelDataInsertNotification";
+NSNotificationName const VVOrmModelDataUpdateNotification = @"VVOrmModelDataUpdateNotification";
+NSNotificationName const VVOrmModelDataDeleteNotification = @"VVOrmModelDataDeleteNotification";
+NSNotificationName const VVOrmModelTableCreatedNotification = @"VVOrmModelTableCreatedNotification";
+NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableDeletedNotification";
 
 @implementation VVOrmSchemaItem
 - (BOOL)notnull{
@@ -199,6 +201,30 @@
     return _modelPool;
 }
 
+- (void)handleDataInsertResult:(BOOL)result{
+    if(result){
+        [_cache removeAllObjects];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataInsertNotification object:self];
+    }
+}
+
+- (void)handleDataUpdateResult:(BOOL)result{
+    if(result){
+        [_cache removeAllObjects];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataUpdateNotification object:self];
+    }
+}
+
+- (void)handleDataDeleteResult:(BOOL)result{
+    if(result){
+        [_cache removeAllObjects];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataDeleteNotification object:self];
+    }
+}
+
 //MARK: - Public
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey{
@@ -368,6 +394,7 @@
             return @([self->_vvdb executeUpdate:sql]);
         }];
         NSAssert1(ret.boolValue, @"Failure to create a table: %@", _tableName);
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableCreatedNotification object:self];
     }
     // 如果字段发生变更,将原数据表的数据插入新表
     if(exist && changed > 0){
@@ -377,7 +404,7 @@
         }
         if(allColumns.length > 1) {
             [allColumns deleteCharactersInRange:NSMakeRange(allColumns.length - 1, 1)];
-            [_vvdb inTransaction:^id(BOOL *rollback) {
+            NSNumber *result = [_vvdb inTransaction:^id(BOOL *rollback) {
                 // 将旧表数据复制至新表
                 NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self->_tableName, allColumns, allColumns, tempTableName];
                 BOOL ret = [self->_vvdb executeUpdate:sql];
@@ -392,6 +419,9 @@
                 }
                 return @(ret);
             }];
+            if(result.boolValue){
+                [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+            }
         }
     }
 }
@@ -399,8 +429,13 @@
 @end
 
 @implementation VVOrmModel (Create)
-
 -(BOOL)insertOne:(id)object{
+    BOOL ret = [self insertOneWithoutNotification:object];
+    [self handleDataInsertResult:ret];
+    return ret;
+}
+
+-(BOOL)insertOneWithoutNotification:(id)object{
     if(self.isDropped) {[self createOrModifyTable];}
     NSDictionary *dic = nil;
     if([object isKindOfClass:[NSDictionary class]]) {
@@ -436,7 +471,6 @@
         [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
         [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",_tableName,keyString,valString];
-        [_cache removeAllObjects];
         return [_vvdb executeUpdate:sql values:values];
     }
     return NO;
@@ -445,8 +479,9 @@
 -(NSUInteger)insertMulti:(NSArray *)objects{
     NSUInteger succCount = 0;
     for (id obj in objects) {
-        if([self insertOne:obj]){ succCount ++;}
+        if([self insertOneWithoutNotification:obj]){ succCount ++;}
     }
+    [self handleDataInsertResult:succCount > 0];
     return succCount;
 }
 
@@ -456,6 +491,13 @@
 
 - (BOOL)update:(id)condition
         values:(NSDictionary *)values{
+    BOOL ret = [self updateWithoutNotification:condition values:values];
+    [self handleDataUpdateResult:ret];
+    return ret;
+}
+
+- (BOOL)updateWithoutNotification:(id)condition
+                           values:(NSDictionary *)values{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSMutableString *setString = [NSMutableString stringWithCapacity:0];
@@ -474,13 +516,18 @@
         }
         [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
-        [_cache removeAllObjects];
         return [_vvdb executeUpdate:sql values:objs];
     }
     return NO;
 }
 
 - (BOOL)updateOne:(id)object{
+    BOOL ret = [self updateOneWithoutNotification:object];
+    [self handleDataUpdateResult:ret];
+    return ret;
+}
+
+- (BOOL)updateOneWithoutNotification:(id)object{
     NSDictionary *dic = nil;
     if([object isKindOfClass:[NSDictionary class]]) {
         dic = object;
@@ -508,20 +555,50 @@
     }
 }
 
+
+/**
+ 更新或插入一条数据
+
+ @param object 要更新或插入的数据
+ @return 0-失败,1-更新成功,2-插入成功
+ */
+- (NSUInteger)upsertOneWithoutNotification:(id)object{
+    if([self isExist:object]){
+        BOOL ret = [self updateOneWithoutNotification:object];
+        return ret ? 1 : 0;
+    }
+    else{
+        BOOL ret = [self insertOneWithoutNotification:object];
+        return ret ? 2 : 0;
+    }
+}
+
 - (NSUInteger)updateMulti:(NSArray *)objects{
     NSUInteger succCount = 0;
     for (id object in objects) {
-        if([self updateOne:object]) {succCount ++;}
+        if([self updateOneWithoutNotification:object]) {succCount ++;}
     }
+    [self handleDataUpdateResult:succCount > 0];
     return succCount;
 }
 
 - (NSUInteger)upsertMulti:(NSArray *)objects{
-    NSUInteger succCount = 0;
+    NSUInteger updateCount = 0;
+    NSUInteger insertCount = 0;
     for (id object in objects) {
-        if([self upsertOne:object]) {succCount ++;}
+        NSUInteger ret = [self upsertOneWithoutNotification:object];
+        if(ret == 1) updateCount ++;
+        else if(ret == 2) insertCount ++;
     }
-    return succCount;
+    if(updateCount + insertCount > 0){
+        [_cache removeAllObjects];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+        if(updateCount > 0)
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataUpdateNotification object:self];
+        if(insertCount > 0)
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataInsertNotification object:self];
+    }
+    return updateCount + insertCount;
 }
 
 - (BOOL)increase:(id)condition
@@ -538,8 +615,9 @@
     [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
-    [_cache removeAllObjects];
-    return [_vvdb executeUpdate:sql];
+    BOOL ret = [_vvdb executeUpdate:sql];
+    [self handleDataUpdateResult:ret];
+    return ret;
 }
 
 @end
@@ -694,54 +772,49 @@
 
 - (BOOL)drop{
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",_tableName];
-    [_cache removeAllObjects];
     _isDropped = [_vvdb executeUpdate:sql];
+    [self handleDataDeleteResult:_isDropped];
+    if(_isDropped){
+        // 此处还需发送表删除通知
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableDeletedNotification object:self];
+    }
     return _isDropped;
 }
 
 - (BOOL)deleteOne:(id)object{
     if(self.isDropped) {[self createOrModifyTable];}
-    NSDictionary *dic = nil;
-    if([object isKindOfClass:[NSDictionary class]]) {
-        dic = object;
-    }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
-    else {
-        return NO;
-    }
-    id pkid = dic[_primaryKey];
-    if(!pkid) return NO;
-    if([_primaryKey isEqualToString:kVsPkid] && [pkid integerValue] == 0) return NO;
-    NSString *where = [VVSqlGenerator where:@{_primaryKey:pkid}];
+    id pk = [object valueForKey:_primaryKey];
+    if(!pk) return NO;
+    if([_primaryKey isEqualToString:kVsPkid] && [pk integerValue] == 0) return NO;
+    NSString *where = [VVSqlGenerator where:@{_primaryKey:pk}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
-    [_cache removeAllObjects];
-    return [_vvdb executeUpdate:sql];
+    BOOL ret = [_vvdb executeUpdate:sql];
+    [self handleDataDeleteResult:ret];
+    return ret;
 }
 
 - (BOOL)deleteMulti:(NSArray *)objects{
-    if(objects.count == 0) return YES;
     if(self.isDropped) {[self createOrModifyTable];}
-    if(!VVSequelize.objectsToKeyValuesArray) return NO;
-    NSArray *array = VVSequelize.objectsToKeyValuesArray(_cls,objects);
-    NSMutableArray *pkids = [NSMutableArray arrayWithCapacity:0];
-    for (NSDictionary *dic in array) {
-        id pkid = dic[_primaryKey];
-        if(pkid){ [pkids addObject:pkid];}
+    NSMutableArray *pks = [NSMutableArray arrayWithCapacity:0];
+    for (id object in objects) {
+        id pk = [object valueForKey:_primaryKey];
+        if(pk) [pks addObject:pk];
     }
-    NSString *where = [VVSqlGenerator where:@{_primaryKey:@{kVsOpIn:pkids}}];
+    if(pks.count == 0) return YES;
+    NSString *where = [VVSqlGenerator where:@{_primaryKey:@{kVsOpIn:pks}}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
-    [_cache removeAllObjects];
-    return [_vvdb executeUpdate:sql];
+    BOOL ret = [_vvdb executeUpdate:sql];
+    [self handleDataDeleteResult:ret];
+    return ret;
 }
 
 - (BOOL)delete:(id)condition{
     if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
-    [_cache removeAllObjects];
-    return [_vvdb executeUpdate:sql];
+    BOOL ret = [_vvdb executeUpdate:sql];
+    [self handleDataDeleteResult:ret];
+    return ret;
 }
 
 @end

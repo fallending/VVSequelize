@@ -8,7 +8,18 @@
 #import <Foundation/Foundation.h>
 #import "VVDataBase.h"
 
-#define VVRangeAll NSMakeRange(0, 0)
+#define VVRangeAll      NSMakeRange(0, 0)   ///< 数据查询时不限定范围
+
+#define kVsPkid         @"vv_pkid"          ///< 数据库字段,自动主键名
+#define kVsCreateAt     @"vv_createAt"      ///< 数据库字段,数据创建时间
+#define kVsUpdateAt     @"vv_updateAt"      ///< 数据库字段,数据更新时间
+
+FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataChangeNotification;    ///< 数据发生变化通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataInsertNotification;    ///< 数据插入成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataUpdateNotification;    ///< 数据更新成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataDeleteNotification;    ///< 数据删除成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableCreatedNotification;  ///< 数据表创建成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  ///< 数据表删除成功通知
 
 /**
  数据表每个字段的配置.
