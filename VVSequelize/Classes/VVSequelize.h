@@ -10,6 +10,7 @@
 #import "VVOrmModel.h"
 #import "VVSqlGenerator.h"
 #import "VVCipherHelper.h"
+#import "VVDataBaseHelper.h"
 #import "NSObject+VVKeyValue.h"
 
 #ifndef VVLog

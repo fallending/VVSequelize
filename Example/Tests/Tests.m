@@ -204,7 +204,7 @@
                             @{@"$or":@[@{@"name":@"zhangsan",@"age":@(26)},@{@"age":@(30)}]},
                             @{@"age":@{@"$lt":@(30)}},
                             @{@"$or":@[@{@"name":@"zhangsan"},@{@"age":@{@"$lt":@(30)}}]},
-                            @{@"type":@{@"$in":@[@"a",@"b",@"c"]}},
+                            @{@"type":@{@"$in":[NSSet setWithArray:@[@"a",@"b",@"c"]]}},
                             @{@"score":@{@"$between":@[@"20",@"40"]}},
                             @{@"text":@{@"$like":@"%%haha"}},
                             @{@"score":@{@"$gt":@(60),@"$lte":@(80)}},
@@ -330,6 +330,26 @@
     id val4 = [set4 vv_dbStoreValue];
     id val5 = [string5 vv_dbStoreValue];
     if(val1 && val2 && val3 && val4 && val5) {}
+}
+
+- (void)testUpdateDatabase{
+    [VVDataBaseHelper setVersions:@[@"0.1.0",@"0.1.1",@"0.1.3",@"0.1.5"]];
+    [VVDataBaseHelper setUpdateBlock:^{
+        NSLog(@"update-> 0.1.1");
+    } forVersion:@"0.1.1"];
+    [VVDataBaseHelper setUpdateBlock:^{
+        NSLog(@"update-> 0.1.2");
+    } forVersion:@"0.1.2"];
+    [VVDataBaseHelper setUpdateBlock:^{
+        NSLog(@"update-> 0.1.3");
+    } forVersion:@"0.1.3"];
+    [VVDataBaseHelper setUpdateBlock:^{
+        NSLog(@"update-> 0.1.4");
+    } forVersion:@"0.1.4"];
+    [VVDataBaseHelper setUpdateBlock:^{
+        NSLog(@"update-> 0.1.5");
+    } forVersion:@"0.1.5"];
+    [VVDataBaseHelper updateDataBasesFromVersion:@"0.1.2"];
 }
 @end
 
