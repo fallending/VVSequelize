@@ -21,6 +21,8 @@
 #define kVsOpNotIn @"$notIn"
 #define kVsOpLike @"$like"
 #define kVsOpNotLike @"$notLike"
+#define kVsOpGlob @"$glob"
+#define kVsOpNotGlob @"$notGlob"
 
 #define kVsOrderAsc @"ASC"
 #define kVsOrderDesc @"DESC"
@@ -66,6 +68,10 @@
  
  "$notLike": "%hat"} -> NOT LIKE "%hat"
  
+ "$glob": "hat*"} -> GLOB "hat*"
+ 
+ "$notGlob": "hat?"} -> NOT GLOB "hat?"
+
  示例:
  
  "name" = "zhangsan" ->   WHERE "name" = "zhangsan"
@@ -103,7 +109,6 @@
  @attention 传入原始SQL语句时,只能传入order by部分,且不能带`order by`关键字; 原生语句应注意`关键字`和`值`用引号包含.
  */
 + (NSString *)orderBy:(id)orderBy;
-
 
 /**
  @brief 生成分页限制语句

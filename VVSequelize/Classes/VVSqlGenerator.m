@@ -77,6 +77,12 @@
     else if([op isEqualToString:kVsOpNotLike]) {
         [string appendString:[self key:key _notLike:val]];
     }
+    else if([op isEqualToString:kVsOpGlob]) {
+        [string appendString:[self key:key _glob:val]];
+    }
+    else if([op isEqualToString:kVsOpNotGlob]) {
+        [string appendString:[self key:key _notGlob:val]];
+    }
     else{
         [string appendString:[self key:key _eq:val]];
     }
@@ -191,6 +197,14 @@
 
 + (NSString *)key:(NSString *)key _notLike:(id)val{
     return [NSString stringWithFormat:@"\"%@\" NOT LIKE \"%@\"", key, val];
+}
+
++ (NSString *)key:(NSString *)key _glob:(id)val{
+    return [NSString stringWithFormat:@"\"%@\" GLOB \"%@\"", key, val];
+}
+
++ (NSString *)key:(NSString *)key _notGlob:(id)val{
+    return [NSString stringWithFormat:@"\"%@\" NOT GLOB \"%@\"", key, val];
 }
 
 //MARK: - Order语句
