@@ -83,7 +83,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\" \"%@\"", column.name,column.type];
     if(column.pk) { [string appendString:@" PRIMARY KEY"];}
     if(column.notnull) { [string appendString:@" NOT NULL"];}
-    if(column.dflt_value) { [string appendFormat:@" DEFAULT(\"%@\")", column.dflt_value]; }
+    if(column.dflt_value) { [string appendFormat:@" DEFAULT(%@)", column.dflt_value]; }
     return string;
 }
 
