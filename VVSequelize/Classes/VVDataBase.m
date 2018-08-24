@@ -17,7 +17,6 @@
 @interface VVDataBase ()
 @property (nonatomic, strong) FMDatabase *fmdb;
 @property (nonatomic, strong) FMDatabaseQueue *fmdbQueue;
-@property (nonatomic, copy  ) NSString *userDefaultsKey;
 @end
 
 @implementation VVDataBase
@@ -74,8 +73,16 @@
             _dbName = dbName;
             _dbDir  = dirPath;
             _dbPath = dbPath;
-            _userDefaultsKey = [NSString stringWithFormat:@"VVDBEncryptKey%@",relativePath];
-            self.encryptKey = encryptKey;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+            if([self respondsToSelector:@selector(setUserDefaultsKey:)] &&
+               [self respondsToSelector:@selector(setEncryptKey:)]){
+                NSString *key = [NSString stringWithFormat:@"VVDBEncryptKey%@",relativePath];
+                [self performSelector:@selector(setUserDefaultsKey:) withObject:key];
+                [self performSelector:@selector(setEncryptKey:) withObject:encryptKey];
+            }
+#pragma clang diagnostic pop
             return self;
         }
     }
@@ -153,35 +160,19 @@
 
 - (BOOL)open{
     BOOL ret = [self.fmdb open];
-    if(ret && self.encryptKey.length > 0){
-        [self.fmdb setKey:self.encryptKey];
+    if(ret){
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        if([self respondsToSelector:@selector(encryptKey)] &&
+           [self respondsToSelector:@selector(setEncryptKey:)] &&
+           [self.fmdb respondsToSelector:@selector(setKey:)]){
+            NSString *key = [self performSelector:@selector(encryptKey)];
+            if(key.length > 0) [self.fmdb setKey:key];
+        }
+#pragma clang diagnostic pop
     }
     return ret;
-}
-
-//MARK: - Getter/Setter
-- (void)setEncryptKey:(NSString *)encryptKey{
-    static dispatch_semaphore_t lock;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        lock = dispatch_semaphore_create(1);
-    });
-    NSString *origin = [[NSUserDefaults standardUserDefaults] stringForKey:_userDefaultsKey];
-    [self close];
-    dispatch_semaphore_wait(lock, DISPATCH_TIME_FOREVER);
-    BOOL ret = [VVCipherHelper changeKeyForDatabase:_dbPath originKey:origin newKey:encryptKey];
-    dispatch_semaphore_signal(lock);
-    if(ret){
-        if(encryptKey == nil){
-            [[NSUserDefaults standardUserDefaults] removeObjectForKey:_userDefaultsKey];
-        }
-        else{
-            [[NSUserDefaults standardUserDefaults] setObject:encryptKey forKey:_userDefaultsKey];
-        }
-        [[NSUserDefaults standardUserDefaults] synchronize];
-        _encryptKey = encryptKey;
-    }
-    [self open];
 }
 
 //MARK: - Private

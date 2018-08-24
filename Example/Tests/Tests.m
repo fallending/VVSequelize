@@ -7,10 +7,9 @@
 //
 
 #import "VVTestClasses.h"
-#import "MJExtension.h"
-#import "YYModel.h"
 #import <VVSequelize/VVSequelize.h>
 #import <VVSequelize/VVClassInfo.h>
+#import <VVSequelize/VVDataBaseHelper.h>
 #import <CoreLocation/CoreLocation.h>
 
 @import XCTest;
@@ -27,22 +26,6 @@
     [super setUp];
     
     VVSequelize.loglevel = 1;
-#if 0
-    [VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
-        return [cls mj_objectWithKeyValues:dic];
-    }];
-    [VVSequelize setKeyValuesArrayToObjects:^NSArray *(Class cls, NSArray *dicArray) {
-        return [cls mj_objectArrayWithKeyValuesArray:dicArray];
-    }];
-    [VVSequelize setObjectToKeyValues:^id(Class cls, id object) {
-        return [object mj_keyValues];
-    }];
-    [VVSequelize setObjectsToKeyValuesArray:^NSArray *(Class cls, NSArray *objects) {
-        return [cls mj_keyValuesArrayWithObjectArray:objects];
-    }];
-#else
-    [VVSequelize useVVKeyValue];
-#endif
     
     NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
     NSString *targetPath = [path stringByAppendingPathComponent:@"mobiles.sqlite"];

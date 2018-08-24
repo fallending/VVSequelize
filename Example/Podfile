@@ -3,12 +3,10 @@ use_frameworks!
 #inhibit_all_warnings!
 
 target 'VVSequelize_Example' do
-  pod 'VVSequelize', :path => '../'
+  pod 'VVSequelize/fts', :path => '../'
 
   target 'VVSequelize_Tests' do
     inherit! :search_paths
-    pod 'MJExtension'
-    pod 'YYModel'
   end
 end
 

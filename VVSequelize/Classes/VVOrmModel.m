@@ -9,6 +9,7 @@
 #import <objc/runtime.h>
 #import "VVSequelize.h"
 #import "VVClassInfo.h"
+#import "NSObject+VVKeyValue.h"
 
 #define VVSqlTypeInteger @"INTEGER"
 #define VVSqlTypeText    @"TEXT"
@@ -437,16 +438,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 
 -(BOOL)insertOneWithoutNotification:(id)object{
     if(self.isDropped) {[self createOrModifyTable];}
-    NSDictionary *dic = nil;
-    if([object isKindOfClass:[NSDictionary class]]) {
-        dic = object;
-    }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
-    else {
-        return NO;
-    }
+    NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] != 0) return NO;
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
@@ -528,16 +520,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 }
 
 - (BOOL)updateOneWithoutNotification:(id)object{
-    NSDictionary *dic = nil;
-    if([object isKindOfClass:[NSDictionary class]]) {
-        dic = object;
-    }
-    else if(VVSequelize.objectToKeyValues){
-        dic = VVSequelize.objectToKeyValues(_cls,object);
-    }
-    else {
-        return NO;
-    }
+    NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     if(!dic[_primaryKey]) return NO;
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] == 0) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
@@ -682,8 +665,8 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     if(!results){
         NSArray *jsonArray = [_vvdb executeQuery:sql blobFields:self.blobs];
         results = jsonArray;
-        if(!jsonResult && [fieldsStr isEqualToString:@"*"] && VVSequelize.keyValuesArrayToObjects){
-            results = VVSequelize.keyValuesArrayToObjects(_cls,jsonArray);
+        if(!jsonResult && [fieldsStr isEqualToString:@"*"]){
+            results = [_cls vv_objectsWithKeyValuesArray:jsonArray];
         }
         [_cache setObject:results forKey:sql];
     }

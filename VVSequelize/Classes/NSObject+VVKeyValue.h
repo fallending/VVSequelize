@@ -8,6 +8,8 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CLLocation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 /**
  将经纬度数据转换为字符串,格式为 {latitude,longitude}
 
@@ -175,3 +177,5 @@ FOUNDATION_EXPORT CLLocationCoordinate2D Coordinate2DFromString(NSString *string
 + (NSArray *)vv_objectsWithKeyValuesArray:(id)keyValuesArray;
 
 @end
+
+NS_ASSUME_NONNULL_END
