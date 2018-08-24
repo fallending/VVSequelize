@@ -54,47 +54,12 @@ post_install do |installer|
 end
 ```
 ## 注意
-1. 请先设置`Dictionary/Object`互转工具,若不设置, 则大部分操作只能支持Dictionary.
-2. 子对象会保存成为Json字符串,子对象内的NSData也会保存为16进制字符串.
-3. 含有子对象时,请确保不会循环引用,否则`Dictionary/Object`互转会死循环,请将相应的循环引用加入互转黑名单. 黑名单可使用`YYModel`和`MJExtension`的设置.
-4. VVKeyValue仅用于本工具,不适用常规的Json转对象.
-5. 集合类型(Array,Dictionary,Set)进行转换时
+1. 子对象会保存成为Json字符串,子对象内的NSData也会保存为16进制字符串.
+2. 含有子对象时,请确保不会循环引用,否则`Dictionary/Object`互转会死循环,请将相应的循环引用加入互转黑名单. 
+3. VVKeyValue仅用于本工具,不适用常规的Json转对象.
 
 ## 用法
-
 此处主要列出一些基本用法,详细用法请阅读代码注释.
-
-### 设置`Dictionary/Object`互转工具  
-一般项目中使用`Dictionary/Object`互转工具时,基本都会存在对象属性名和字典的字段名不一致的情况, 会进行重新映射.
- 
-这时请务必设置另一个`Dictionary/Object`互转工具,或者是本项目自带的`VVKeyValue`.
-
-比如项目中用的`YYModel`,那么本工具中请使用自带的`VVKeyValue`或者`MJExtension`
-
-此处建议使用`VVKeyValue`,经过多次修改,已经可用,且专门针对本数据库存储数据做了处理,如果出现问题,请提[issue](https://github.com/pozi119/VVSequelize/issues/new),并使用第三方替代.
-
-设置方法如下:
-
-```objc
-// 设置使用自带的字典/对象互转工具
-[VVSequelize useVVKeyValue];
-```
-在VVKeyValue出现问题时可使用第三方,但存储套嵌对象时也可能有问题:
-```objc
-// 使用第三方的字典/互转工具
-[VVSequelize setKeyValuesToObject:^id(Class cls, NSDictionary *dic) {
-    return [cls mj_objectWithKeyValues:dic];
-}];
-[VVSequelize setKeyValuesArrayToObjects:^NSArray *(Class cls, NSArray *dicArray) {
-    return [cls mj_objectArrayWithKeyValuesArray:dicArray];
-}];
-[VVSequelize setObjectToKeyValues:^id(Class cls, id object) {
-    return [object mj_keyValues];
-}];
-[VVSequelize setObjectsToKeyValuesArray:^NSArray *(Class cls, NSArray *objects) {
-    return [cls mj_keyValuesArrayWithObjectArray:objects];
-}];
-```
 
 ### 定义ORM模型 
 可自定义表名,各字段的参数,不保存的字段, 存放的数据库文件,是否记录创建和更新时间等.
