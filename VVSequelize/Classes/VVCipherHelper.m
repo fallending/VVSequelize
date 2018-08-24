@@ -6,6 +6,7 @@
 //
 
 #import "VVCipherHelper.h"
+#import <objc/runtime.h>
 #import "sqlite3.h"
 
 @implementation VVCipherHelper
@@ -115,6 +116,52 @@
         NSAssert1(NO, @"Failed to open database with message '%s'.", sqlite3_errmsg(encrypted_DB));
         return NO;
     }
+}
+
+@end
+
+static void *userDefaultsKey = &userDefaultsKey;
+static void *encryptKey = &encryptKey;
+
+@implementation VVDataBase (VVCipherHelper)
+
+- (void)setUserDefaultsKey:(NSString *)userDefaultsKey{
+    objc_setAssociatedObject(self, &userDefaultsKey, userDefaultsKey, OBJC_ASSOCIATION_COPY);
+}
+
+- (NSString *)userDefaultsKey{
+    return objc_getAssociatedObject(self, &userDefaultsKey);
+}
+
+- (void)setEncryptKey:(NSString *)encryptKey{
+    static dispatch_semaphore_t lock;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        lock = dispatch_semaphore_create(1);
+    });
+    NSString * userDefaultsKey = self.userDefaultsKey;
+    if(userDefaultsKey.length > 0){
+        NSString *origin = [[NSUserDefaults standardUserDefaults] stringForKey:userDefaultsKey];
+        [self close];
+        dispatch_semaphore_wait(lock, DISPATCH_TIME_FOREVER);
+        BOOL ret = [VVCipherHelper changeKeyForDatabase:self.dbPath originKey:origin newKey:encryptKey];
+        dispatch_semaphore_signal(lock);
+        if(ret){
+            if(encryptKey == nil){
+                [[NSUserDefaults standardUserDefaults] removeObjectForKey:userDefaultsKey];
+            }
+            else{
+                [[NSUserDefaults standardUserDefaults] setObject:encryptKey forKey:userDefaultsKey];
+            }
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            objc_setAssociatedObject(self, &encryptKey, encryptKey, OBJC_ASSOCIATION_COPY);
+        }
+        [self open];
+    }
+}
+
+- (NSString *)encryptKey{
+    return objc_getAssociatedObject(self, &encryptKey);
 }
 
 @end

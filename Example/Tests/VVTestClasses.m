@@ -7,7 +7,6 @@
 //
 
 #import "VVTestClasses.h"
-#import "MJExtension.h"
 #import <VVSequelize/VVSequelize.h>
 
 @implementation VVTestMobile

@@ -7,8 +7,9 @@
 
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface VVDataBase : NSObject
-@property (nonatomic, strong) NSString *encryptKey;         ///< 加密Key,可设置
 @property (nonatomic, strong, readonly) NSString *dbPath;   ///< 数据库文件全路径
 @property (nonatomic, strong, readonly) NSString *dbName;   ///< 数据库文件名
 @property (nonatomic, strong, readonly) NSString *dbDir;    ///< 数据库文件所在目录名
@@ -120,5 +121,7 @@
 - (BOOL)open;
 
 @end
+
+NS_ASSUME_NONNULL_END
 
 

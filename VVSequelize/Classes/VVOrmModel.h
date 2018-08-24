@@ -8,6 +8,8 @@
 #import <Foundation/Foundation.h>
 #import "VVDataBase.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 #define VVRangeAll      NSMakeRange(0, 0)   ///< 数据查询时不限定范围
 
 #define kVsPkid         @"vv_pkid"          ///< 数据库字段,自动主键名
@@ -414,4 +416,6 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
 - (BOOL)delete:(nullable id)condition;
 
 @end
+
+NS_ASSUME_NONNULL_END
 
