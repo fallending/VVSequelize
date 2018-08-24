@@ -22,11 +22,13 @@
 ## 待完成
 * [ ] FTS支持
 * [ ] 防SQL注入
-* [ ] 即将移除三方`Dictionary/Object`工具支持
+* [x] 即将移除三方`Dictionary/Object`工具支持
 
-## 改动(0.2.0)
-1. 新增glob支持.
-2. fix bug.
+## 改动(0.2.1)
+1. 加入FMDB的FTS源码
+2. 分离VVCipherHelper
+3. 移除三方`Dictionary/Object`工具支持
+4. podspec添加`standard`,`fts`,`nocipher`分支
 
 ## 安装
 目前版本基本可食用,以后根据需求不定期更新.
