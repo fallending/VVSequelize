@@ -12,22 +12,17 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '8.0'
   
   s.default_subspec = 'standard'
+  
+  s.source_files = "VVSequelize/Classes/**/*"
 
   s.subspec 'standard' do |ss|
-      ss.source_files = "VVSequelize/Classes/**/*"
-      ss.exclude_files = "VVSequelize/Classes/fmdbFTS/*.{h,m}"
-      ss.dependency "FMDB/SQLCipher"
+      ss.dependency "FMDB"
   end
   
   s.subspec 'fts' do |ss|
-      ss.source_files = "VVSequelize/Classes/**/*"
-      ss.dependency "FMDB/SQLCipher"
-  end
-  
-  s.subspec 'nocipher' do |ss|
-      ss.source_files = "VVSequelize/Classes/**/*"
-      ss.exclude_files = "VVSequelize/Classes/fmdbFTS/*.{h,m}","VVSequelize/Classes/VVCipherHelper.{h,m}"
-      ss.dependency "FMDB"
+      ss.dependency "FMDB/FTS"
   end
 
 end
+
+

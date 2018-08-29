@@ -28,7 +28,7 @@
 1. 加入FMDB的FTS源码
 2. 分离VVCipherHelper
 3. 移除三方`Dictionary/Object`工具支持
-4. podspec添加`standard`,`fts`,`nocipher`分支
+4. podspec添加`standard`,`fts`分支
 
 ## 安装
 目前版本基本可食用,以后根据需求不定期更新.

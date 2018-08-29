@@ -7,7 +7,7 @@
 
 #import "VVCipherHelper.h"
 #import <objc/runtime.h>
-#import "sqlite3.h"
+#import <sqlite3.h>
 
 @implementation VVCipherHelper
 
@@ -120,17 +120,17 @@
 
 @end
 
-static void *userDefaultsKey = &userDefaultsKey;
-static void *encryptKey = &encryptKey;
+static void *_userDefaultsKey = &_userDefaultsKey;
+static void *_encryptKey = &_encryptKey;
 
 @implementation VVDataBase (VVCipherHelper)
 
 - (void)setUserDefaultsKey:(NSString *)userDefaultsKey{
-    objc_setAssociatedObject(self, &userDefaultsKey, userDefaultsKey, OBJC_ASSOCIATION_COPY);
+    objc_setAssociatedObject(self, &_userDefaultsKey, userDefaultsKey, OBJC_ASSOCIATION_COPY);
 }
 
 - (NSString *)userDefaultsKey{
-    return objc_getAssociatedObject(self, &userDefaultsKey);
+    return objc_getAssociatedObject(self, &_userDefaultsKey);
 }
 
 - (void)setEncryptKey:(NSString *)encryptKey{
@@ -154,14 +154,14 @@ static void *encryptKey = &encryptKey;
                 [[NSUserDefaults standardUserDefaults] setObject:encryptKey forKey:userDefaultsKey];
             }
             [[NSUserDefaults standardUserDefaults] synchronize];
-            objc_setAssociatedObject(self, &encryptKey, encryptKey, OBJC_ASSOCIATION_COPY);
+            objc_setAssociatedObject(self, &_encryptKey, encryptKey, OBJC_ASSOCIATION_COPY);
         }
         [self open];
     }
 }
 
 - (NSString *)encryptKey{
-    return objc_getAssociatedObject(self, &encryptKey);
+    return objc_getAssociatedObject(self, &_encryptKey);
 }
 
 @end
