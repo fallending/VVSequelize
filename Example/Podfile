@@ -3,21 +3,21 @@ use_frameworks!
 #inhibit_all_warnings!
 
 target 'VVSequelize_Example' do
-  pod 'VVSequelize/fts', :path => '../'
+  pod 'VVSequelize', :path => '../'
 
   target 'VVSequelize_Tests' do
     inherit! :search_paths
   end
 end
 
-post_install do |installer|
-    print "Add 'SQLCipher' to FMDB 'HEADER_SEARCH_PATHS' \n"
-    installer.pods_project.targets.each do |target|
-        if target.name == "FMDB"
-            target.build_configurations.each do |config|
-                header_search = {"HEADER_SEARCH_PATHS" => "SQLCipher"}
-                config.build_settings.merge!(header_search)
-            end
-        end
-    end
-end
+#post_install do |installer|
+#    print "Add 'SQLCipher' to FMDB 'HEADER_SEARCH_PATHS' \n"
+#    installer.pods_project.targets.each do |target|
+#        if target.name == "FMDB"
+#            target.build_configurations.each do |config|
+#                header_search = {"HEADER_SEARCH_PATHS" => "SQLCipher"}
+#                config.build_settings.merge!(header_search)
+#            end
+#        end
+#    end
+#end
