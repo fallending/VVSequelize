@@ -83,6 +83,9 @@
                 [self performSelector:@selector(setEncryptKey:) withObject:encryptKey];
             }
 #pragma clang diagnostic pop
+            // 执行一些设置
+            [self executeQuery:@"PRAGMA synchronous='NORMAL'"];
+            [self executeQuery:@"PRAGMA journal_mode=wal"];
             return self;
         }
     }
