@@ -23,35 +23,69 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataDeleteNotification;    
 FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableCreatedNotification;  ///< 数据表创建成功通知
 FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  ///< 数据表删除成功通知
 
+// 使用宏定义字段配置
+#define VVFIELD_PK(name)         [[VVOrmField alloc] initWithName:(name) pk:YES notnull:NO unique:NO indexed:NO dflt_value:nil]
+#define VVFIELD_PK_NOTNULL(name) [[VVOrmField alloc] initWithName:(name) pk:YES notnull:YES unique:NO indexed:NO dflt_value:nil]
+#define VVFIELD(name)            [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:NO indexed:NO dflt_value:nil]
+#define VVFIELD_NOTNULL(name)    [[VVOrmField alloc] initWithName:(name) pk:NO notnull:YES unique:NO indexed:NO dflt_value:nil]
+#define VVFIELD_UNIQUE(name)     [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:YES indexed:YES dflt_value:nil]
+#define VVFIELD_INDEXED(name)    [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:NO indexed:YES dflt_value:nil]
+#define VVFIELD_UNIQUE_NOTNULL(name)   [[VVOrmField alloc] initWithName:(name) pk:NO notnull:YES unique:YES indexed:YES dflt_value:nil]
+#define VVFIELD_INDEXED_NOTNULL(name)  [[VVOrmField alloc] initWithName:(name) pk:NO notnull:YES unique:NO indexed:YES dflt_value:nil]
+#define VVFIELD_UNIQUE_DFLV(name,dfl)  [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:YES indexed:YES dflt_value:(dfl)]
+#define VVFIELD_INDEXED_DFLV(name,dfl) [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:NO indexed:YES dflt_value:(dfl)]
+
 /**
  数据表每个字段的配置.
  
  本项目中仅默认主键vv_pkid支持自增类型,所以此类中未定义自增属性.
  */
-@interface VVOrmSchemaItem: NSObject
+@interface VVOrmField: NSObject
 @property (nonatomic, copy  ) NSString *name;   ///< 字段名
 @property (nonatomic, assign) BOOL notnull;     ///< 是否不为空,默认为NO(可为空)
 @property (nonatomic, assign) BOOL pk;          ///< 是否主键
-@property (nonatomic, assign) BOOL unique;      ///< 是否约束唯一
-@property (nonatomic, copy  , nullable) NSString *type;   ///< 字段类型: TEXT,INTEGER,REAL,BLOB
+@property (nonatomic, assign) BOOL unique;      ///< 是否唯一
+@property (nonatomic, assign) BOOL indexed;     ///< 是否建立索引
+@property (nonatomic, copy  , nullable) NSString *type;   ///< 字段类型: TEXT,INTEGER,REAL,BLOB,可加长度限制
 @property (nonatomic, strong, nullable) id dflt_value;    ///< 默认值
+/**
+ 约束该字段的值满足莫种条件,例: "age > 0"; 仅在建表时设置,无法从已存在表中获取约束条件.
+ */
+@property (nonatomic, copy  , nullable) NSString *check;
 
 /**
  生成字段配置
  
- @param dic 格式:{"name":"xxx","type":"TEXT","unique":@(YES),"notnull":@(YES),....}
+ @param dictionary 格式:{"name":"xxx","type":"TEXT","unique":@(YES),"notnull":@(YES),....}
  @return 字段配置
  */
-+ (instancetype)schemaItemWithDic:(NSDictionary *)dic;
++ (instancetype)fieldWithDictionary:(NSDictionary *)dictionary;
 
+/**
+ 生成字段配置. type默认由class属性生成,check约束默认为nil,若要自定义请单独赋值.
+
+ @param name 字段名
+ @param pk 是否主键
+ @param notnull 是否非空字段
+ @param unique 是否唯一
+ @param indexed 是否索引
+ @param dflt_value 默认值
+ @return 字段配置
+ */
+- (instancetype)initWithName:(NSString *)name
+                          pk:(BOOL)pk
+                     notnull:(BOOL)notnull
+                      unique:(BOOL)unique
+                     indexed:(BOOL)indexed
+                  dflt_value:(nullable id)dflt_value;
 
 /**
  比较两个字段配置是否相同
  
- @param item 要比较的字段配置
+ @param field 要比较的字段配置
  @return 是否相同
  */
-- (BOOL)isEqualToItem:(VVOrmSchemaItem *)item;
+- (BOOL)isEqualToField:(VVOrmField *)field;
 @end
 
 @interface VVOrmModel : NSObject
@@ -142,6 +176,11 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
                             logAt:(BOOL)logAt;
 
 /**
+ 重置当前Orm.通常在需要重新创建表之前使用,drop表会自动调用此方法.
+ */
+- (void)removeFromOrmModelPool;
+
+/**
  重置OrmModel Pool
  
  @note 所有OrmModel将重新生成,通常在删除数据库文件后使用
@@ -193,6 +232,15 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
 - (BOOL)updateOne:(nonnull id)object;
 
 /**
+ 更新一条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
+ 
+ @param object 要更新的数据,对象或数组
+ @param fields 只更新某些字段
+ @return 是否更新成功
+ */
+- (BOOL)updateOne:(nonnull id)object fields:(nullable NSArray<NSString *> *)fields;
+
+/**
  更新一条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
  
  @param object 要更新的数据
@@ -209,6 +257,17 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
  @warning 若update大量数据,请放入事务中进行操作
  */
 - (NSUInteger)updateMulti:(nullable NSArray *)objects;
+
+/**
+ 更新多条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
+ 
+ @param objects 要更新的数据
+ @param fields 只更新某些字段
+ @return 更新成功的条数
+ @note 每条数据依次更新
+ @warning 若update大量数据,请放入事务中进行操作
+ */
+- (NSUInteger)updateMulti:(nullable NSArray *)objects fields:(nullable NSArray<NSString *> *)fields;
 
 /**
  更新多条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
@@ -387,7 +446,7 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
  删除表
  
  @return 是否删除成功
- @warning 删除表后再进行增删改查操作会重新创建表.但通常情况下,请不要进行删除表操作.
+ @warning 删除表后请将ORM置为nil.通常情况下,请不要进行删除表操作.
  */
 - (BOOL)drop;
 

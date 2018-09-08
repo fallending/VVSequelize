@@ -16,151 +16,180 @@
 #define VVSqlTypeBlob    @"BLOB"
 #define VVSqlTypeReal    @"REAL"
 
-NSNotificationName const VVOrmModelDataChangeNotification = @"VVOrmModelDataChangeNotification";
-NSNotificationName const VVOrmModelDataInsertNotification = @"VVOrmModelDataInsertNotification";
-NSNotificationName const VVOrmModelDataUpdateNotification = @"VVOrmModelDataUpdateNotification";
-NSNotificationName const VVOrmModelDataDeleteNotification = @"VVOrmModelDataDeleteNotification";
+NSNotificationName const VVOrmModelDataChangeNotification   = @"VVOrmModelDataChangeNotification";
+NSNotificationName const VVOrmModelDataInsertNotification   = @"VVOrmModelDataInsertNotification";
+NSNotificationName const VVOrmModelDataUpdateNotification   = @"VVOrmModelDataUpdateNotification";
+NSNotificationName const VVOrmModelDataDeleteNotification   = @"VVOrmModelDataDeleteNotification";
 NSNotificationName const VVOrmModelTableCreatedNotification = @"VVOrmModelTableCreatedNotification";
 NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableDeletedNotification";
 
-@implementation VVOrmSchemaItem
+@implementation VVOrmField
 - (BOOL)notnull{
-    if(_pk) return YES; // 如果是主键,则不能为空值
-    return _pk;
+    return _pk ? YES : _notnull; // 如果是主键,则不能为空值
 }
 
-+ (instancetype)schemaItemWithDic:(NSDictionary *)dic{
-    NSString *name = dic[@"name"];
+- (BOOL)indexed{
+    return (!_pk && _unique) ? YES : _indexed;  // 唯一约束会被索引
+}
+
++ (instancetype)fieldWithDictionary:(NSDictionary *)dictionary{
+    NSString *name = dictionary[@"name"];
     if(!name || name.length == 0) return nil;
-    VVOrmSchemaItem *column = [VVOrmSchemaItem new];
-    column.name = name;
-    column.type = dic[@"type"];
-    column.pk   = [dic[@"pk"] boolValue];
-    column.notnull = [dic[@"notnull"] boolValue];
-    column.unique  = [dic[@"unique"] boolValue];
-    column.dflt_value = dic[@"dflt_value"];
-    return column;
+    VVOrmField *field = [[VVOrmField alloc] initWithName:name
+                                                      pk:[dictionary[@"pk"] boolValue]
+                                                 notnull:[dictionary[@"notnull"] boolValue]
+                                                  unique:[dictionary[@"unique"] boolValue]
+                                                 indexed:[dictionary[@"indexed"] boolValue]
+                                              dflt_value:dictionary[@"dflt_value"]];
+    field.type  = dictionary[@"type"];
+    field.check = dictionary[@"check"];
+    return field;
 }
 
-- (BOOL)isEqualToItem:(VVOrmSchemaItem *)item{
-    id dflt_val1 = [self.dflt_value isKindOfClass:[NSNull class]] ? nil : self.dflt_value;
-    id dflt_val2 = [item.dflt_value isKindOfClass:[NSNull class]] ? nil : item.dflt_value;
-    BOOL dflt_equal = (!dflt_val1 && !dflt_val2) ? YES : [dflt_val1 isEqual:dflt_val2];
-    NSString *type1 = [self.type containsString:@"("] ? [self.type componentsSeparatedByString:@"("].firstObject : self.type;
-    NSString *type2 = [item.type containsString:@"("] ? [item.type componentsSeparatedByString:@"("].firstObject : item.type;
-    return [self.name isEqualToString:item.name]
-    && [type1.uppercaseString isEqualToString:type2.uppercaseString]
-    && dflt_equal
-    && self.pk == item.pk
-    && self.notnull == item.notnull
-    && self.unique == item.unique;
+- (instancetype)initWithName:(NSString *)name
+                          pk:(BOOL)pk
+                     notnull:(BOOL)notnull
+                      unique:(BOOL)unique
+                     indexed:(BOOL)indexed
+                  dflt_value:(id)dflt_value
+{
+    self = [super init];
+    if (self) {
+        _name       = name;
+        _pk         = pk;
+        _notnull    = notnull;
+        _unique     = _pk ? YES : unique;
+        _dflt_value = dflt_value;
+        _indexed    = (!_pk && _unique) ? YES : indexed;
+    }
+    return self;
 }
+
+/**
+ 比较字段配置.不比较indexed,check,因为索引可以单独创建和删除,不影响表结构,而check暂未找到方法从表结构中获取.
+
+ @param field 用于比较的字段配置
+ @return 配置是否相同
+ */
+- (BOOL)isEqualToField:(VVOrmField *)field{
+    id dflt_val1    = [self.dflt_value isKindOfClass:[NSNull class]] ? nil : self.dflt_value;
+    id dflt_val2    = [field.dflt_value isKindOfClass:[NSNull class]] ? nil : field.dflt_value;
+    BOOL dflt_equal = (!dflt_val1 && !dflt_val2) ? YES : [dflt_val1 isEqual:dflt_val2];
+    return [self.name isEqualToString:field.name] 
+    && [self.type.uppercaseString isEqualToString:field.type.uppercaseString]
+    && dflt_equal
+    && self.pk      == field.pk
+    && self.notnull == field.notnull
+    && self.unique  == field.unique;
+}
+
 @end
 
 @interface VVOrmModel ()
 
 @property (nonatomic, strong) VVDataBase *vvdb;
-@property (nonatomic, copy  ) NSString *tableName;
-@property (nonatomic, copy  ) NSArray *fields;
-@property (nonatomic, copy  ) NSArray *blobs;
-@property (nonatomic, copy  ) NSArray *manuals;
-@property (nonatomic, copy  ) NSArray *excludes;
-@property (nonatomic        ) Class cls;
-@property (nonatomic, copy  ) NSString *primaryKey;
-@property (nonatomic, assign) BOOL logAt;
-@property (nonatomic, strong) NSCache *cache;
-@property (nonatomic, assign) BOOL isDropped; ///< ormModel对应的表是否被drop
+@property (nonatomic, copy  ) NSString   *tableName;
+@property (nonatomic, copy  ) NSArray    *fields;
+@property (nonatomic, copy  ) NSArray    *blobs;
+@property (nonatomic, copy  ) NSArray    *manuals;
+@property (nonatomic, copy  ) NSArray    *excludes;
+@property (nonatomic        ) Class      cls;
+@property (nonatomic, copy  ) NSString   *primaryKey;
+@property (nonatomic, assign) BOOL       logAt;
+@property (nonatomic, strong) NSCache    *cache;
+@property (nonatomic, copy  ) NSString   *poolKey;
 
 @end
 
 @implementation VVOrmModel
 
 //MARK: - Private
-
-- (NSString *)columnSqlOf:(VVOrmSchemaItem *)column{
-    if ([column.name isEqualToString:kVsPkid]) {
+- (NSString *)createSqlOfField:(VVOrmField *)field{
+    if ([field.name isEqualToString:kVsPkid]) {
         return [NSString stringWithFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT", kVsPkid];
     }
-    NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\" \"%@\"", column.name,column.type];
-    if(column.pk) { [string appendString:@" PRIMARY KEY"];}
-    if(column.notnull) { [string appendString:@" NOT NULL"];}
-    if(column.dflt_value) { [string appendFormat:@" DEFAULT(%@)", column.dflt_value]; }
+    NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\" \"%@\"", field.name, field.type];
+    if(field.pk)              { [string appendString:@" PRIMARY KEY"];}
+    if(field.notnull)         { [string appendString:@" NOT NULL"];}
+    if(field.unique)          { [string appendString:@" UNIQUE"];}
+    if(field.dflt_value)      { [string appendFormat:@" DEFAULT(%@)", field.dflt_value]; }
+    if(field.check.length> 0) { [string appendFormat:@" CHECK(%@)", field.check];}
     return string;
 }
 
-- (NSDictionary *)tableColumns{
+- (NSDictionary *)tableFields{
     NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",_tableName];
     NSArray *columns = [_vvdb executeQuery:tableInfoSql];
     NSMutableDictionary *resultDic = [NSMutableDictionary dictionaryWithCapacity:0];
     for (NSDictionary *dic in columns) {
-        VVOrmSchemaItem *column = [VVOrmSchemaItem new];
-        column.name = dic[@"name"];
-        column.type = dic[@"type"];
-        column.pk = [dic[@"pk"] boolValue];
-        column.notnull =[dic[@"notnull"] boolValue];
-        column.dflt_value = dic[@"dflt_value"];
-        resultDic[column.name] = column;
+        VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
+        resultDic[field.name] = field;
     }
     NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(\"%@\");",_tableName];
     NSArray *indexList = [_vvdb executeQuery:indexListSql];
     for (NSDictionary *indexDic in indexList) {
-        if([indexDic[@"origin"] isEqualToString:@"u"] && [indexDic[@"unique"] integerValue] == 1){
-            NSString *indexName = indexDic[@"name"];
-            NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(\"%@\");",indexName];
-            NSArray *indexInfos = [_vvdb executeQuery:indexInfoSql];
-            if(indexInfos.count > 0) {
-                NSDictionary *indexInfo = indexInfos.firstObject;
-                NSString *columnName = indexInfo[@"name"];
-                VVOrmSchemaItem *column = resultDic[columnName];
-                column.unique = YES;
-            }
+        NSString *indexName    = indexDic[@"name"];
+        NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(\"%@\");",indexName];
+        NSArray *indexInfos    = [_vvdb executeQuery:indexInfoSql];
+        for (NSDictionary *indexInfo in indexInfos) {
+            NSString *fieldName    = indexInfo[@"name"];
+            VVOrmField *field      = resultDic[fieldName];
+            field.unique           = [indexDic[@"unique"] boolValue];
+            field.indexed          = YES;
         }
     }
     return resultDic;
 }
 
-- (NSDictionary *)classColumnsWithManuals:(NSArray<VVOrmSchemaItem *> *)manuals{
-    NSMutableDictionary *manualColumns = [NSMutableDictionary dictionaryWithCapacity:0];
-    for (VVOrmSchemaItem *column in manuals) {
-        if(column.name) {manualColumns[column.name] = column; }
+- (NSDictionary *)classFieldsWithManuals:(NSArray<VVOrmField *> *)manuals
+                                excludes:(NSArray<NSString *> *)excludes{
+    NSMutableDictionary *manualFields = [NSMutableDictionary dictionaryWithCapacity:0];
+    for (VVOrmField *column in manuals) {
+        if(column.name) {manualFields[column.name] = column; }
     }
     NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:0];
     VVClassInfo *classInfo = [VVClassInfo classInfoWithClass:_cls];
     for (NSString *propertyName in classInfo.propertyInfos) {
-        VVOrmSchemaItem *column = manualColumns[propertyName] ? manualColumns[propertyName] : [VVOrmSchemaItem new];
-        column.name = propertyName;
-        column.type = [self sqliteTypeForPropertyInfo:classInfo.propertyInfos[propertyName]];
-        dic[column.name] = column;
+        if([excludes containsObject:propertyName]) continue;
+        VVOrmField *field = manualFields[propertyName] ? manualFields[propertyName] : [VVOrmField new];
+        field.name = propertyName;
+        field.type = field.type.length > 0 ? field.type : [self sqliteTypeForPropertyInfo:classInfo.propertyInfos[propertyName]];
+        dic[field.name] = field;
     }
     return dic;
 }
 
-- (NSInteger)compareSchemaItems:(NSDictionary<NSString *,VVOrmSchemaItem *> *)columns1
-                           with:(NSDictionary<NSString *,VVOrmSchemaItem *> *)columns2{
-    NSArray *allKeys1 = columns1.allKeys;
-    NSArray *allKeys2 = columns2.allKeys;
-    NSInteger different = 0;
-    for (NSString *key in allKeys1) {
-        if([key isEqualToString:kVsPkid]
-           || [key isEqualToString:kVsCreateAt]
-           || [key isEqualToString:kVsUpdateAt]){
-            continue;
-        }
-        if ([allKeys2 containsObject:key]) {
-            if(![columns1[key] isEqualToItem:columns2[key]]) different ++;
+- (NSUInteger)compareFields:(NSDictionary<NSString *,VVOrmField *> *)oldFields
+                           with:(NSDictionary<NSString *,VVOrmField *> *)newFields
+                   indexChanged:(NSUInteger *)indexChanged{
+    NSArray *defKeys = @[kVsPkid,kVsCreateAt,kVsUpdateAt];
+    NSMutableArray *oldKeys = oldFields.allKeys.mutableCopy;
+    NSMutableArray *newKeys = newFields.allKeys.mutableCopy;
+    [oldKeys removeObjectsInArray:defKeys];
+    [newKeys removeObjectsInArray:defKeys];
+    NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
+    NSUInteger different  = 0;
+    NSUInteger idxChanged = 0;
+    for (NSString *key in oldKeys) {
+        VVOrmField *oldField = oldFields[key];
+        if ([newKeys containsObject:key]) {
+            VVOrmField *newField = newFields[key];
+            if(![oldField isEqualToField:newField])  different ++;
+            if(oldField.indexed != newField.indexed) idxChanged ++;
+            [compared addObject:key];
         }
         else{
+            if(oldField.indexed) idxChanged ++;
             different ++;
         }
     }
-    for (NSString *key in allKeys2) {
-        if([key isEqualToString:kVsPkid]
-           || [key isEqualToString:kVsCreateAt]
-           || [key isEqualToString:kVsUpdateAt]){
-            continue;
-        }
-        if(![allKeys1 containsObject:key]) different ++;
+    [newKeys removeObjectsInArray:compared];
+    different += newKeys.count;
+    for (NSString *key in newKeys) {
+        VVOrmField *newField = newFields[key];
+        if(newField.indexed) idxChanged ++;
     }
+    *indexChanged = idxChanged;
     return different;
 }
 
@@ -202,7 +231,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     return _modelPool;
 }
 
-- (void)handleDataInsertResult:(BOOL)result{
+- (void)handleInsertResult:(BOOL)result{
     if(result){
         [_cache removeAllObjects];
         [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
@@ -210,7 +239,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     }
 }
 
-- (void)handleDataUpdateResult:(BOOL)result{
+- (void)handleUpdateResult:(BOOL)result{
     if(result){
         [_cache removeAllObjects];
         [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
@@ -218,7 +247,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     }
 }
 
-- (void)handleDataDeleteResult:(BOOL)result{
+- (void)handleDeleteResult:(BOOL)result{
     if(result){
         [_cache removeAllObjects];
         [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
@@ -250,20 +279,16 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 
 + (instancetype)ormModelWithClass:(Class)cls
                        primaryKey:(NSString *)primaryKey
-                         uniques:(NSArray<NSString *> *)uniques
+                          uniques:(NSArray<NSString *> *)uniques
                          excludes:(NSArray<NSString *> *)excludes
                         tableName:(NSString *)tableName
                          dataBase:(VVDataBase *)vvdb{
     NSMutableArray *manuals = [NSMutableArray arrayWithCapacity:0];
     if(primaryKey && primaryKey.length > 0){
-        VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":primaryKey,@"pk":@(YES)}];
-        [manuals addObject:column];
+        [manuals addObject:VVFIELD_PK(primaryKey)];
     }
-    if(uniques && uniques.count > 0){
-        for (NSString *unique in uniques) {
-            VVOrmSchemaItem *column = [VVOrmSchemaItem schemaItemWithDic:@{@"name":unique,@"unique":@(YES)}];
-            [manuals addObject:column];
-        }
+    for (NSString *unique in uniques) {
+        [manuals addObject:VVFIELD_UNIQUE(unique)];
     }
     return [self ormModelWithClass:cls manuals:manuals excludes:excludes tableName:tableName dataBase:vvdb logAt:YES];
 }
@@ -287,21 +312,27 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     VVLog(2,@"poolKey: %@, model: %@",poolKey,model);
     if(model) return model;
     model = [[VVOrmModel alloc] init];
-    model.cls = cls;
+    model.cls       = cls;
     model.tableName = tbname;
-    model.vvdb = db;
-    model.manuals = manuals;
-    model.excludes = excludes;
-    model.logAt = logAt;
+    model.vvdb      = db;
+    model.manuals   = manuals;
+    model.excludes  = excludes;
+    model.logAt     = logAt;
+    model.poolKey   = poolKey;
     if(VVSequelize.useCache){
         NSCache *cache = [[NSCache alloc] init];
-        cache.name = tbname;
+        cache.name       = tbname;
         cache.countLimit = 1000;
-        model.cache = cache;
+        model.cache      = cache;
     }
     [model createOrModifyTable];
     [[VVOrmModel modelPool] setObject:model forKey:poolKey];
     return model;
+}
+
+- (void)removeFromOrmModelPool{
+    [self.cache removeAllObjects];
+    [[VVOrmModel modelPool] removeObjectForKey:self.poolKey];
 }
 
 + (void)resetOrmModelPool{
@@ -315,49 +346,46 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
  根据参数,创建或修改表
  */
 - (void)createOrModifyTable{
-    _isDropped = NO;
-    // 处理自定义字段配置
+    //MARK: 处理字段配置
     NSMutableArray *temps = [NSMutableArray arrayWithCapacity:0];
     for (id obj in _manuals) {
         if ([obj isKindOfClass:[NSDictionary class]]) {
-            [temps addObject:[VVOrmSchemaItem schemaItemWithDic:obj]];
+            [temps addObject:[VVOrmField fieldWithDictionary:obj]];
         }
-        else if([obj isKindOfClass:[VVOrmSchemaItem class]]){
+        else if([obj isKindOfClass:[VVOrmField class]]){
             [temps addObject:obj];
         }
     }
     // 根据要存储的类生成字段配置列表
-    NSMutableDictionary *classColumns = [self classColumnsWithManuals:temps].mutableCopy;
-    for (NSString *column in _excludes) {
-        [classColumns removeObjectForKey:column];
-    }
+    NSMutableDictionary *classFields = [self classFieldsWithManuals:temps excludes:_excludes].mutableCopy;
     // 定义的数据库类可能使用vv_pkid作为主键,并且需要在外部使用
-    [classColumns removeObjectForKey:kVsPkid];
-    self.fields = classColumns.allKeys;
+    [classFields removeObjectForKey:kVsPkid];
+    self.fields = classFields.allKeys;
     // 获取BLOB类型的字段
     NSMutableArray *blobs = [NSMutableArray arrayWithCapacity:0];
-    for (VVOrmSchemaItem *item in classColumns.allValues) {
-        if([item.type isEqualToString:VVSqlTypeBlob]) [blobs addObject:item.name];
+    for (VVOrmField *item in classFields.allValues) {
+        if([item.type.uppercaseString hasPrefix:VVSqlTypeBlob]) [blobs addObject:item.name];
     }
     self.blobs = blobs;
-    NSAssert1(classColumns.count > 0, @"No need to create a table : %@", _tableName);
+    NSAssert1(classFields.count > 0, @"No need to create a table : %@", _tableName);
     
-    // 检查数据表是否存在
+    //MARK: 检查数据表是否存在
     BOOL exist = [_vvdb isTableExist:_tableName];
-    NSInteger changed = 0;
+    NSUInteger changed      = 0;
+    NSUInteger indexChanged = 0;
     // 若表存在,检查是否需要进行变更.如需变更,则将原数据表进行更名.
     NSString *tempTableName = [NSString stringWithFormat:@"%@_%@",_tableName, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
     if(exist){
         // 获取已存在字段
-        NSDictionary *tableColumns = [self tableColumns];
-        for (VVOrmSchemaItem *column in tableColumns.allValues) {
+        NSDictionary *tableFields = [self tableFields];
+        for (VVOrmField *column in tableFields.allValues) {
             if (column.pk) {
                 _primaryKey = column.name;
                 break;
             }
         }
         // 计算变化的字段数量
-        changed = [self compareSchemaItems:classColumns with:tableColumns];
+        changed = [self compareFields:classFields with:tableFields indexChanged:&indexChanged];
         // 字段发生变更,对原数据表进行更名
         if(changed > 0){
             NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
@@ -368,39 +396,34 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
         }
     }
     
-    // 若表不存在或字段发生变更,需要创建新表
+    //MARK: 若表不存在或字段发生变更,需要创建新表
     if(!exist || changed > 0){
-        NSMutableString *columnsString = [NSMutableString stringWithCapacity:0];
-        NSArray *allColumns = classColumns.allValues;
-        NSMutableArray *uniqueColumns = [NSMutableArray arrayWithCapacity:0];
-        for (VVOrmSchemaItem *column in allColumns) {
-            [columnsString appendFormat:@"%@,", [self columnSqlOf:column]];
-            if(column.unique) [uniqueColumns addObject:column];
-            if(column.pk) _primaryKey = column.name;
+        NSMutableString *fieldsSQL = [NSMutableString stringWithCapacity:0];
+        NSArray *allFields = classFields.allValues;
+        for (VVOrmField *field in allFields) {
+            [fieldsSQL appendFormat:@"%@,", [self createSqlOfField:field]];
+            if(field.pk) _primaryKey = field.name;
         }
         if(_logAt){
-            [columnsString appendFormat:@"\"%@\" REAL,",kVsCreateAt]; //创建时间
-            [columnsString appendFormat:@"\"%@\" REAL,",kVsUpdateAt]; //修改时间
+            [fieldsSQL appendFormat:@"\"%@\" REAL,",kVsCreateAt]; //创建时间
+            [fieldsSQL appendFormat:@"\"%@\" REAL,",kVsUpdateAt]; //修改时间
         }
         if(!_primaryKey){
-            [columnsString appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
+            [fieldsSQL appendFormat:@"\"%@\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,",kVsPkid];
             _primaryKey = kVsPkid;
         }
-        for (VVOrmSchemaItem *column in uniqueColumns) {
-            [columnsString appendFormat:@"CONSTRAINT \"%@\" UNIQUE (\"%@\") ON CONFLICT FAIL,", column.name, column.name];
-        }
-        [columnsString deleteCharactersInRange:NSMakeRange(columnsString.length - 1, 1)];
-        NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, columnsString];
+        [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
+        NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, fieldsSQL];
         NSNumber *ret = [_vvdb inQueue:^id{
             return @([self->_vvdb executeUpdate:sql]);
         }];
         NSAssert1(ret.boolValue, @"Failure to create a table: %@", _tableName);
         [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableCreatedNotification object:self];
     }
-    // 如果字段发生变更,将原数据表的数据插入新表
+    //MARK: 如果字段发生变更,将原数据表的数据插入新表
     if(exist && changed > 0){
         NSMutableString *allColumns = [NSMutableString stringWithCapacity:0];
-        for (NSString *column in classColumns.allKeys) {
+        for (NSString *column in classFields.allKeys) {
             [allColumns appendFormat:@"\"%@\",",column];
         }
         if(allColumns.length > 1) {
@@ -425,6 +448,30 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
             }
         }
     }
+    //MARK: 若索引发生变化,则重建索引
+    if(indexChanged > 0){
+        NSString *indexName = [NSString stringWithFormat:@"vvorm_index_%@",_tableName];
+        // 删除原索引
+        NSString *dropIdxSQL = [NSString stringWithFormat:@"DROP INDEX \"%@\";",indexName];
+        // 建立新索引
+        NSMutableString *indexFields = [NSMutableString stringWithCapacity:0];
+        for (VVOrmField *field in classFields) {
+            if(field.indexed && !field.unique){ // sqlite3会对unique约束自动建立索引
+                [indexFields appendFormat:@"\"%@\",", field.name];
+            }
+        }
+        if(indexFields.length > 1) [indexFields deleteCharactersInRange:NSMakeRange(indexFields.length - 1, 1)];
+        NSString *createIdxSQL = nil;
+        if(indexFields.length > 0) createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX \"%@\" on \"%@\" (%@);",indexName,_tableName,indexFields];
+        NSNumber *ret = [_vvdb inQueue:^id{
+            BOOL r = [self->_vvdb executeUpdate:dropIdxSQL];
+            if(r) r = [self->_vvdb executeUpdate:createIdxSQL];
+            return @(r);
+        }];
+        if(!ret.boolValue){
+            VVLog(2, @"Warning: Failed create index for table (%@)!",self->_tableName);
+        }
+    }
 }
 
 @end
@@ -432,12 +479,11 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 @implementation VVOrmModel (Create)
 -(BOOL)insertOne:(id)object{
     BOOL ret = [self insertOneWithoutNotification:object];
-    [self handleDataInsertResult:ret];
+    [self handleInsertResult:ret];
     return ret;
 }
 
 -(BOOL)insertOneWithoutNotification:(id)object{
-    if(self.isDropped) {[self createOrModifyTable];}
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] != 0) return NO;
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
@@ -473,7 +519,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     for (id obj in objects) {
         if([self insertOneWithoutNotification:obj]){ succCount ++;}
     }
-    [self handleDataInsertResult:succCount > 0];
+    [self handleInsertResult:succCount > 0];
     return succCount;
 }
 
@@ -484,13 +530,12 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 - (BOOL)update:(id)condition
         values:(NSDictionary *)values{
     BOOL ret = [self updateWithoutNotification:condition values:values];
-    [self handleDataUpdateResult:ret];
+    [self handleUpdateResult:ret];
     return ret;
 }
 
 - (BOOL)updateWithoutNotification:(id)condition
                            values:(NSDictionary *)values{
-    if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSMutableString *setString = [NSMutableString stringWithCapacity:0];
     NSMutableArray *objs = [NSMutableArray arrayWithCapacity:0];
@@ -514,18 +559,34 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 }
 
 - (BOOL)updateOne:(id)object{
-    BOOL ret = [self updateOneWithoutNotification:object];
-    [self handleDataUpdateResult:ret];
+    BOOL ret = [self updateOneWithoutNotification:object fields:nil];
+    [self handleUpdateResult:ret];
     return ret;
 }
 
-- (BOOL)updateOneWithoutNotification:(id)object{
+- (BOOL)updateOne:(id)object fields:(nullable NSArray<NSString *> *)fields{
+    BOOL ret = [self updateOneWithoutNotification:object fields:fields];
+    [self handleUpdateResult:ret];
+    return ret;
+}
+
+- (BOOL)updateOneWithoutNotification:(id)object fields:(nullable NSArray<NSString *> *)fields{
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     if(!dic[_primaryKey]) return NO;
     if([_primaryKey isEqualToString:kVsPkid] && [dic[_primaryKey] integerValue] == 0) return NO;
     NSDictionary *condition = @{_primaryKey:dic[_primaryKey]};
-    NSMutableDictionary *values = dic.mutableCopy;
-    [values removeObjectForKey:_primaryKey];
+    NSMutableDictionary *values = nil;
+    if(fields.count == 0){
+        values = dic.mutableCopy;
+        [values removeObjectForKey:_primaryKey];
+    }
+    else{
+        values = [NSMutableDictionary dictionaryWithCapacity:fields.count];
+        for (NSString *field in fields) {
+            values[field] = dic[field];
+        }
+    }
+    if(values.count == 0) return NO;
     return [self update:condition values:values];
 }
 
@@ -547,7 +608,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
  */
 - (NSUInteger)upsertOneWithoutNotification:(id)object{
     if([self isExist:object]){
-        BOOL ret = [self updateOneWithoutNotification:object];
+        BOOL ret = [self updateOneWithoutNotification:object fields:nil];
         return ret ? 1 : 0;
     }
     else{
@@ -557,11 +618,15 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 }
 
 - (NSUInteger)updateMulti:(NSArray *)objects{
+    return [self updateMulti:objects fields:nil];
+}
+
+- (NSUInteger)updateMulti:(NSArray *)objects fields:(nullable NSArray<NSString *> *)fields{
     NSUInteger succCount = 0;
     for (id object in objects) {
-        if([self updateOneWithoutNotification:object]) {succCount ++;}
+        if([self updateOneWithoutNotification:object fields:fields]) {succCount ++;}
     }
-    [self handleDataUpdateResult:succCount > 0];
+    [self handleUpdateResult:succCount > 0];
     return succCount;
 }
 
@@ -588,7 +653,6 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
            field:(NSString *)field
            value:(NSInteger)value{
     if (value == 0) { return YES; }
-    if(self.isDropped) {[self createOrModifyTable];}
     NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\" %@ %@",
                                   field, field, value > 0 ? @"+": @"-", @(ABS(value))];
     if(_logAt){
@@ -599,7 +663,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",_tableName,setString,where];
     BOOL ret = [_vvdb executeUpdate:sql];
-    [self handleDataUpdateResult:ret];
+    [self handleUpdateResult:ret];
     return ret;
 }
 
@@ -645,7 +709,6 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
              orderBy:(id)orderBy
                range:(NSRange)range
           jsonResult:(BOOL)jsonResult{
-    if(self.isDropped) {[self createOrModifyTable];}
     NSString *fieldsStr = @"*";
     if(fields.count > 0){
         NSMutableString *tempStr = [NSMutableString stringWithCapacity:0];
@@ -674,7 +737,6 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 }
 
 - (NSInteger)count:(id)condition{
-    if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", _tableName,where];
     NSArray *array = [_cache objectForKey:sql];
@@ -691,7 +753,6 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 }
 
 - (BOOL)isExist:(id)object{
-    if(self.isDropped) {[self createOrModifyTable];}
     id pk = [object valueForKey:_primaryKey];
     if(!pk) return NO;
     if([_primaryKey isEqualToString:kVsPkid] && [pk integerValue] == 0) return NO;
@@ -731,7 +792,6 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 }
 
 - (id)calc:(NSString *)field method:(NSString *)method{
-    if(self.isDropped) {[self createOrModifyTable];}
     if(!([method isEqualToString:@"max"]
          || [method isEqualToString:@"min"]
          || [method isEqualToString:@"sum"])) return nil;
@@ -755,29 +815,28 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 
 - (BOOL)drop{
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",_tableName];
-    _isDropped = [_vvdb executeUpdate:sql];
-    [self handleDataDeleteResult:_isDropped];
-    if(_isDropped){
-        // 此处还需发送表删除通知
+    BOOL ret = [_vvdb executeUpdate:sql];
+    [self handleDeleteResult:ret];
+    if(ret){
+        // 此处还需发送表删除通知,并从ormModelPool中移除
         [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableDeletedNotification object:self];
+        [self removeFromOrmModelPool];
     }
-    return _isDropped;
+    return ret;
 }
 
 - (BOOL)deleteOne:(id)object{
-    if(self.isDropped) {[self createOrModifyTable];}
     id pk = [object valueForKey:_primaryKey];
     if(!pk) return NO;
     if([_primaryKey isEqualToString:kVsPkid] && [pk integerValue] == 0) return NO;
     NSString *where = [VVSqlGenerator where:@{_primaryKey:pk}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     BOOL ret = [_vvdb executeUpdate:sql];
-    [self handleDataDeleteResult:ret];
+    [self handleDeleteResult:ret];
     return ret;
 }
 
 - (BOOL)deleteMulti:(NSArray *)objects{
-    if(self.isDropped) {[self createOrModifyTable];}
     NSMutableArray *pks = [NSMutableArray arrayWithCapacity:0];
     for (id object in objects) {
         id pk = [object valueForKey:_primaryKey];
@@ -787,16 +846,15 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     NSString *where = [VVSqlGenerator where:@{_primaryKey:@{kVsOpIn:pks}}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     BOOL ret = [_vvdb executeUpdate:sql];
-    [self handleDataDeleteResult:ret];
+    [self handleDeleteResult:ret];
     return ret;
 }
 
 - (BOOL)delete:(id)condition{
-    if(self.isDropped) {[self createOrModifyTable];}
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",_tableName, where];
     BOOL ret = [_vvdb executeUpdate:sql];
-    [self handleDataDeleteResult:ret];
+    [self handleDeleteResult:ret];
     return ret;
 }
 
