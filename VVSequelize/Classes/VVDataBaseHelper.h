@@ -1,6 +1,6 @@
 //
 //  VVDBVersionManager.h
-//  EnigmaFMDB
+//  VVSequelize
 //
 //  Created by Jinbo Li on 2018/8/11.
 //
