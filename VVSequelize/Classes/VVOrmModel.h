@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "VVDataBase.h"
+#import "VVOrmConfig.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -23,71 +24,6 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataDeleteNotification;    
 FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableCreatedNotification;  ///< 数据表创建成功通知
 FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  ///< 数据表删除成功通知
 
-// 使用宏定义字段配置
-#define VVFIELD_PK(name)         [[VVOrmField alloc] initWithName:(name) pk:YES notnull:NO unique:NO indexed:NO dflt_value:nil]
-#define VVFIELD_PK_NOTNULL(name) [[VVOrmField alloc] initWithName:(name) pk:YES notnull:YES unique:NO indexed:NO dflt_value:nil]
-#define VVFIELD(name)            [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:NO indexed:NO dflt_value:nil]
-#define VVFIELD_NOTNULL(name)    [[VVOrmField alloc] initWithName:(name) pk:NO notnull:YES unique:NO indexed:NO dflt_value:nil]
-#define VVFIELD_UNIQUE(name)     [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:YES indexed:YES dflt_value:nil]
-#define VVFIELD_INDEXED(name)    [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:NO indexed:YES dflt_value:nil]
-#define VVFIELD_UNIQUE_NOTNULL(name)   [[VVOrmField alloc] initWithName:(name) pk:NO notnull:YES unique:YES indexed:YES dflt_value:nil]
-#define VVFIELD_INDEXED_NOTNULL(name)  [[VVOrmField alloc] initWithName:(name) pk:NO notnull:YES unique:NO indexed:YES dflt_value:nil]
-#define VVFIELD_UNIQUE_DFLV(name,dfl)  [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:YES indexed:YES dflt_value:(dfl)]
-#define VVFIELD_INDEXED_DFLV(name,dfl) [[VVOrmField alloc] initWithName:(name) pk:NO notnull:NO unique:NO indexed:YES dflt_value:(dfl)]
-
-/**
- 数据表每个字段的配置.
- 
- 本项目中仅默认主键vv_pkid支持自增类型,所以此类中未定义自增属性.
- */
-@interface VVOrmField: NSObject
-@property (nonatomic, copy  ) NSString *name;   ///< 字段名
-@property (nonatomic, assign) BOOL notnull;     ///< 是否不为空,默认为NO(可为空)
-@property (nonatomic, assign) BOOL pk;          ///< 是否主键
-@property (nonatomic, assign) BOOL unique;      ///< 是否唯一
-@property (nonatomic, assign) BOOL indexed;     ///< 是否建立索引
-@property (nonatomic, copy  , nullable) NSString *type;   ///< 字段类型: TEXT,INTEGER,REAL,BLOB,可加长度限制
-@property (nonatomic, strong, nullable) id dflt_value;    ///< 默认值
-/**
- 约束该字段的值满足莫种条件,例: "age > 0"; 仅在建表时设置,无法从已存在表中获取约束条件.
- */
-@property (nonatomic, copy  , nullable) NSString *check;
-
-/**
- 生成字段配置
- 
- @param dictionary 格式:{"name":"xxx","type":"TEXT","unique":@(YES),"notnull":@(YES),....}
- @return 字段配置
- */
-+ (instancetype)fieldWithDictionary:(NSDictionary *)dictionary;
-
-/**
- 生成字段配置. type默认由class属性生成,check约束默认为nil,若要自定义请单独赋值.
-
- @param name 字段名
- @param pk 是否主键
- @param notnull 是否非空字段
- @param unique 是否唯一
- @param indexed 是否索引
- @param dflt_value 默认值
- @return 字段配置
- */
-- (instancetype)initWithName:(NSString *)name
-                          pk:(BOOL)pk
-                     notnull:(BOOL)notnull
-                      unique:(BOOL)unique
-                     indexed:(BOOL)indexed
-                  dflt_value:(nullable id)dflt_value;
-
-/**
- 比较两个字段配置是否相同
- 
- @param field 要比较的字段配置
- @return 是否相同
- */
-- (BOOL)isEqualToField:(VVOrmField *)field;
-@end
-
 @interface VVOrmModel : NSObject
 
 @property (nonatomic, strong, readonly) VVDataBase *vvdb;    ///< 数据库,可执行某些自定义查询/更新
@@ -96,84 +32,25 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
 /**
  定义ORM模型,使用默认数据库,默认表名.
  
- @param cls 模型(Class)
- @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
+ @param config ORM配置
  @return ORM模型
  @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
-+ (instancetype)ormModelWithClass:(Class)cls
-                       primaryKey:(nullable NSString *)primaryKey;
++ (instancetype)ormModelWithConfig:(VVOrmConfig *)config;
 
 
 /**
  定义ORM模型,可指定表名和数据库.
  
- @param cls 模型(Class)
- @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
+ @param config ORM配置
  @param tableName 表名,nil表示使用cls类名
  @param vvdb 数据库,nil表示使用默认数据库
  @return ORM模型
  @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
-+ (instancetype)ormModelWithClass:(Class)cls
-                       primaryKey:(nullable NSString *)primaryKey
-                        tableName:(nullable NSString *)tableName
-                         dataBase:(nullable VVDataBase *)vvdb;
-
-/**
- 定义ORM模型,可指定不存储字段.
- 
- @param cls 模型(Class)
- @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
- @param excludes 不存入数据表的字段名
- @param tableName 表名,nil表示使用cls类名
- @param vvdb 数据库,nil表示使用默认数据库
- @return ORM模型
- @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
- */
-+ (instancetype)ormModelWithClass:(Class)cls
-                       primaryKey:(nullable NSString *)primaryKey
-                         excludes:(nullable NSArray<NSString *> *)excludes
-                        tableName:(nullable NSString *)tableName
-                         dataBase:(nullable VVDataBase *)vvdb;
-
-/**
- 定义ORM模型,可指定不存储字段和唯一性约束字段.
- 
- @param cls 模型(Class)
- @param primaryKey 指定主键名,若cls无对应属性,则使用vv_pkid自增属性作为主键
- @param uniques 唯一性约束的数据表字段名
- @param excludes 不存入数据表的字段名
- @param tableName 表名,nil表示使用cls类名
- @param vvdb 数据库,nil表示使用默认数据库
- @return ORM模型
- @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
- */
-+ (instancetype)ormModelWithClass:(Class)cls
-                       primaryKey:(nullable NSString *)primaryKey
-                          uniques:(nullable NSArray<NSString *> *)uniques
-                         excludes:(nullable NSArray<NSString *> *)excludes
-                        tableName:(nullable NSString *)tableName
-                         dataBase:(nullable VVDataBase *)vvdb;
-
-/**
- 定义ORM模型,完全自定义.
- 
- @param cls 模型(Class)
- @param manuals 自定义各个字段的配置.格式为VVOrmSchemaItem数组,或可转换为VVOrmSchemaItem的json数组.
- @param excludes 不存入数据表的字段名
- @param tableName 表名,nil表示使用cls类名
- @param vvdb 数据库,nil表示使用默认数据库
- @param logAt 是否将vv_createAt,vv_updateAt添加至每条数据,用于记录插入时间,更新时间,默认为YES
- @return ORM模型
- @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
- */
-+ (instancetype)ormModelWithClass:(Class)cls
-                          manuals:(nullable NSArray *)manuals
-                         excludes:(nullable NSArray *)excludes
-                        tableName:(nullable NSString *)tableName
-                         dataBase:(nullable VVDataBase *)vvdb
-                            logAt:(BOOL)logAt;
++ (instancetype)ormModelWithConfig:(VVOrmConfig *)config
+                         tableName:(nullable NSString *)tableName
+                          dataBase:(nullable VVDataBase *)vvdb;
 
 /**
  重置当前Orm.通常在需要重新创建表之前使用,drop表会自动调用此方法.

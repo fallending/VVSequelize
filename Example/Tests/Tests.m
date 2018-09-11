@@ -35,10 +35,9 @@
     }
 
     self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
-    VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
-//    VVOrmSchemaItem *column2 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"times",@"unique":@(YES)}];
+    VVOrmField *field1 = VVFIELD_PK(@"mobile");
     self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
-                                             manuals:@[column1]
+                                             manuals:@[field1]
                                             excludes:nil
                                            tableName:@"mobiles"
                                             dataBase:self.vvdb
@@ -161,13 +160,13 @@
 
 - (void)testOrmModel{
 //    VVOrmModel *personModel = [[VVOrmModel alloc] initWithClass:VVTestPerson.class];
-    VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"idcard",@"pk":@(YES)}];
-    VVOrmSchemaItem *column2 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"unique":@(YES)}];
-    VVOrmSchemaItem *column3 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"name",@"notnull":@(YES)}];
-    VVOrmSchemaItem *column4 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"arr",@"unique":@(YES),@"notnull":@(YES)}];
+    VVOrmField *field1 = VVFIELD_PK(@"idcard");;
+    VVOrmField *field2 = VVFIELD_UNIQUE(@"mobile");
+    VVOrmField *field3 = VVFIELD_NOTNULL(@"name");
+    VVOrmField *field4 = VVFIELD_UNIQUE_NOTNULL(@"arr");
 
     VVOrmModel *personModel1 = [VVOrmModel ormModelWithClass:VVTestPerson.class
-                                                     manuals:@[column1,column2,column3,column4]
+                                                     manuals:@[field1,field2,field3,field4]
                                                     excludes:nil
                                                    tableName:@"persons"
                                                     dataBase:nil
