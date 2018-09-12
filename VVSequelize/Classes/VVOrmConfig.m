@@ -94,7 +94,7 @@
        (self.ftsTokenizer.length > 0 && ![self.ftsTokenizer isEqualToString:config.ftsTokenizer]))
     {
         *indexChanged = YES;
-        return NO;
+        return YES;
     }
     
     NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
@@ -107,12 +107,12 @@
     }
     NSMutableDictionary *remained = config.fields.mutableCopy;
     [remained removeObjectsForKeys:compared];
-    return remained.count == 0;
+    return remained.count > 0;
 }
 
 //MARK: - 懒加载
 - (NSDictionary<NSString *,VVOrmField *> *)fields{
-    if(_fields){
+    if(!_fields){
         VVClassInfo *classInfo = [VVClassInfo classInfoWithClass:_cls];
         for (NSString *propertyName in classInfo.propertyInfos) {
             if([_excludes containsObject:propertyName]) continue;
@@ -122,8 +122,8 @@
             _privateFields[field.name] = field;
         }
         if(_logAt){
-            VVOrmField *createAt = VVFIELD_PK(kVsCreateAt); createAt.type = @"REAL";
-            VVOrmField *updateAt = VVFIELD_PK(kVsUpdateAt); updateAt.type = @"REAL";
+            VVOrmField *createAt = VVFIELD(kVsCreateAt); createAt.type = @"REAL";
+            VVOrmField *updateAt = VVFIELD(kVsUpdateAt); updateAt.type = @"REAL";
             _privateFields[kVsCreateAt] = createAt;
             _privateFields[kVsUpdateAt] = updateAt;
         }

@@ -51,7 +51,7 @@
         _pk         = pk;
         _notnull    = notnull;
         _unique     = _pk ? YES : unique;
-        _dflt_value = [dflt_value isKindOfClass:NSNull.class] ? nil : [NSString stringWithFormat:@"%@",dflt_value];
+        _dflt_value = !dflt_value || [dflt_value isKindOfClass:NSNull.class] ? nil : [NSString stringWithFormat:@"%@",dflt_value];
         _indexed    = (!_pk && _unique) ? YES : indexed;
     }
     return self;

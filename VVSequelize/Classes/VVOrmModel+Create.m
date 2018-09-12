@@ -10,12 +10,12 @@
 
 @implementation VVOrmModel (Create)
 -(BOOL)insertOne:(id)object{
-    BOOL ret = [self insertOneWithoutNotification:object];
+    BOOL ret = [self innerInsertOne:object];
     [self handleResult:ret action:VVOrmActionInsert];
     return ret;
 }
 
--(BOOL)insertOneWithoutNotification:(id)object{
+-(BOOL)innerInsertOne:(id)object{
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
@@ -48,7 +48,7 @@
 -(NSUInteger)insertMulti:(NSArray *)objects{
     NSUInteger succCount = 0;
     for (id obj in objects) {
-        if([self insertOneWithoutNotification:obj]){ succCount ++;}
+        if([self innerInsertOne:obj]){ succCount ++;}
     }
     [self handleResult:succCount > 0 action:VVOrmActionInsert];
     return succCount;

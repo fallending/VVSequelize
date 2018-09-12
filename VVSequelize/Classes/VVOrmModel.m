@@ -104,10 +104,10 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     }
     
     //MARK: 若表不存在或字段发生变更,需要创建新表
-    if(!exist || changed > 0){
+    if(!exist || changed){
         NSMutableString *fieldsSQL = [NSMutableString stringWithCapacity:0];
-        for (VVOrmField *field in _config.fields) {
-            [fieldsSQL appendFormat:@"%@,", [self createSqlOfField:field]];
+        for (NSString *name in _config.fields) {
+            [fieldsSQL appendFormat:@"%@,", [self createSqlOfField:_config.fields[name]]];
         }
         [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
         NSString *sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)  ", _tableName, fieldsSQL];
@@ -118,7 +118,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
         [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableCreatedNotification object:self];
     }
     //MARK: 如果字段发生变更,将原数据表的数据插入新表
-    if(exist && changed > 0){
+    if(exist && changed){
         NSMutableString *allFields = [NSMutableString stringWithCapacity:0];
         for (NSString *column in _config.fields) {
             [allFields appendFormat:@"\"%@\",",column];
@@ -149,7 +149,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     if(indexChanged){
         NSString *indexName = [NSString stringWithFormat:@"vvorm_index_%@",_tableName];
         // 删除原索引
-        NSString *dropIdxSQL = [NSString stringWithFormat:@"DROP INDEX \"%@\";",indexName];
+        NSString *dropIdxSQL = [NSString stringWithFormat:@"DROP INDEX IF EXISTS \"%@\";",indexName];
         // 建立新索引
         NSMutableString *indexFields = [NSMutableString stringWithCapacity:0];
         for (NSString *name in _config.fields) {
@@ -163,7 +163,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
         if(indexFields.length > 0) createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX \"%@\" on \"%@\" (%@);",indexName,_tableName,indexFields];
         NSNumber *ret = [_vvdb inQueue:^id{
             BOOL r = [self->_vvdb executeUpdate:dropIdxSQL];
-            if(r) r = [self->_vvdb executeUpdate:createIdxSQL];
+            if(r && createIdxSQL.length > 0) r = [self->_vvdb executeUpdate:createIdxSQL];
             return @(r);
         }];
         if(!ret.boolValue){

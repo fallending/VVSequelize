@@ -45,18 +45,18 @@
 }
 
 - (BOOL)updateOne:(id)object{
-    BOOL ret = [self updateOneWithoutNotification:object fields:nil];
+    BOOL ret = [self innerUpdateOne:object fields:nil];
     [self handleResult:ret action:VVOrmActionUpdate];
     return ret;
 }
 
 - (BOOL)updateOne:(id)object fields:(nullable NSArray<NSString *> *)fields{
-    BOOL ret = [self updateOneWithoutNotification:object fields:fields];
+    BOOL ret = [self innerUpdateOne:object fields:fields];
     [self handleResult:ret action:VVOrmActionUpdate];
     return ret;
 }
 
-- (BOOL)updateOneWithoutNotification:(id)object fields:(nullable NSArray<NSString *> *)fields{
+- (BOOL)innerUpdateOne:(id)object fields:(nullable NSArray<NSString *> *)fields{
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     NSString *primaryKey = self.config.primaryKey;
     if(primaryKey.length == 0 || !dic[primaryKey]) return NO;
@@ -85,7 +85,6 @@
     }
 }
 
-
 /**
  更新或插入一条数据
  
@@ -94,7 +93,7 @@
  */
 - (NSUInteger)upsertOneWithoutNotification:(id)object{
     if([self isExist:object]){
-        BOOL ret = [self updateOneWithoutNotification:object fields:nil];
+        BOOL ret = [self innerUpdateOne:object fields:nil];
         return ret ? 1 : 0;
     }
     else{
@@ -110,7 +109,7 @@
 - (NSUInteger)updateMulti:(NSArray *)objects fields:(nullable NSArray<NSString *> *)fields{
     NSUInteger succCount = 0;
     for (id object in objects) {
-        if([self updateOneWithoutNotification:object fields:fields]) {succCount ++;}
+        if([self innerUpdateOne:object fields:fields]) {succCount ++;}
     }
     [self handleResult:succCount > 0 action:VVOrmActionUpdate];
     return succCount;
@@ -139,8 +138,8 @@
            field:(NSString *)field
            value:(NSInteger)value{
     if (value == 0) { return YES; }
-    NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\" %@ %@",
-                                  field, field, value > 0 ? @"+": @"-", @(ABS(value))];
+    NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\"%@",
+                                  field, field, @(value)];
     if(self.config.logAt){
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
         [setString appendFormat:@",\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
