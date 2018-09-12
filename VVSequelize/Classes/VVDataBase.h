@@ -53,17 +53,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSArray *)executeQuery:(nonnull NSString *)sql;
 
 /**
- 执行SQL查询语句
-
- @param sql sql语句
- @param blobFields BLOB类型的字段,查询结果中应转换成NSData类型
- @return 查询结果,json数组
- */
-- (NSArray *)executeQuery:(nonnull NSString *)sql
-               blobFields:(nullable NSArray<NSString *> *)blobFields;
-
-
-/**
  执行SQL更新语句
 
  @param sql sql语句

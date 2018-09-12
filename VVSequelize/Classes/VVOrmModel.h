@@ -13,10 +13,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 #define VVRangeAll      NSMakeRange(0, 0)   ///< 数据查询时不限定范围
 
-#define kVsPkid         @"vv_pkid"          ///< 数据库字段,自动主键名
-#define kVsCreateAt     @"vv_createAt"      ///< 数据库字段,数据创建时间
-#define kVsUpdateAt     @"vv_updateAt"      ///< 数据库字段,数据更新时间
-
 FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataChangeNotification;    ///< 数据发生变化通知
 FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataInsertNotification;    ///< 数据插入成功通知
 FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataUpdateNotification;    ///< 数据更新成功通知
@@ -26,6 +22,7 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
 
 @interface VVOrmModel : NSObject
 
+@property (nonatomic, strong, readonly) VVOrmConfig *config; ///< ORM配置
 @property (nonatomic, strong, readonly) VVDataBase *vvdb;    ///< 数据库,可执行某些自定义查询/更新
 @property (nonatomic, copy  , readonly) NSString *tableName; ///< 表名
 
@@ -37,7 +34,6 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
  @discussion 生成的模型将使用dbPath+tableName作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,将先从模型池中查找.
  */
 + (instancetype)ormModelWithConfig:(VVOrmConfig *)config;
-
 
 /**
  定义ORM模型,可指定表名和数据库.
@@ -51,18 +47,6 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
 + (instancetype)ormModelWithConfig:(VVOrmConfig *)config
                          tableName:(nullable NSString *)tableName
                           dataBase:(nullable VVDataBase *)vvdb;
-
-/**
- 重置当前Orm.通常在需要重新创建表之前使用,drop表会自动调用此方法.
- */
-- (void)removeFromOrmModelPool;
-
-/**
- 重置OrmModel Pool
- 
- @note 所有OrmModel将重新生成,通常在删除数据库文件后使用
- */
-+ (void)resetOrmModelPool;
 
 @end
 

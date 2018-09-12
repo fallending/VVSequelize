@@ -8,6 +8,10 @@
 #import <Foundation/Foundation.h>
 #import "VVOrmField.h"
 
+#define kVsCreateAt     @"vv_createAt"      ///< 数据库字段,数据创建时间
+#define kVsUpdateAt     @"vv_updateAt"      ///< 数据库字段,数据更新时间
+
+@class VVDataBase;
 @interface VVOrmConfig : NSObject
 
 @property (nonatomic, strong) Class    cls;            ///< 对应的模型(Class)
@@ -19,12 +23,31 @@
 @property (nonatomic, copy, readonly) NSArray<NSString *>                   *fieldNames; ///< 字段名
 
 /**
+ 从数据表获取配置
+
+ @param tableName 表名
+ @param vvdb 数据库
+ @return ORM配置
+ */
++ (instancetype)configWithTable:(NSString *)tableName
+                     inDatabase:(VVDataBase *)vvdb;
+
+/**
  初始化ORM配置
 
  @param cls 数据表要存储的类
  @return ORM配置
  */
 + (instancetype)prepareWithClass:(Class)cls;
+
+/**
+ 是否和相比较的ORM配置一致
+
+ @param config 作对比的ORM配置
+ @param indexChanged 是否需要更新索引
+ @return 是否一致
+ */
+- (BOOL)compareWithConfig:(VVOrmConfig *)config indexChanged:(BOOL *)indexChanged;
 
 //MARK: - 链式调用
 

@@ -35,13 +35,8 @@
     }
 
     self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
-    VVOrmField *field1 = VVFIELD_PK(@"mobile");
-    self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
-                                             manuals:@[field1]
-                                            excludes:nil
-                                           tableName:@"mobiles"
-                                            dataBase:self.vvdb
-                                              logAt:YES];
+    VVOrmConfig *config = [[VVOrmConfig prepareWithClass:VVTestMobile.class] primaryKey:@"mobile"];
+    self.mobileModel = [VVOrmModel ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
 }
 
 - (void)tearDown
@@ -157,20 +152,15 @@
     NSLog(@"max : %@, min : %@, sum : %@", max, min, sum);
 }
 
-
 - (void)testOrmModel{
 //    VVOrmModel *personModel = [[VVOrmModel alloc] initWithClass:VVTestPerson.class];
     VVOrmField *field1 = VVFIELD_PK(@"idcard");;
     VVOrmField *field2 = VVFIELD_UNIQUE(@"mobile");
     VVOrmField *field3 = VVFIELD_NOTNULL(@"name");
     VVOrmField *field4 = VVFIELD_UNIQUE_NOTNULL(@"arr");
+    VVOrmConfig *config = [[VVOrmConfig prepareWithClass:VVTestPerson.class] manuals:@[field1,field2,field3,field4]];
 
-    VVOrmModel *personModel1 = [VVOrmModel ormModelWithClass:VVTestPerson.class
-                                                     manuals:@[field1,field2,field3,field4]
-                                                    excludes:nil
-                                                   tableName:@"persons"
-                                                    dataBase:nil
-                                                      logAt:YES];
+    VVOrmModel *personModel1 = [VVOrmModel ormModelWithConfig:config tableName:@"persons" dataBase:nil];
     NSUInteger maxrowid = [personModel1 maxRowid];
 //    NSLog(@"%@", personModel);
     NSLog(@"maxrowid: %@", @(maxrowid));
@@ -245,12 +235,12 @@
     NSLog(@"dic: %@",oneDic);
     VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
     NSLog(@"obj: %@",nOne);
-    VVOrmModel *orm = [VVOrmModel ormModelWithClass:VVTestOne.class primaryKey:@"oneId"];
+    VVOrmConfig *config = [[VVOrmConfig prepareWithClass:VVTestOne.class] primaryKey:@"oneId"];
+    VVOrmModel *orm = [VVOrmModel ormModelWithConfig:config];
     [orm upsertOne:one];
     VVTestOne *mOne = [orm findOne:nil];
     NSLog(@"mOne: %@",mOne);
 }
-
 
 - (void)testMixDataTypes{
     VVTestMix *mix = [VVTestMix new];
@@ -277,7 +267,8 @@
     NSLog(@"mix: %@", mixkvs);
     VVTestMix *mix2 = [VVTestMix vv_objectWithKeyValues:mixkvs];
     NSLog(@"mix2: %@",mix2);
-    VVOrmModel *orm = [VVOrmModel ormModelWithClass:VVTestMix.class primaryKey:@"num"];
+    VVOrmConfig *config = [[VVOrmConfig prepareWithClass:VVTestMix.class] primaryKey:@"num"];
+    VVOrmModel *orm = [VVOrmModel ormModelWithConfig:config];
     [orm upsertOne:mix];
     VVTestMix *mix3 = [orm findOne:nil];
     NSLog(@"mix3: %@",mix3);
