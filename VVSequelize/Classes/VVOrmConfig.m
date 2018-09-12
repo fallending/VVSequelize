@@ -15,10 +15,10 @@
 #define VVSqlTypeReal    @"REAL"
 
 @interface VVOrmConfig ()
-@property (nonatomic, strong) NSArray *manuals;
-@property (nonatomic, strong) NSArray *excludes;
-@property (nonatomic, strong) NSArray *uniques;
-@property (nonatomic, assign) BOOL    fromTable; //是否是由数据表生成的配置
+@property (nonatomic, strong) NSArray<VVOrmField *> *manuals;
+@property (nonatomic, strong) NSArray<NSString *>   *excludes;
+@property (nonatomic, strong) NSArray<NSString *>   *uniques;
+@property (nonatomic, assign) BOOL fromTable; //是否是由数据表生成的配置
 @end
 
 @implementation VVOrmConfig{
@@ -51,6 +51,7 @@
     NSString *tableInfoSql      = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",tableName];
     NSArray *infos              = [vvdb executeQuery:tableInfoSql];
     NSMutableDictionary *fields = [NSMutableDictionary dictionaryWithCapacity:0];
+    NSMutableArray *uniques     = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in infos) {
         VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
         if(field.pk) {
@@ -70,9 +71,11 @@
             VVOrmField *field  = fields[name];
             field.unique       = [indexDic[@"unique"] boolValue];
             field.indexed      = [indexName hasPrefix:@"sqlite_autoindex_"] ? NO : YES;
+            if(field.unique) {[uniques addObject:field.name];}
         }
     }
     config->_fields = fields;
+    config->_uniques = uniques.copy;
     return config;
 }
 

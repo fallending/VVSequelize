@@ -8,6 +8,10 @@
 #import <Foundation/Foundation.h>
 #import "VVDataBase.h"
 #import "VVOrmModel.h"
+#import "VVOrmModel+Create.h"
+#import "VVOrmModel+Update.h"
+#import "VVOrmModel+Retrieve.h"
+#import "VVOrmModel+Delete.h"
 #import "VVSqlGenerator.h"
 #import "VVDataBaseHelper.h"
 #import "NSObject+VVKeyValue.h"
