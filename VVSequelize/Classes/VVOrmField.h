@@ -21,9 +21,7 @@
 #define VVFIELD_FTS_UNINDEXED(name)    [[VVOrmField alloc] initWithName:(name) fts_unindexed:NO]
 
 /**
- 数据表每个字段的配置.
- 
- 本项目中仅默认主键vv_pkid支持自增类型,所以此类中未定义自增属性.
+ 数据表每个字段的配置. 
  */
 @interface VVOrmField: NSObject
 @property (nonatomic, copy  ) NSString *name;     ///< 字段名

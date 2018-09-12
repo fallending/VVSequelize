@@ -6,22 +6,13 @@
 //
 
 #import "VVOrmModel+Update.h"
-#import "VVOrmModel+Create.h"
-#import "VVOrmModel+Retrieve.h"
 #import "NSObject+VVKeyValue.h"
 #import "VVSqlGenerator.h"
 
 @implementation VVOrmModel (Update)
 
-- (BOOL)update:(id)condition
-        values:(NSDictionary *)values{
-    BOOL ret = [self updateWithoutNotification:condition values:values];
-    [self handleResult:ret action:VVOrmActionUpdate];
-    return ret;
-}
-
-- (BOOL)updateWithoutNotification:(id)condition
-                           values:(NSDictionary *)values{
+- (BOOL)innerUpdate:(id)condition
+             values:(NSDictionary *)values{
     NSString *where = [VVSqlGenerator where:condition];
     NSMutableString *setString = [NSMutableString stringWithCapacity:0];
     NSMutableArray *objs = [NSMutableArray arrayWithCapacity:0];
@@ -44,22 +35,10 @@
     return NO;
 }
 
-- (BOOL)updateOne:(id)object{
-    BOOL ret = [self innerUpdateOne:object fields:nil];
-    [self handleResult:ret action:VVOrmActionUpdate];
-    return ret;
-}
-
-- (BOOL)updateOne:(id)object fields:(nullable NSArray<NSString *> *)fields{
-    BOOL ret = [self innerUpdateOne:object fields:fields];
-    [self handleResult:ret action:VVOrmActionUpdate];
-    return ret;
-}
-
 - (BOOL)innerUpdateOne:(id)object fields:(nullable NSArray<NSString *> *)fields{
-    NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     NSString *primaryKey = self.config.primaryKey;
-    if(primaryKey.length == 0 || !dic[primaryKey]) return NO;
+    if(primaryKey.length == 0 || ![object valueForKey:primaryKey]) return NO;
+    NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     NSDictionary *condition = @{primaryKey:dic[primaryKey]};
     NSMutableDictionary *values = nil;
     if(fields.count == 0){
@@ -73,33 +52,26 @@
         }
     }
     if(values.count == 0) return NO;
-    return [self update:condition values:values];
+    return [self innerUpdate:condition values:values];
 }
 
-- (BOOL)upsertOne:(id)object{
-    if([self isExist:object]){
-        return [self updateOne:object];
-    }
-    else{
-        return [self insertOne:object];
-    }
+- (BOOL)update:(id)condition
+        values:(NSDictionary *)values{
+    BOOL ret = [self innerUpdate:condition values:values];
+    [self handleResult:ret action:VVOrmActionUpdate];
+    return ret;
 }
 
-/**
- 更新或插入一条数据
- 
- @param object 要更新或插入的数据
- @return 0-失败,1-更新成功,2-插入成功
- */
-- (NSUInteger)upsertOneWithoutNotification:(id)object{
-    if([self isExist:object]){
-        BOOL ret = [self innerUpdateOne:object fields:nil];
-        return ret ? 1 : 0;
-    }
-    else{
-        BOOL ret = NO;//FIXME: [self insertOneWithoutNotification:object];
-        return ret ? 2 : 0;
-    }
+- (BOOL)updateOne:(id)object{
+    BOOL ret = [self innerUpdateOne:object fields:nil];
+    [self handleResult:ret action:VVOrmActionUpdate];
+    return ret;
+}
+
+- (BOOL)updateOne:(id)object fields:(nullable NSArray<NSString *> *)fields{
+    BOOL ret = [self innerUpdateOne:object fields:fields];
+    [self handleResult:ret action:VVOrmActionUpdate];
+    return ret;
 }
 
 - (NSUInteger)updateMulti:(NSArray *)objects{
@@ -113,25 +85,6 @@
     }
     [self handleResult:succCount > 0 action:VVOrmActionUpdate];
     return succCount;
-}
-
-- (NSUInteger)upsertMulti:(NSArray *)objects{
-    NSUInteger updateCount = 0;
-    NSUInteger insertCount = 0;
-    for (id object in objects) {
-        NSUInteger ret = [self upsertOneWithoutNotification:object];
-        if(ret == 1) updateCount ++;
-        else if(ret == 2) insertCount ++;
-    }
-    if(updateCount + insertCount > 0){
-        [self.cache removeAllObjects];
-        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
-        if(updateCount > 0)
-        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataUpdateNotification object:self];
-        if(insertCount > 0)
-        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataInsertNotification object:self];
-    }
-    return updateCount + insertCount;
 }
 
 - (BOOL)increase:(id)condition

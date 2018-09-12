@@ -13,7 +13,6 @@
  
  @param PKVal 主键的值
  @return 查询结果,对象
- @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (nullable id)findOneByPKVal:(nonnull id)PKVal;
 
@@ -22,7 +21,6 @@
  
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 查询结果,对象
- @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (nullable id)findOne:(nullable id)condition;
 
@@ -32,7 +30,6 @@
  @param condition 查询条件,格式详见VVSqlGenerator
  @param orderBy 排序方式
  @return 查询结果,对象
- @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (nullable id)findOne:(nullable id)condition
                orderBy:(nullable id)orderBy;
@@ -42,7 +39,6 @@
  
  @param condition 查询条件,格式详见VVSqlGenerator
  @return 查询结果,对象数组
- @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (NSArray *)findAll:(nullable id)condition;
 
@@ -53,7 +49,6 @@
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 查询结果,对象数组
- @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (NSArray *)findAll:(nullable id)condition
              orderBy:(nullable id)orderBy
@@ -67,7 +62,6 @@
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
- @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
  */
 - (NSArray *)findAll:(nullable id)condition
               fields:(nullable NSArray<NSString *> *)fields
@@ -83,7 +77,7 @@
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @param jsonResult 是否强制返回JsonOjbects.YES-强制返回JsonObject,NO-根据fields参数确定返回结果
  @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
- @note 定义ORM时允许记录时间,则查询结果会包含vv_createAt, vv_updateAt, 若使用默认主键还会包含vv_pkid
+ @note 定义ORM时允许记录时间,则jsonResult可能会包含vv_createAt, vv_updateAt
  @attention 若使用VVKeyValue作为对象/字典互转工具,某些数据转成字典后为NSData的描述字符串,不能直接使用.
  */
 - (NSArray *)findAll:(nullable id)condition

@@ -19,7 +19,7 @@
         values:(nonnull NSDictionary *)values;
 
 /**
- 更新一条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
+ 更新一条数据,更新不成功不会插入新数据.
  
  @param object 要更新的数据,对象或数组
  @return 是否更新成功
@@ -27,7 +27,7 @@
 - (BOOL)updateOne:(nonnull id)object;
 
 /**
- 更新一条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
+ 更新一条数据,更新不成功不会插入新数据.
  
  @param object 要更新的数据,对象或数组
  @param fields 只更新某些字段
@@ -36,25 +36,7 @@
 - (BOOL)updateOne:(nonnull id)object fields:(nullable NSArray<NSString *> *)fields;
 
 /**
- 更新一条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
- 
- @param object 要更新的数据
- @return 是否更新或插入成功
- */
-- (BOOL)upsertOne:(nonnull id)object;
-
-/**
- 更新多条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
- 
- @param objects 要更新的数据
- @return 更新成功的条数
- @note 每条数据依次更新
- @warning 若update大量数据,请放入事务中进行操作
- */
-- (NSUInteger)updateMulti:(nullable NSArray *)objects;
-
-/**
- 更新多条数据,更新不成功不会插入新数据.使用vv_pkid的表不能直接更新数据.
+ 更新多条数据,更新不成功不会插入新数据.
  
  @param objects 要更新的数据
  @param fields 只更新某些字段
@@ -63,16 +45,15 @@
  @warning 若update大量数据,请放入事务中进行操作
  */
 - (NSUInteger)updateMulti:(nullable NSArray *)objects fields:(nullable NSArray<NSString *> *)fields;
-
 /**
- 更新多条数据,更新失败会插入新数据.使用vv_pkid的表会直接新增数据.
+ 更新多条数据,更新不成功不会插入新数据.
  
  @param objects 要更新的数据
- @return 更新或插入成功的条数
- @note 每条数据依次更新或插入
- @warning 若upsert大量数据,请放入事务中进行操作
+ @return 更新成功的条数
+ @note 每条数据依次更新
+ @warning 若update大量数据,请放入事务中进行操作
  */
-- (NSUInteger)upsertMulti:(nullable NSArray *)objects;
+- (NSUInteger)updateMulti:(nullable NSArray *)objects;
 
 /**
  将某个字段的值增加某个数值

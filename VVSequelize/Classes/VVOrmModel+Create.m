@@ -9,13 +9,8 @@
 #import "NSObject+VVKeyValue.h"
 
 @implementation VVOrmModel (Create)
--(BOOL)insertOne:(id)object{
-    BOOL ret = [self innerInsertOne:object];
-    [self handleResult:ret action:VVOrmActionInsert];
-    return ret;
-}
 
--(BOOL)innerInsertOne:(id)object{
+-(BOOL)innerInsertOne:(id)object upsert:(BOOL)upsert{
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
     NSMutableString *valString = [NSMutableString stringWithCapacity:0];
@@ -39,16 +34,38 @@
         }
         [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
         [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
-        NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) VALUES (%@)",self.tableName,keyString,valString];
+        NSString *sql = [NSString stringWithFormat:@"%@ INTO \"%@\" (%@) VALUES (%@)",
+                         (upsert ? @"INSERT OR REPLACE" : @"INSERT"), self.tableName,keyString,valString];
         return [self.vvdb executeUpdate:sql values:values];
     }
     return NO;
 }
 
+-(BOOL)insertOne:(id)object{
+    BOOL ret = [self innerInsertOne:object upsert:NO];
+    [self handleResult:ret action:VVOrmActionInsert];
+    return ret;
+}
+
 -(NSUInteger)insertMulti:(NSArray *)objects{
     NSUInteger succCount = 0;
     for (id obj in objects) {
-        if([self innerInsertOne:obj]){ succCount ++;}
+        if([self innerInsertOne:obj upsert:NO]){ succCount ++;}
+    }
+    [self handleResult:succCount > 0 action:VVOrmActionInsert];
+    return succCount;
+}
+
+-(BOOL)upsertOne:(id)object{
+    BOOL ret = [self innerInsertOne:object upsert:YES];
+    [self handleResult:ret action:VVOrmActionInsert];
+    return ret;
+}
+
+-(NSUInteger)upsertMulti:(NSArray *)objects{
+    NSUInteger succCount = 0;
+    for (id obj in objects) {
+        if([self innerInsertOne:obj upsert:YES]){ succCount ++;}
     }
     [self handleResult:succCount > 0 action:VVOrmActionInsert];
     return succCount;

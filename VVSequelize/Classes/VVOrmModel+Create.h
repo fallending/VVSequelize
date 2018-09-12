@@ -26,4 +26,23 @@
  */
 -(NSUInteger)insertMulti:(nullable NSArray *)objects;
 
+/**
+ 更新一条数据,更新失败会插入新数据.
+ 
+ @param object 要更新的数据
+ @return 是否更新或插入成功
+ @note upsert会更新vv_createAt
+ */
+- (BOOL)upsertOne:(nonnull id)object;
+
+/**
+ 更新多条数据,更新失败会插入新数据.
+ 
+ @param objects 要更新的数据
+ @return 更新或插入成功的条数
+ @note upsert会更新vv_createAt
+ @warning 若upsert大量数据,请放入事务中进行操作
+ */
+- (NSUInteger)upsertMulti:(nullable NSArray *)objects;
+
 @end
