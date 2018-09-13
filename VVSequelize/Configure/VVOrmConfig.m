@@ -15,11 +15,45 @@
 #define VVSqlTypeBlob    @"BLOB"
 #define VVSqlTypeReal    @"REAL"
 
+@interface VVPropertyInfo (VVOrmConfig)
+- (NSString *)sqlType;
+@end
+
+@implementation VVPropertyInfo (VVOrmConfig)
+- (NSString *)sqlType{
+    NSString *type = VVSqlTypeText;
+    switch (self.type) {
+            case VVEncodingTypeCNumber:
+            type = VVSqlTypeInteger;
+            break;
+            case VVEncodingTypeCRealNumber:
+            type = VVSqlTypeReal;
+            break;
+            case VVEncodingTypeObject:{
+                switch (self.nsType) {
+                        case VVEncodingTypeNSNumber:
+                        case VVEncodingTypeNSDecimalNumber:
+                        type = VVSqlTypeReal;
+                        break;
+                        case VVEncodingTypeNSData:
+                        case VVEncodingTypeNSMutableData:
+                        type = VVSqlTypeBlob;
+                        break;
+                    default:
+                        break;
+                }
+            }   break;
+        default:
+            break;
+    }
+    return type;
+}
+@end
+
 @interface VVOrmConfig ()
 @property (nonatomic, strong) NSArray<VVOrmField *> *manuals;
 @property (nonatomic, strong) NSArray<NSString *>   *whiteList;
 @property (nonatomic, strong) NSArray<NSString *>   *blackList;
-@property (nonatomic, strong) NSArray<NSString *>   *uniques;
 @property (nonatomic, assign) BOOL fromTable; //是否是由数据表生成的配置
 
 @end
@@ -49,15 +83,97 @@
 
 + (instancetype)configWithTable:(NSString *)tableName
                        database:(VVDataBase *)vvdb{
+    if(![vvdb isTableExist:tableName]) return nil;
     VVOrmConfig *config = nil;
     BOOL isFtsTable = [self isFtsTable:tableName database:vvdb];
     if(isFtsTable){
-        config = [VVOrmFtsConfig configWithTable:tableName database:vvdb];
+        config = [self configWithNormalTable:tableName database:vvdb];
     }
     else{
-        config = [VVOrmCommonConfig configWithTable:tableName database:vvdb];
+        config = [self configWithFtsTable:tableName database:vvdb];
     }
-    config.fromTable    = YES;
+    return config;
+}
+
++ (instancetype)configWithNormalTable:(NSString *)tableName database:(VVDataBase *)vvdb{
+    VVOrmConfig *config = [[VVOrmConfig alloc] init];
+    config.fromTable = YES;
+
+    // count > 1 时,表示主键为自增类型主键
+    NSInteger count = 0;
+    if([vvdb isTableExist:@"sqlite_sequence"]){
+        NSString *sql   = [NSString stringWithFormat:@"SELECT count(*) as count FROM sqlite_sequence WHERE name = \"%@\"",tableName];
+        NSArray *cols   = [vvdb executeQuery:sql];
+        if (cols.count > 0) {
+            NSDictionary *dic = cols.firstObject;
+            count = [dic[@"count"] integerValue];
+        }
+    }
+    
+    // 获取表的每个字段配置
+    NSString *tableInfoSql      = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",tableName];
+    NSArray *infos              = [vvdb executeQuery:tableInfoSql];
+    NSMutableDictionary *fields = [NSMutableDictionary dictionaryWithCapacity:0];
+    NSMutableArray *uniques     = [NSMutableArray arrayWithCapacity:0];
+    for (NSDictionary *dic in infos) {
+        VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
+        if(field.pk) {
+            config.primaryKey = field.name;
+            if(count == 1) { field.pk = VVOrmPkAutoincrement; } // 自增主键
+        }
+        fields[field.name] = field;
+    }
+    // 获取表的索引字段
+    NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(\"%@\");",tableName];
+    NSArray *indexList = [vvdb executeQuery:indexListSql];
+    for (NSDictionary *indexDic in indexList) {
+        NSString *indexName    = indexDic[@"name"];
+        NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(\"%@\");",indexName];
+        NSArray *indexInfos    = [vvdb executeQuery:indexInfoSql];
+        for (NSDictionary *indexInfo in indexInfos) {
+            NSString *name     = indexInfo[@"name"];
+            VVOrmField *field  = fields[name];
+            field.unique       = [indexDic[@"unique"] boolValue];
+            field.indexed      = [indexName hasPrefix:@"sqlite_autoindex_"] ? NO : YES;
+            if(field.unique) {[uniques addObject:field.name];}
+        }
+    }
+    config.uniques = uniques.copy;
+    config->_fields  = fields;
+    config->_logAt   = [fields.allKeys containsObject:kVsCreateAt] && [fields.allKeys containsObject:kVsUpdateAt];
+    return config;
+}
+
++ (instancetype)configWithFtsTable:(NSString *)tableName database:(VVDataBase *)vvdb{
+    NSString *sql = [NSString stringWithFormat:@"SELECT * as count FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"",tableName];
+    NSArray *cols = [vvdb executeQuery:sql];
+    if(cols.count != 1) return nil;
+    NSDictionary *dic = cols.firstObject;
+    NSString *tableSQL = dic[@"sql"];
+    
+    NSInteger ftsType = 3;
+    if([tableSQL isMatchRegex:@" +fts4"]) ftsType = 4;
+    if([tableSQL isMatchRegex:@" +fts5"]) ftsType = 5;
+    
+    VVOrmConfig *config = [[VVOrmConfig alloc] init];
+    config.fromTable = YES;
+    
+    // 获取表的每个字段配置
+    NSString *tableInfoSql      = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",tableName];
+    NSArray *infos              = [vvdb executeQuery:tableInfoSql];
+    NSMutableDictionary *fields = [NSMutableDictionary dictionaryWithCapacity:0];
+    NSMutableArray *notindexds  = [NSMutableArray arrayWithCapacity:0];
+    for (NSDictionary *dic in infos) {
+        VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
+        fields[field.name] = field;
+        NSString *regex = ftsType == 5 ? [NSString stringWithFormat:@"%@ +UNINDEXED",field.name] : [NSString stringWithFormat:@"UNINDEXED +%@",field.name];
+        if([tableSQL isMatchRegex:regex]) {
+            field.fts_notindexed = NO;
+            [notindexds addObject:field.name];
+        }
+    }
+    config.notindexeds = notindexds;
+    config->_fields      = fields;
     return config;
 }
 
@@ -68,7 +184,46 @@
 }
 
 - (BOOL)isEqualToConfig:(VVOrmConfig *)config indexChanged:(BOOL *)indexChanged{
-    return NO; // 由子类实现
+    if(self.fts != config.fts) {
+        *indexChanged = self.fts;
+        return NO;
+    }
+    if(self.fts){
+        *indexChanged = NO;
+        if(self.fields.count != config.fields.count ||
+           ![self.module isEqualToString:config.module] ||
+           ![self.tokenizer isEqualToString:config.tokenizer]){
+            return NO;
+        }
+        NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
+        for (NSString *name in self.fields) {
+            VVOrmField *field1 = self.fields[name];
+            VVOrmField *field2 = config.fields[name];
+            if(field1.fts_notindexed != field2.fts_notindexed ) { return NO; }
+            [compared addObject:name];
+        }
+        NSMutableDictionary *remained = config.fields.mutableCopy;
+        [remained removeObjectsForKeys:compared];
+        return remained.count == 0;
+    }
+    else{
+        if(self.fields.count != config.fields.count || self.logAt != config.logAt ){
+            *indexChanged = YES;
+            return NO;
+        }
+        
+        NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
+        for (NSString *name in self.fields) {
+            VVOrmField *field1 = self.fields[name];
+            VVOrmField *field2 = config.fields[name];
+            if(![field1 isEqualToField:field2]) { return NO; }
+            if(field1.indexed != field2.indexed) { *indexChanged = YES; }
+            [compared addObject:name];
+        }
+        NSMutableDictionary *remained = config.fields.mutableCopy;
+        [remained removeObjectsForKeys:compared];
+        return remained.count == 0;
+    }
 }
 
 //MARK: - 懒加载
@@ -76,19 +231,30 @@
     if(!_fields){
         VVClassInfo *classInfo = [VVClassInfo classInfoWithClass:_cls];
         for (NSString *propertyName in classInfo.propertyInfos) {
-            if([_blackList containsObject:propertyName]) continue;
             VVOrmField *field = _privateFields[propertyName] ? _privateFields[propertyName] : [VVOrmField new];
             field.name = propertyName;
-            field.type = field.type.length > 0 ? field.type : [self sqlTypeForProperty:classInfo.propertyInfos[propertyName]];
+            field.type = field.type.length > 0 ? field.type : [classInfo.propertyInfos[propertyName] sqlType];
             _privateFields[field.name] = field;
         }
+        // 处理白名单
+        if(_whiteList.count > 0){
+            NSMutableDictionary *tmpFields = _privateFields.mutableCopy;
+            for(NSString *name in _whiteList){
+                tmpFields[name] = _privateFields[name];
+            }
+            _privateFields = tmpFields;
+        }
+        // 处理黑名单
+        else if(_blackList.count > 0){
+            [_privateFields removeObjectsForKeys:_blackList];
+        }
+        // 是否记录时间
         if(_logAt){
             VVOrmField *createAt = VVFIELD(kVsCreateAt); createAt.type = @"REAL";
             VVOrmField *updateAt = VVFIELD(kVsUpdateAt); updateAt.type = @"REAL";
             _privateFields[kVsCreateAt] = createAt;
             _privateFields[kVsUpdateAt] = updateAt;
         }
-        [_privateFields removeObjectsForKeys:_blackList];
         _fields = _privateFields.copy;
     }
     return _fields;
@@ -102,34 +268,36 @@
 }
 
 //MARK: - setter
+//MARK: public properties
 - (void)setCls:(Class)cls{
     _cls = cls;
-    if(!_fromTable){
-        _privateFields = [NSMutableDictionary dictionaryWithCapacity:0];
-        [self resetFields];
-    }
+    if(_fromTable) return;
+    _privateFields = [NSMutableDictionary dictionaryWithCapacity:0];
+    [self resetFields];
+}
+
+- (void)setFts:(BOOL)fts{
+    if(_fromTable) return;
+    _fts = fts;
+    [self resetFields];
 }
 
 - (void)setPrimaryKey:(NSString *)primaryKey{
+    if(_fromTable) return;
     _primaryKey = primaryKey;
     _privateFields[primaryKey] = VVFIELD_PK(primaryKey);
     [self resetFields];
 }
 
-- (void)setUniques:(NSArray *)uniques{
-    _uniques = uniques;
-    for (NSString *field in uniques) {
-        _privateFields[field] = VVFIELD_UNIQUE(field);
-    }
+- (void)setLogAt:(BOOL)logAt{
+    if(_fromTable) return;
+    _logAt = logAt;
     [self resetFields];
 }
 
-- (void)setExcludes:(NSArray *)blackList{
-    _blackList = blackList;
-    [self resetFields];
-}
-
-- (void)setManuals:(NSArray *)manuals{
+//MARK: private properties
+- (void)setManuals:(NSArray<VVOrmField *> *)manuals{
+    if(_fromTable) return;
     _manuals = manuals;
     for (VVOrmField *field in manuals) {
         _privateFields[field.name] = field;
@@ -137,14 +305,26 @@
     [self resetFields];
 }
 
-- (void)setLogAt:(BOOL)logAt{
-    _logAt = logAt;
+- (void)setWhiteList:(NSArray<NSString *> *)whiteList{
+    if(_fromTable) return;
+    _whiteList = whiteList;
+    [self resetFields];
+}
+
+- (void)setBlackList:(NSArray<NSString *> *)blackList{
+    if(_fromTable) return;
+    _blackList = blackList;
     [self resetFields];
 }
 
 //MARK: - 链式调用
 - (instancetype)primaryKey:(NSString *)primaryKey{
     self.primaryKey = primaryKey;
+    return self;
+}
+
+- (instancetype)fts:(BOOL)fts{
+    self.fts = fts;
     return self;
 }
 
@@ -170,38 +350,55 @@
 
 //MARK: - Private
 - (void)resetFields{
-    if(!_fromTable){
-        _fields = nil;
-        _fieldNames = nil;
-    }
+    _fields = nil;
+    _fieldNames = nil;
 }
 
-- (NSString *)sqlTypeForProperty:(VVPropertyInfo *)property{
-    NSString *type = VVSqlTypeText;
-    switch (property.type) {
-            case VVEncodingTypeCNumber:
-            type = VVSqlTypeInteger;
-            break;
-            case VVEncodingTypeCRealNumber:
-            type = VVSqlTypeReal;
-            break;
-            case VVEncodingTypeObject:{
-                switch (property.nsType) {
-                        case VVEncodingTypeNSNumber:
-                        case VVEncodingTypeNSDecimalNumber:
-                        type = VVSqlTypeReal;
-                        break;
-                        case VVEncodingTypeNSData:
-                        case VVEncodingTypeNSMutableData:
-                        type = VVSqlTypeBlob;
-                        break;
-                    default:
-                        break;
-                }
-            }   break;
-        default:
-            break;
+//MARK: - Common
+- (void)setUniques:(NSArray<NSString *> *)uniques{
+    if(_fromTable) return;
+    _uniques = uniques;
+    for (NSString *field in uniques) {
+        _privateFields[field] = VVFIELD_UNIQUE(field);
     }
-    return type;
+    [self resetFields];
 }
+
+- (instancetype)uniques:(NSArray<NSString *> *)uniques{
+    self.uniques = uniques;
+    return self;
+}
+
+//MARK: - FTS
+-(void)setModule:(NSString *)module{
+    if(_fromTable) return;
+    _module = module;
+}
+
+- (void)setTokenizer:(NSString *)tokenizer{
+    if(_fromTable) return;
+    _tokenizer = tokenizer;
+}
+
+- (void)setNotindexeds:(NSArray<NSString *> *)notindexeds{
+    if(_fromTable) return;
+    _notindexeds = notindexeds;
+    [self resetFields];
+}
+
+- (instancetype)module:(NSString *)module{
+    self.module = module;
+    return self;
+}
+
+- (instancetype)tokenizer:(NSString *)tokenizer{
+    self.tokenizer = tokenizer;
+    return self;
+}
+
+- (instancetype)notindexeds:(NSArray<NSString *> *)notindexeds{
+    self.notindexeds = notindexeds;
+    return self;
+}
+
 @end

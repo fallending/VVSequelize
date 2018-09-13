@@ -9,12 +9,7 @@
 #import "VVDataBase.h"
 
 #import "VVOrmField.h"
-#import "VVOrmFtsField.h"
-#import "VVOrmCommonField.h"
-
 #import "VVOrmConfig.h"
-#import "VVOrmCommonConfig.h"
-#import "VVOrmFtsConfig.h"
 
 #import "VVOrmModel.h"
 #import "VVOrmModel+Create.h"
