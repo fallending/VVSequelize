@@ -7,6 +7,7 @@
 
 #import "VVOrmFtsConfig.h"
 #import "VVDataBase.h"
+#import "VVOrmFtsField.h"
 #import "NSString+VVOrmModel.h"
 
 @implementation VVOrmFtsConfig

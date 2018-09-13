@@ -7,6 +7,7 @@
 
 #import "VVOrmCommonConfig.h"
 #import "VVDataBase.h"
+#import "VVOrmCommonField.h"
 
 @implementation VVOrmCommonConfig
 - (instancetype)init{

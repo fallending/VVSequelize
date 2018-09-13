@@ -6,10 +6,8 @@
 //
 
 #import "VVOrmConfig.h"
+#import "VVSequelize.h"
 #import "VVClassInfo.h"
-#import "VVDataBase.h"
-#import "VVOrmCommonConfig.h"
-#import "VVOrmFtsConfig.h"
 #import "NSString+VVOrmModel.h"
 
 #define VVSqlTypeInteger @"INTEGER"
