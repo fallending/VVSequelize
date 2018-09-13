@@ -85,29 +85,50 @@
     return config;
 }
 
-- (BOOL)compareWithConfig:(VVOrmConfig *)config indexChanged:(BOOL *)indexChanged{
-    // 比较fields
-    if(self.fields.count != config.fields.count ||
-       self.logAt        != config.logAt        ||
-       (self.primaryKey.length   > 0 && ![self.primaryKey   isEqualToString:config.primaryKey]) ||
-       (self.ftsModule.length    > 0 && ![self.ftsModule    isEqualToString:config.ftsModule])  ||
-       (self.ftsTokenizer.length > 0 && ![self.ftsTokenizer isEqualToString:config.ftsTokenizer]))
-    {
+- (BOOL)isEqualToConfig:(VVOrmConfig *)config indexChanged:(BOOL *)indexChanged{
+    if((self.ftsModule.length == 0) ^ (config.ftsModule.length == 0)){
         *indexChanged = YES;
-        return YES;
+        return NO;
     }
     
-    NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
-    for (NSString *name in self.fields) {
-        VVOrmField *field1 = self.fields[name];
-        VVOrmField *field2 = config.fields[name];
-        if(![field1 isEqualToField:field2]) { return NO; }
-        if(field1.indexed != field2.indexed) { *indexChanged = YES; }
-        [compared addObject:name];
+    // 普通表配置比较
+    if(self.ftsModule.length == 0){
+        if(self.fields.count != config.fields.count || self.logAt != config.logAt ){
+            *indexChanged = YES;
+            return NO;
+        }
+        
+        NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
+        for (NSString *name in self.fields) {
+            VVOrmField *field1 = self.fields[name];
+            VVOrmField *field2 = config.fields[name];
+            if(![field1 isEqualToField:field2]) { return NO; }
+            if(field1.indexed != field2.indexed) { *indexChanged = YES; }
+            [compared addObject:name];
+        }
+        NSMutableDictionary *remained = config.fields.mutableCopy;
+        [remained removeObjectsForKeys:compared];
+        return remained.count == 0;
     }
-    NSMutableDictionary *remained = config.fields.mutableCopy;
-    [remained removeObjectsForKeys:compared];
-    return remained.count > 0;
+    // FTS表配置,仅比较unindexed字段是否一致
+    else{
+        if(self.fields.count != config.fields.count ||
+           ![self.ftsModule isEqualToString:config.ftsModule] ||
+           ![self.ftsTokenizer isEqualToString:config.ftsTokenizer]){
+            return NO;
+        }
+        NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
+        for (NSString *name in self.fields) {
+            VVOrmField *field1 = self.fields[name];
+            VVOrmField *field2 = config.fields[name];
+            if(field1.fts_unindexed != field2.fts_unindexed ) { return NO; }
+            [compared addObject:name];
+        }
+        NSMutableDictionary *remained = config.fields.mutableCopy;
+        [remained removeObjectsForKeys:compared];
+        return remained.count == 0;
+    }
+    return NO;
 }
 
 //MARK: - 懒加载

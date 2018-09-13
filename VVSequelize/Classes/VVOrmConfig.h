@@ -18,7 +18,7 @@
 @property (nonatomic, copy  ) NSString *primaryKey;    ///< 主键名
 @property (nonatomic, copy  ) NSString *ftsModule;     ///< 设置FTS模块:fts3,fts4,fts5.默认为nil,不使用fts模块.
 @property (nonatomic, copy  ) NSString *ftsTokenizer;  ///< 设置FTS分词器:porter,unicode61,..., 必须在fts模块启用时有效,且当前sqlite3库支持
-@property (nonatomic, assign) BOOL   logAt;            ///< 是否自动记录时间,默认为YES
+@property (nonatomic, assign) BOOL     logAt;          ///< 是否自动记录时间,默认为YES
 @property (nonatomic, strong, readonly) NSArray<NSString *> *uniques;    ///< 具有唯一性约束的字段
 @property (nonatomic, copy,   readonly) NSArray<NSString *> *fieldNames; ///< 字段名
 @property (nonatomic, copy,   readonly) NSDictionary<NSString *,VVOrmField *> *fields;     ///< 字段配置,格式为 {字段名:配置}
@@ -48,7 +48,7 @@
  @param indexChanged 是否需要更新索引
  @return 是否一致
  */
-- (BOOL)compareWithConfig:(VVOrmConfig *)config indexChanged:(BOOL *)indexChanged;
+- (BOOL)isEqualToConfig:(VVOrmConfig *)config indexChanged:(BOOL *)indexChanged;
 
 //MARK: - 链式调用
 
