@@ -8,6 +8,8 @@
 #import <Foundation/Foundation.h>
 #import "VVDataBase.h"
 #import "VVOrmConfig.h"
+#import "VVOrmCommonConfig.h"
+#import "VVOrmFtsConfig.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

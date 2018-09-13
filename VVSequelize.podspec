@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   
   s.default_subspec = 'standard'
   
-  s.source_files = "VVSequelize/Classes/**/*"
+  s.source_files = "VVSequelize/**/*"
 
   s.subspec 'standard' do |ss|
       ss.dependency "FMDB"

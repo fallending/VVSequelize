@@ -17,34 +17,6 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 
 @implementation VVOrmModel
 
-//MARK: - Private
-- (NSString *)createSqlOfField:(VVOrmField *)field{
-    NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\" \"%@\"", field.name, field.type];
-    if(field.pk > 0)                 { [string appendString: field.pk == 1 ? @" PRIMARY KEY" : @" PRIMARY KEY AUTOINCREMENT"];}
-    if(field.notnull)                { [string appendString:@" NOT NULL"];}
-    if(field.pk == 0 && field.unique){ [string appendString:@" UNIQUE"];}
-    if(field.dflt_value.length > 0)  { [string appendFormat:@" DEFAULT(%@)", field.dflt_value]; }
-    return string;
-}
-
-- (void)handleResult:(BOOL)result action:(VVOrmAction)action{
-    if(!result) return;
-    [_cache removeAllObjects];
-    [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
-    switch (action) {
-            case VVOrmActionInsert:
-            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataInsertNotification object:self];
-            break;
-            case VVOrmActionUpdate:
-            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataUpdateNotification object:self];
-            break;
-            case VVOrmActionDelete:
-            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataDeleteNotification object:self];
-            break;
-        default:
-            break;
-    }
-}
 
 //MARK: - Public
 + (instancetype)ormModelWithConfig:(VVOrmConfig *)config{
@@ -71,12 +43,33 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     return model;
 }
 
+- (void)handleResult:(BOOL)result action:(VVOrmAction)action{
+    if(!result) return;
+    [_cache removeAllObjects];
+    [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+    switch (action) {
+            case VVOrmActionInsert:
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataInsertNotification object:self];
+            break;
+            case VVOrmActionUpdate:
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataUpdateNotification object:self];
+            break;
+            case VVOrmActionDelete:
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataDeleteNotification object:self];
+            break;
+        default:
+            break;
+    }
+}
+
+//Private
+
 /**
  根据参数,创建或修改表
  */
 - (void)createOrModifyTable{
     NSAssert1(_config.fields.count > 0, @"No need to create a table : %@", _tableName);
-    VVOrmConfig *tableConfig = [VVOrmConfig configWithTable:_tableName inDatabase:_vvdb];
+    VVOrmConfig *tableConfig = [VVOrmConfig configWithTable:_tableName database:_vvdb];
     //检查数据表是否存在
     BOOL exist        = [_vvdb isTableExist:_tableName];
     BOOL indexChanged = NO;
@@ -106,29 +99,13 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 
 - (void)createTable{
     NSString *sql = nil;
-    NSMutableString *fieldsSQL = [NSMutableString stringWithCapacity:0];
     // 创建FTS表
-    if(_config.ftsModule.length > 0){
-        NSMutableString *notIndexed = [NSMutableString stringWithCapacity:0];
-        for (NSString *name in _config.fields) {
-            [fieldsSQL appendFormat:@"%@,", name];
-            VVOrmField *field = _config.fields[name];
-            if(field.fts_unindexed){
-                [notIndexed appendFormat:@",notindexed = %@",name];
-            }
-        }
-        NSString *tokenizer = _config.ftsTokenizer.length == 0 ? @"" : [NSString stringWithFormat:@",tokenizer = %@", _config.ftsTokenizer];
-        [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
-        [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS \"%@\" USING %@(%@ %@ %@)",
-         _tableName, _config.ftsModule, fieldsSQL, notIndexed, tokenizer];
+    if([_config isKindOfClass:VVOrmFtsConfig.class]){
+        sql = [self ftsTableCreateSQL];
     }
     // 创建普通表
     else{
-        for (NSString *name in _config.fields) {
-            [fieldsSQL appendFormat:@"%@,", [self createSqlOfField:_config.fields[name]]];
-        }
-        [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
-        [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)", _tableName, fieldsSQL];
+        sql = [self commonTableCreateSQL];
     }
     // 执行建表SQL
     NSNumber *ret = [_vvdb inQueue:^id{
@@ -136,6 +113,41 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     }];
     NSAssert1(ret.boolValue, @"Failure to create a table: %@", _tableName);
     [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableCreatedNotification object:self];
+}
+
+- (NSString *)commonFieldCreateSQL:(VVOrmCommonField *)field{
+    NSMutableString *string = [NSMutableString stringWithFormat:@"\"%@\" \"%@\"", field.name, field.type];
+    if(field.pk > 0)                 { [string appendString: field.pk == 1 ? @" PRIMARY KEY" : @" PRIMARY KEY AUTOINCREMENT"];}
+    if(field.notnull)                { [string appendString:@" NOT NULL"];}
+    if(field.pk == 0 && field.unique){ [string appendString:@" UNIQUE"];}
+    if(field.dflt_value.length > 0)  { [string appendFormat:@" DEFAULT(%@)", field.dflt_value]; }
+    return string;
+}
+
+- (NSString *)commonTableCreateSQL{
+    NSMutableString *fieldsSQL = [NSMutableString stringWithCapacity:0];
+    for (NSString *name in _config.fields) {
+        [fieldsSQL appendFormat:@"%@,", [self commonFieldCreateSQL:_config.fields[name]]];
+    }
+    [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
+    return [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)", _tableName, fieldsSQL];
+}
+
+- (NSString *)ftsTableCreateSQL{
+    VVOrmFtsConfig *config = (VVOrmFtsConfig *)_config;
+    NSMutableString *fieldsSQL  = [NSMutableString stringWithCapacity:0];
+    NSMutableString *notIndexed = [NSMutableString stringWithCapacity:0];
+    for (NSString *name in config.fields) {
+        [fieldsSQL appendFormat:@"%@,", name];
+        VVOrmFtsField *field = config.fields[name];
+        if(field.notindexed){
+            [notIndexed appendFormat:@",notindexed = %@",name];
+        }
+    }
+    NSString *tokenizer = config.tokenizer.length == 0 ? @"" : [NSString stringWithFormat:@",tokenizer = %@", config.tokenizer];
+    [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
+    return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS \"%@\" USING %@(%@ %@ %@)",
+           _tableName, config.module, fieldsSQL, notIndexed, tokenizer];
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName{
@@ -176,7 +188,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 
 - (void)rebuildIndex{
     // FTS表无需创建索引
-    if(_config.ftsModule.length == 0) return;
+    if([_config isKindOfClass:VVOrmFtsConfig.class]) return;
     
     NSString *indexName = [NSString stringWithFormat:@"vvorm_index_%@",_tableName];
     // 删除原索引
@@ -184,7 +196,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     // 建立新索引
     NSMutableString *indexFields = [NSMutableString stringWithCapacity:0];
     for (NSString *name in _config.fields) {
-        VVOrmField *field = _config.fields[name];
+        VVOrmCommonField *field = _config.fields[name];
         if(field.indexed && !field.unique){ // sqlite3会对unique约束自动建立索引
             [indexFields appendFormat:@"\"%@\",", field.name];
         }

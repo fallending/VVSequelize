@@ -74,7 +74,7 @@ self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil enc
 VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
 self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
                                          manuals:@[column1]
-                                        excludes:nil
+                                        blackList:nil
                                        tableName:@"mobiles"
                                         dataBase:self.vvdb
                                           logAt:YES];
