@@ -36,14 +36,12 @@
 }
 
 - (BOOL)innerUpdateOne:(id)object fields:(nullable NSArray<NSString *> *)fields{
-    NSString *primaryKey = self.config.primaryKey;
-    if(primaryKey.length == 0 || ![object valueForKey:primaryKey]) return NO;
+    NSDictionary *condition = [self uniqueConditionForObject:object];
+    if(condition.count == 0) return NO;
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
-    NSDictionary *condition = @{primaryKey:dic[primaryKey]};
     NSMutableDictionary *values = nil;
     if(fields.count == 0){
         values = dic.mutableCopy;
-        [values removeObjectForKey:primaryKey];
     }
     else{
         values = [NSMutableDictionary dictionaryWithCapacity:fields.count];

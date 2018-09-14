@@ -63,6 +63,19 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     }
 }
 
+- (NSDictionary *)uniqueConditionForObject:(id)object{
+    NSString *pk = _config.primaryKey;
+    if(pk.length > 0) {
+        id val = [object valueForKey:pk];
+        if(val) return @{pk:val};
+    }
+    for(NSString *key in _config.uniques){
+        id val = [object valueForKey:key];
+        if(val) return @{key: val};
+    }
+    return nil;
+}
+
 //Private
 
 /**

@@ -28,9 +28,9 @@
  删除多条数据
  
  @param objects 要删除的数据
- @return 是否删除成功
+ @return 成功删除的数量
  */
-- (BOOL)deleteMulti:(nullable NSArray *)objects;
+- (NSUInteger)deleteMulti:(nullable NSArray *)objects;
 
 /**
  根据条件删除数据

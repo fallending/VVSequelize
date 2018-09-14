@@ -57,6 +57,7 @@ FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  
 
 - (void)handleResult:(BOOL)result action:(VVOrmAction)action;
 
+- (NSDictionary *)uniqueConditionForObject:(id)object;
 @end
 
 NS_ASSUME_NONNULL_END

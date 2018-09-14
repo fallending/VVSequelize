@@ -21,31 +21,30 @@
 }
 
 - (BOOL)deleteOne:(id)object{
-    NSString *primaryKey =self.config.primaryKey;
-    if(primaryKey.length == 0) return NO;
-    id pk = [object valueForKey:primaryKey];
-    if(!pk) return NO;
-    NSString *where = [VVSqlGenerator where:@{primaryKey:pk}];
+    NSDictionary *condition = [self uniqueConditionForObject:object];
+    if(dic.count == 0) return NO;
+    NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",self.tableName, where];
     BOOL ret = [self.vvdb executeUpdate:sql];
     [self handleResult:ret action:VVOrmActionDelete];
     return ret;
 }
 
-- (BOOL)deleteMulti:(NSArray *)objects{
-    NSString *primaryKey =self.config.primaryKey;
-    if(primaryKey.length == 0) return NO;
-    NSMutableArray *pks = [NSMutableArray arrayWithCapacity:0];
+- (NSUInteger)deleteMulti:(NSArray *)objects{
+    NSString *key = self.config.primaryKey;
+    if(key.length == 0) key = self.config.uniques.firstObject;
+    if(key.length == 0) return 0;
+    NSMutableArray *vals = [NSMutableArray arrayWithCapacity:0];
     for (id object in objects) {
-        id pk = [object valueForKey:primaryKey];
-        if(pk) [pks addObject:pk];
+        id val = [object valueForKey:key];
+        if(val) [vals addObject:val];
     }
-    if(pks.count == 0) return YES;
-    NSString *where = [VVSqlGenerator where:@{primaryKey:@{kVsOpIn:pks}}];
+    if(vals.count == 0) return 0;
+    NSString *where = [VVSqlGenerator where:@{key:@{kVsOpIn:vals}}];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",self.tableName, where];
     BOOL ret = [self.vvdb executeUpdate:sql];
     [self handleResult:ret action:VVOrmActionDelete];
-    return ret;
+    return ret ? vals.count : 0;
 }
 
 - (BOOL)delete:(id)condition{

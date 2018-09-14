@@ -93,11 +93,8 @@
 }
 
 - (BOOL)isExist:(id)object{
-    NSString *primaryKey =self.config.primaryKey;
-    if(primaryKey.length == 0) return NO;
-    id pk = [object valueForKey:primaryKey];
-    if(!pk) return NO;
-    NSDictionary *condition = @{primaryKey:pk};
+    NSDictionary *condition = [self uniqueConditionForObject:object];
+    if(dic.count == 0) return NO;
     return [self count:condition] > 0;
 }
 
