@@ -22,7 +22,7 @@
 
 - (BOOL)deleteOne:(id)object{
     NSDictionary *condition = [self uniqueConditionForObject:object];
-    if(dic.count == 0) return NO;
+    if(condition.count == 0) return NO;
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",self.tableName, where];
     BOOL ret = [self.vvdb executeUpdate:sql];

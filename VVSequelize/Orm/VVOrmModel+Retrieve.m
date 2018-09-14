@@ -94,7 +94,7 @@
 
 - (BOOL)isExist:(id)object{
     NSDictionary *condition = [self uniqueConditionForObject:object];
-    if(dic.count == 0) return NO;
+    if(condition.count == 0) return NO;
     return [self count:condition] > 0;
 }
 

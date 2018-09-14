@@ -63,7 +63,9 @@
     NSRange range = [dbPath rangeOfString:homePath];
     NSString *relativePath = range.location == NSNotFound ?
         dbPath : [dbPath substringFromIndex:range.location + range.length];
-    VVLog(1,@"Open or create the database: %@", dbPath);
+#if DEBUG
+    NSLog(@"Open or create the database: %@", dbPath);
+#endif
     FMDatabaseQueue *fmdbQueue = [FMDatabaseQueue databaseQueueWithPath:dbPath];
     if (fmdbQueue) {
         self = [self init];
@@ -95,28 +97,25 @@
 
 //MARK: - 原始SQL语句
 - (NSArray *)executeQuery:(NSString *)sql{
-    VVLog(1,@"query: %@",sql);
     FMResultSet *set = [self.fmdb executeQuery:sql];
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     while ([set next]) {
         [array addObject:set.resultDictionary];
     }
-    VVLog(2, @"query result: %@",[self descriptionsOfDictionryArray:array]);
+    if(VVSequelize.trace) VVSequelize.trace(sql, nil, array);
     return array;
 }
 
 - (BOOL)executeUpdate:(NSString *)sql{
-    VVLog(1,@"execute: %@",sql);
     BOOL ret = [self.fmdb executeUpdate:sql];
-    VVLog(2, @"execute result: %@",@(ret));
+    if(VVSequelize.trace) VVSequelize.trace(sql, nil, @(ret));
     return ret;
 }
 
 - (BOOL)executeUpdate:(NSString *)sql
                values:(nonnull NSArray *)values{
-    VVLog(1,@"execute: %@\nvalues: %@",sql,[self descriptionsOfArray:values]);
     BOOL ret = [self.fmdb executeUpdate:sql withArgumentsInArray:values];
-    VVLog(2, @"execute result: %@",@(ret));
+    if(VVSequelize.trace) VVSequelize.trace(sql, values, @(ret));
     return ret;
 }
 
@@ -167,48 +166,6 @@
 #pragma clang diagnostic pop
     }
     return ret;
-}
-
-//MARK: - Private
-- (NSArray *)descriptionsOfArray:(NSArray *)array{
-    if(VVSequelize.loglevel < 1) return nil;
-    NSMutableArray *descriptions = [NSMutableArray arrayWithCapacity:0];
-    for (id val in array) {
-        NSString *description = nil;
-        if([val isKindOfClass:NSData.class]){
-            NSData *data = val;
-            description =[NSString stringWithFormat:@"Data<%@ bytes>",@(data.length)];
-        }
-        else{
-            description = [val description];
-        }
-        if(description.length > 100) description = [description substringToIndex:100];
-        [descriptions addObject:description];
-    }
-    return descriptions;
-}
-
-- (NSArray *)descriptionsOfDictionryArray:(NSArray<NSDictionary *> *)array{
-    if(VVSequelize.loglevel < 2) return nil;
-    NSMutableArray *descriptions = [NSMutableArray arrayWithCapacity:0];
-    for (NSDictionary *dic in array) {
-        NSMutableDictionary *descDic = [NSMutableDictionary dictionaryWithCapacity:0];
-        for (NSString *key in dic.allKeys) {
-            id val = dic[key];
-            NSString *description = nil;
-            if([val isKindOfClass:NSData.class]){
-                NSData *data = val;
-                description =[NSString stringWithFormat:@"Data<%@ bytes>",@(data.length)];
-            }
-            else{
-                description = [val description];
-            }
-            if(description.length > 100) description = [description substringToIndex:100];
-            descDic[key] = description;
-        }
-        [descriptions addObject:descDic];
-    }
-    return descriptions;
 }
 
 @end

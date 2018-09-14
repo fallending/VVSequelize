@@ -8,10 +8,8 @@
 #import "VVSequelize.h"
 
 @interface VVSequelizeInnerPrivate: NSObject
-
-@property (nonatomic, assign) NSInteger loglevel;        ///< 调试信息
-@property (nonatomic, assign) BOOL      useCache;        ///< 是否使用缓存
-
+@property (nonatomic, assign) BOOL useCache;  ///< 是否使用缓存
+@property (nonatomic, copy  ) void (^trace)(NSString *, NSArray *, id); ///< 跟踪SQL执行
 @end
 
 @implementation VVSequelizeInnerPrivate
@@ -32,33 +30,20 @@
 
 //MARK: - 全局设置
 
-+ (NSInteger)loglevel{
-    return [[self class] innerPrivate].loglevel;
++ (void)setTrace:(void (^)(NSString *, NSArray *, id))trace{
+    [self innerPrivate].trace = trace;
 }
 
-+ (void)setLoglevel:(NSInteger)loglevel{
-    [[self class] innerPrivate].loglevel = loglevel;
++ (void (^)(NSString *, NSArray *, id))trace{
+    return [self innerPrivate].trace;
 }
 
 + (BOOL)useCache{
-    return [[self class] innerPrivate].useCache;
+    return [self innerPrivate].useCache;
 }
 
 +(void)setUseCache:(BOOL)useCache{
-    [[self class] innerPrivate].useCache = useCache;
-}
-
-//MARK: - 调试信息打印
-+ (void)VVVerbose:(NSUInteger)level
-           format:(NSString *)fmt, ...{
-    NSInteger loglevel = [[self class] innerPrivate].loglevel;
-    if(loglevel > 0 && loglevel >= level){
-        va_list args;
-        va_start(args, fmt);
-        NSString *string = fmt? [[NSString alloc] initWithFormat:fmt locale:[NSLocale currentLocale] arguments:args]:fmt;
-        va_end(args);
-        NSLog(@"VVSequelize->%@", string);
-    }
+    [self innerPrivate].useCache = useCache;
 }
 
 @end

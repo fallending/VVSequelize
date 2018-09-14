@@ -201,7 +201,9 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
             }
             if(!ret){
                 *rollback = YES;
-                VVLog(2, @"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
+#if DEBUG
+                NSLog(@"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
+#endif
             }
             return @(ret);
         }];
@@ -242,7 +244,9 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
         return @(r);
     }];
     if(!ret.boolValue){
-        VVLog(2, @"Warning: Failed create index for table (%@)!",self->_tableName);
+#if DEBUG
+        NSLog(@"Warning: Failed create index for table (%@)!",self->_tableName);
+#endif
     }
 }
 

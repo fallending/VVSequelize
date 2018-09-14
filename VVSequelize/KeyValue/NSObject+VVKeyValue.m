@@ -600,15 +600,21 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string){
 
 - (void)setValue:(id)value forUndefinedKey:(NSString *)key{
     // do Nothing
-    VVLog(1,@"setValue: %@ forUndefinedKey: %@",value,key);
+#if DEBUG
+    NSLog(@"setValue: %@ forUndefinedKey: %@",value,key);
+#endif
 }
 
 - (void)setNilValueForKey:(NSString *)key{
-    VVLog(1,@"setNilValueForKey: %@",key);
+#if DEBUG
+    NSLog(@"setNilValueForKey: %@",key);
+#endif
 }
 
 - (id)valueForUndefinedKey:(NSString *)key{
-    VVLog(1,@"valueForUndefinedKey: %@",key);
+#if DEBUG
+    NSLog(@"valueForUndefinedKey: %@",key);
+#endif
     return nil;
 }
 @end
