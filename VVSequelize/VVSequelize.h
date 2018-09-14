@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "VVSQLiteDB.h"
 #import "VVDataBase.h"
 
 #import "VVOrmField.h"
@@ -26,6 +27,8 @@
  */
 @interface VVSequelize : NSObject
 
+@property (nonatomic, strong, class) Class<VVSQLiteDB> dbClass; ///< 设置sqlite3封装类
+
 @property (nonatomic, assign, class) BOOL useCache; ///< 是否使用缓存
 
 /**
@@ -33,7 +36,8 @@
  sql: SQL语句;
  values: 插入/更新时`sql3_bind`的数据;
  results: 语句执行结果;
+ error: 执行失败的错误;
  */
-@property (nonatomic, copy, class) void (^trace)(NSString *sql, NSArray *values, id results);
+@property (nonatomic, copy, class) void (^trace)(NSString *sql, NSArray *values, id results, NSError *error);
 
 @end

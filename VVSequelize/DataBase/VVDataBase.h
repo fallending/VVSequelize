@@ -6,10 +6,12 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "VVSQLiteDB.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface VVDataBase : NSObject
+
 @property (nonatomic, strong, readonly) NSString *dbPath;   ///< 数据库文件全路径
 @property (nonatomic, strong, readonly) NSString *dbName;   ///< 数据库文件名
 @property (nonatomic, strong, readonly) NSString *dbDir;    ///< 数据库文件所在目录名
@@ -66,7 +68,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param sql sql语句
  @param values 对应sql语句中`?`的值
  @return 是否更新成功
- @note 主要针对插入数据时,可能有NSData类型的值,所以插入语句中的values对为(?,?,?,..)格式,由FMDB处理
+ @note 插入/更新数据时,防SQL主注入,sql语句会包含(?,?,?,..)格式,由`sqlite3_bind`处理
  */
 - (BOOL)executeUpdate:(NSString *)sql
                values:(nonnull NSArray *)values;

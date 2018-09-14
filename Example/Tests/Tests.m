@@ -7,9 +7,8 @@
 //
 
 #import "VVTestClasses.h"
+#import "VVTestDBClass.h"
 #import <VVSequelize/VVSequelize.h>
-#import <VVSequelize/VVClassInfo.h>
-#import <VVSequelize/VVDataBaseHelper.h>
 #import <CoreLocation/CoreLocation.h>
 
 @import XCTest;
@@ -24,16 +23,18 @@
 - (void)setUp
 {
     [super setUp];
-    
-    [VVSequelize setTrace:^(NSString *sql, NSArray *values, id results) {
+    [VVSequelize setDbClass:VVTestDBClass.class];
+    [VVSequelize setTrace:^(NSString *sql, NSArray *values, id results, NSError *error) {
         NSLog(@"\n----------VVSequelize----------\n"
               "sql    : %@\n"
               "values : %@\n"
               "results: %@\n"
+              "error  : %@\n"
               @"-------------------------------\n",
               sql, values.firstObject,
               [results isKindOfClass:NSArray.class] ? [results firstObject] :
-              [results isKindOfClass:NSDictionary.class] ? [results allObjects].firstObject : results);
+              [results isKindOfClass:NSDictionary.class] ? [results allObjects].firstObject : results,
+              error);
     }];
     
     NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];

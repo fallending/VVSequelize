@@ -10,18 +10,7 @@ Pod::Spec.new do |s|
   s.author           = { 'Valo Lee' => 'pozi119@163.com' }
   s.source           = { :git => 'https://github.com/pozi119/VVSequelize.git', :tag => s.version.to_s }
   s.ios.deployment_target = '8.0'
-  
-  s.default_subspec = 'standard'
-  
   s.source_files = "VVSequelize/**/*"
-
-  s.subspec 'standard' do |ss|
-      ss.dependency "FMDB"
-  end
-  
-  s.subspec 'fts' do |ss|
-      ss.dependency "FMDB/FTS"
-  end
 
 end
 

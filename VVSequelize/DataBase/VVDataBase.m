@@ -8,15 +8,8 @@
 #import "VVDataBase.h"
 #import "VVSequelize.h"
 
-#if __has_include(<VVSequelize/VVSequelize.h>)
-#import <fmdb/FMDB.h>
-#else
-#import "FMDB.h"
-#endif
-
 @interface VVDataBase ()
-@property (nonatomic, strong) FMDatabase *fmdb;
-@property (nonatomic, strong) FMDatabaseQueue *fmdbQueue;
+@property (nonatomic, strong) id<VVSQLiteDB>    sqlitedb;
 @end
 
 @implementation VVDataBase
@@ -41,8 +34,9 @@
 }
 
 - (instancetype)initWithDBName:(NSString *)dbName
-                       dirPath:(NSString *)dirPath
-                    encryptKey:(NSString *)encryptKey{
+                      dirPath:(NSString *)dirPath
+                   encryptKey:(NSString *)encryptKey{
+    NSAssert(VVSequelize.dbClass, @"请先设置全局的sqlite3封装类: `VVSequelize.dbClass`");
     if (dbName.length == 0) {
         dbName = @"vvsequlize.sqlite";
     }
@@ -66,12 +60,11 @@
 #if DEBUG
     NSLog(@"Open or create the database: %@", dbPath);
 #endif
-    FMDatabaseQueue *fmdbQueue = [FMDatabaseQueue databaseQueueWithPath:dbPath];
-    if (fmdbQueue) {
+    id<VVSQLiteDB> sqlitedb = [VVSequelize.dbClass dbWithPath:dbPath];
+    if (sqlitedb) {
         self = [self init];
         if (self) {
-            _fmdbQueue = fmdbQueue;
-            _fmdb = [fmdbQueue valueForKey:@"_db"];
+            _sqlitedb = sqlitedb;
             _dbName = dbName;
             _dbDir  = dirPath;
             _dbPath = dbPath;
@@ -97,25 +90,24 @@
 
 //MARK: - 原始SQL语句
 - (NSArray *)executeQuery:(NSString *)sql{
-    FMResultSet *set = [self.fmdb executeQuery:sql];
-    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-    while ([set next]) {
-        [array addObject:set.resultDictionary];
-    }
-    if(VVSequelize.trace) VVSequelize.trace(sql, nil, array);
+    NSError *error = nil;
+    NSArray *array = [self.sqlitedb executeQuery:sql error:&error];
+    if(VVSequelize.trace) VVSequelize.trace(sql, nil, array, error);
     return array;
 }
 
 - (BOOL)executeUpdate:(NSString *)sql{
-    BOOL ret = [self.fmdb executeUpdate:sql];
-    if(VVSequelize.trace) VVSequelize.trace(sql, nil, @(ret));
+    NSError *error = nil;
+    BOOL ret = [self.sqlitedb executeUpdate:sql error:&error];
+    if(VVSequelize.trace) VVSequelize.trace(sql, nil, @(ret), error);
     return ret;
 }
 
 - (BOOL)executeUpdate:(NSString *)sql
                values:(nonnull NSArray *)values{
-    BOOL ret = [self.fmdb executeUpdate:sql withArgumentsInArray:values];
-    if(VVSequelize.trace) VVSequelize.trace(sql, values, @(ret));
+    NSError *error = nil;
+    BOOL ret = [self.sqlitedb executeUpdate:sql values:values error:&error];
+    if(VVSequelize.trace) VVSequelize.trace(sql, values, @(ret), error);
     return ret;
 }
 
@@ -148,20 +140,20 @@
 
 //MARK: - 其他操作
 - (BOOL)close{
-    return [self.fmdb close];
+    return [self.sqlitedb close];
 }
 
 - (BOOL)open{
-    BOOL ret = [self.fmdb open];
+    BOOL ret = [self.sqlitedb open];
     if(ret){
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundeclared-selector"
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         if([self respondsToSelector:@selector(encryptKey)] &&
            [self respondsToSelector:@selector(setEncryptKey:)] &&
-           [self.fmdb respondsToSelector:@selector(setKey:)]){
+           [_sqlitedb respondsToSelector:@selector(setEncryptKey:)]){
             NSString *key = [self performSelector:@selector(encryptKey)];
-            if(key.length > 0) [self.fmdb setKey:key];
+            if(key.length > 0) [_sqlitedb setEncryptKey:key];
         }
 #pragma clang diagnostic pop
     }

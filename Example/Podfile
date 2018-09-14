@@ -4,6 +4,7 @@ use_frameworks!
 
 target 'VVSequelize_Example' do
   pod 'VVSequelize', :path => '../'
+  pod 'FMDB'
 
   target 'VVSequelize_Tests' do
     inherit! :search_paths

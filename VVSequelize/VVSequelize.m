@@ -8,8 +8,9 @@
 #import "VVSequelize.h"
 
 @interface VVSequelizeInnerPrivate: NSObject
-@property (nonatomic, assign) BOOL useCache;  ///< 是否使用缓存
-@property (nonatomic, copy  ) void (^trace)(NSString *, NSArray *, id); ///< 跟踪SQL执行
+@property (nonatomic, strong) Class<VVSQLiteDB> dbClass; ///< 设置sqlite3封装类
+@property (nonatomic, assign) BOOL useCache;             ///< 是否使用缓存
+@property (nonatomic, copy  ) void (^trace)(NSString *, NSArray *, id, NSError *); ///< 跟踪SQL执行
 @end
 
 @implementation VVSequelizeInnerPrivate
@@ -30,12 +31,12 @@
 
 //MARK: - 全局设置
 
-+ (void)setTrace:(void (^)(NSString *, NSArray *, id))trace{
-    [self innerPrivate].trace = trace;
++ (Class<VVSQLiteDB>)dbClass{
+    return [self innerPrivate].dbClass;
 }
 
-+ (void (^)(NSString *, NSArray *, id))trace{
-    return [self innerPrivate].trace;
++ (void)setDbClass:(Class<VVSQLiteDB>)dbClass{
+    [self innerPrivate].dbClass = dbClass;
 }
 
 + (BOOL)useCache{
@@ -44,6 +45,14 @@
 
 +(void)setUseCache:(BOOL)useCache{
     [self innerPrivate].useCache = useCache;
+}
+
++ (void (^)(NSString *, NSArray *, id, NSError *))trace{
+    return [self innerPrivate].trace;
+}
+
++ (void)setTrace:(void (^)(NSString *, NSArray *, id, NSError *))trace{
+    [self innerPrivate].trace = trace;
 }
 
 @end

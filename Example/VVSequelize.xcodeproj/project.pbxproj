@@ -10,6 +10,7 @@
 		3A2B2CCFF1E6127C73E0D526 /* Pods_VVSequelize_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBA44D65D4D4DE86438B567E /* Pods_VVSequelize_Tests.framework */; };
 		3E07BDC020D256CD00A12B94 /* mobiles.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */; };
 		3E07BDC120D257ED00A12B94 /* mobiles.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */; };
+		3E0B381D214B9CDA00ED092D /* VVTestDBClass.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E0B381C214B9CDA00ED092D /* VVTestDBClass.m */; };
 		3E42AE1B20CF98800050EA22 /* VVTestClasses.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E42AE1A20CF98800050EA22 /* VVTestClasses.m */; };
 		6003F58E195388D20070C39A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58D195388D20070C39A /* Foundation.framework */; };
 		6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58F195388D20070C39A /* CoreGraphics.framework */; };
@@ -43,6 +44,8 @@
 		1D35FB986B749E5A10F687F1 /* Pods-VVSequelize_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VVSequelize_Example.debug.xcconfig"; path = "Pods/Target Support Files/Pods-VVSequelize_Example/Pods-VVSequelize_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		1E450AED6236C34B2B1295CE /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = mobiles.sqlite; sourceTree = "<group>"; };
+		3E0B381B214B9CDA00ED092D /* VVTestDBClass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VVTestDBClass.h; sourceTree = "<group>"; };
+		3E0B381C214B9CDA00ED092D /* VVTestDBClass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VVTestDBClass.m; sourceTree = "<group>"; };
 		3E42AE1920CF98800050EA22 /* VVTestClasses.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VVTestClasses.h; sourceTree = "<group>"; };
 		3E42AE1A20CF98800050EA22 /* VVTestClasses.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VVTestClasses.m; sourceTree = "<group>"; };
 		6003F58A195388D20070C39A /* VVSequelize_Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VVSequelize_Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -179,6 +182,8 @@
 				3E07BDBF20D256CD00A12B94 /* mobiles.sqlite */,
 				3E42AE1920CF98800050EA22 /* VVTestClasses.h */,
 				3E42AE1A20CF98800050EA22 /* VVTestClasses.m */,
+				3E0B381B214B9CDA00ED092D /* VVTestDBClass.h */,
+				3E0B381C214B9CDA00ED092D /* VVTestDBClass.m */,
 				6003F5BB195388D20070C39A /* Tests.m */,
 				6003F5B6195388D20070C39A /* Supporting Files */,
 			);
@@ -387,6 +392,7 @@
 			files = (
 				3E42AE1B20CF98800050EA22 /* VVTestClasses.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
+				3E0B381D214B9CDA00ED092D /* VVTestDBClass.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
