@@ -25,7 +25,16 @@
 {
     [super setUp];
     
-    VVSequelize.loglevel = 1;
+    [VVSequelize setTrace:^(NSString *sql, NSArray *values, id results) {
+        NSLog(@"\n----------VVSequelize----------\n"
+              "sql    : %@\n"
+              "values : %@\n"
+              "results: %@\n"
+              @"-------------------------------\n",
+              sql, values.firstObject,
+              [results isKindOfClass:NSArray.class] ? [results firstObject] :
+              [results isKindOfClass:NSDictionary.class] ? [results allObjects].firstObject : results);
+    }];
     
     NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
     NSString *targetPath = [path stringByAppendingPathComponent:@"mobiles.sqlite"];

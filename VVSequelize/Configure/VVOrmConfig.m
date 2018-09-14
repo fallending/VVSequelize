@@ -74,7 +74,7 @@
 }
 
 + (BOOL)isFtsTable:(NSString *)tableName database:(VVDataBase *)vvdb{
-    NSString *sql = [NSString stringWithFormat:@"SELECT * as count FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"",tableName];
+    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"",tableName];
     NSArray *cols = [vvdb executeQuery:sql];
     if(cols.count != 1) return nil;
     NSDictionary *dic = cols.firstObject;
@@ -146,7 +146,7 @@
 }
 
 + (instancetype)configWithFtsTable:(NSString *)tableName database:(VVDataBase *)vvdb{
-    NSString *sql = [NSString stringWithFormat:@"SELECT * as count FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"",tableName];
+    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"",tableName];
     NSArray *cols = [vvdb executeQuery:sql];
     if(cols.count != 1) return nil;
     NSDictionary *dic = cols.firstObject;
@@ -217,8 +217,8 @@
         for (NSString *name in self.fields) {
             VVOrmField *field1 = self.fields[name];
             VVOrmField *field2 = config.fields[name];
-            if(![field1 isEqualToField:field2]) { return NO; }
             if(field1.indexed != field2.indexed) { *indexChanged = YES; }
+            if(![field1 isEqualToField:field2])  { return NO; }
             [compared addObject:name];
         }
         NSMutableDictionary *remained = config.fields.mutableCopy;

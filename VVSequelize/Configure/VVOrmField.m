@@ -42,9 +42,12 @@
 }
 
 - (BOOL)isEqualToField:(VVOrmField *)field{
+    BOOL dflt_equal = (self.dflt_value.length == 0 && field.dflt_value.length == 0) ||
+    (self.dflt_value.length > 0 && field.dflt_value.length > 0 && [self.dflt_value isEqualToString:field.dflt_value]);
+    BOOL type_equal = (self.type.length == 0 && field.type.length == 0) ||
+    (self.type.length > 0 && field.type.length > 0 && [self.type isEqualToString:field.type]);
     return [self.name isEqualToString:field.name]
-    && [self.type.uppercaseString isEqualToString:field.type.uppercaseString]
-    && [self.dflt_value isEqualToString:self.dflt_value]
+    && dflt_equal && type_equal
     && self.pk          == field.pk
     && self.notnull     == field.notnull
     && self.unique      == field.unique
