@@ -113,32 +113,32 @@
 - (instancetype)uniques:(NSArray<NSString *> *)uniques;
 
 //MARK: - FTS
-@property (nonatomic, copy  ) NSString *module;     ///< FTS模块:fts3,fts4,fts5.默认为fts4.
-@property (nonatomic, copy  ) NSString *tokenizer;  ///< FTS分词器:porter,unicode61,icu,...
-@property (nonatomic, strong) NSArray<NSString *>  *notindexeds; ///< 不索引的的字段
+@property (nonatomic, copy  ) NSString *ftsModule;     ///< FTS模块:fts3,fts4,fts5...默认为fts4
+@property (nonatomic, copy  ) NSString *ftsTokenizer;  ///< FTS分词器:porter,unicode61,icu,...
+@property (nonatomic, strong) NSArray<NSString *>  *ftsNotindexeds; ///< 不索引的的字段
 
 /**
  设置FTS模块
  
- @param module FTS模块名,fts3,fts4,fts5
+ @param ftsModule FTS模块名,fts3,fts4,fts5...
  @return ORM配置
  */
-- (instancetype)module:(NSString *)module;
+- (instancetype)ftsModule:(NSString *)ftsModule;
 
 /**
  设置FTS分词器,必须是当前sqlite3库支持的.
  
- @param tokenizer FTS分词器名,porter,unicode61,icu,...
+ @param ftsTokenizer FTS分词器名,porter,unicode61,icu,...
  @return ORM配置
  */
-- (instancetype)tokenizer:(NSString *)tokenizer;
+- (instancetype)ftsTokenizer:(NSString *)ftsTokenizer;
 
 /**
  设置不索引的字段.
  
- @param notindexeds 不索引的字段
+ @param ftsNotindexeds 不索引的字段
  @return ORM配置
  */
-- (instancetype)notindexeds:(NSArray<NSString *> *)notindexeds;
+- (instancetype)ftsNotindexeds:(NSArray<NSString *> *)ftsNotindexeds;
 
 @end

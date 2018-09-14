@@ -7,6 +7,7 @@
 
 #import "VVOrmModel.h"
 #import "VVSequelize.h"
+#import "NSString+VVOrmModel.h"
 
 NSNotificationName const VVOrmModelDataChangeNotification   = @"VVOrmModelDataChangeNotification";
 NSNotificationName const VVOrmModelDataInsertNotification   = @"VVOrmModelDataInsertNotification";
@@ -136,17 +137,29 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 - (NSString *)ftsTableCreateSQL{
     NSMutableString *fieldsSQL  = [NSMutableString stringWithCapacity:0];
     NSMutableString *notIndexed = [NSMutableString stringWithCapacity:0];
+    NSInteger ftsType = 3;
+    if([_config.ftsModule isMatchRegex:@"fts4"]) ftsType = 4;
+    if([_config.ftsModule isMatchRegex:@"fts5"]) ftsType = 5;
+
     for (NSString *name in _config.fields) {
-        [fieldsSQL appendFormat:@"%@,", name];
         VVOrmField *field = _config.fields[name];
-        if(field.fts_notindexed){
-            [notIndexed appendFormat:@",notindexed = %@",name];
+        if(ftsType == 5){
+            [fieldsSQL appendFormat:@"%@%@,", name , field.fts_notindexed ? @" NOTINDEXED" : @""];
+        }
+        else{
+            [fieldsSQL appendFormat:@"%@ %@,", name, field.type];
+        }
+        if(ftsType != 5 && field.fts_notindexed){
+            [notIndexed appendFormat:@"notindexed = %@,",name];
         }
     }
-    NSString *tokenizer = _config.tokenizer.length == 0 ? @"" : [NSString stringWithFormat:@",tokenizer = %@", _config.tokenizer];
+    NSAssert(fieldsSQL.length > 1, @"无效的FTS表配置");
+    [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
+    if(notIndexed.length > 1) [notIndexed deleteCharactersInRange:NSMakeRange(notIndexed.length - 1, 1)];
+    NSString *tokenizer = _config.ftsTokenizer.length == 0 ? @"" : [NSString stringWithFormat:@",tokenizer = %@", _config.ftsTokenizer];
     [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
     return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS \"%@\" USING %@(%@ %@ %@)",
-           _tableName, _config.module, fieldsSQL, notIndexed, tokenizer];
+           _tableName, _config.ftsModule, fieldsSQL, notIndexed, tokenizer];
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName{
@@ -188,11 +201,17 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 - (void)rebuildIndex{
     // FTS表无需创建索引
     if(_config.fts) return;
+    NSString *indexesSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type ='index' and tbl_name = \"%@\"",_tableName];
+    NSArray *array = [_vvdb executeQuery:indexesSQL];
+    NSMutableString *dropIdxSQL = [NSMutableString stringWithCapacity:0];
+    for (NSDictionary *dic  in array) {
+        NSString *idxName = dic[@"name"];
+        if([idxName hasPrefix:@"sqlite_autoindex_"]) continue;
+        [dropIdxSQL appendFormat:@"DROP INDEX IF EXISTS \"%@\";", idxName];
+    }
     
-    NSString *indexName = [NSString stringWithFormat:@"vvorm_index_%@",_tableName];
-    // 删除原索引
-    NSString *dropIdxSQL = [NSString stringWithFormat:@"DROP INDEX IF EXISTS \"%@\";",indexName];
     // 建立新索引
+    NSString *indexName = [NSString stringWithFormat:@"vvorm_index_%@",_tableName];
     NSMutableString *indexFields = [NSMutableString stringWithCapacity:0];
     for (NSString *name in _config.fields) {
         VVOrmField *field = _config.fields[name];
@@ -204,8 +223,9 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     NSString *createIdxSQL = nil;
     if(indexFields.length > 0) createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX \"%@\" on \"%@\" (%@);",indexName,_tableName,indexFields];
     NSNumber *ret = [_vvdb inQueue:^id{
-        BOOL r = [self->_vvdb executeUpdate:dropIdxSQL];
-        if(r && createIdxSQL.length > 0) r = [self->_vvdb executeUpdate:createIdxSQL];
+        BOOL r = YES;
+        if(dropIdxSQL.length > 0)        {r = [self->_vvdb executeUpdate:dropIdxSQL];}
+        if(r && createIdxSQL.length > 0) {r = [self->_vvdb executeUpdate:createIdxSQL];}
         return @(r);
     }];
     if(!ret.boolValue){

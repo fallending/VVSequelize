@@ -62,6 +62,7 @@
     NSDictionary<NSString *,VVOrmField *> *_fields;
     NSArray<NSString *> *_fieldNames;
     NSMutableDictionary *_privateFields;
+    NSString *_ftsModule; // FTS模块名
 }
 
 - (instancetype)init{
@@ -172,7 +173,7 @@
             [notindexds addObject:field.name];
         }
     }
-    config.notindexeds = notindexds;
+    config.ftsNotindexeds = notindexds;
     config->_fields      = fields;
     return config;
 }
@@ -191,8 +192,8 @@
     if(self.fts){
         *indexChanged = NO;
         if(self.fields.count != config.fields.count ||
-           ![self.module isEqualToString:config.module] ||
-           ![self.tokenizer isEqualToString:config.tokenizer]){
+           ![self.ftsModule isEqualToString:config.ftsModule] ||
+           ![self.ftsTokenizer isEqualToString:config.ftsTokenizer]){
             return NO;
         }
         NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
@@ -370,34 +371,38 @@
 }
 
 //MARK: - FTS
--(void)setModule:(NSString *)module{
+-(void)setFtsModule:(NSString *)ftsModule{
     if(_fromTable) return;
-    _module = module;
+    _ftsModule = ftsModule;
 }
 
-- (void)setTokenizer:(NSString *)tokenizer{
-    if(_fromTable) return;
-    _tokenizer = tokenizer;
+- (NSString *)ftsModule{
+    return _ftsModule.length == 0 ? @"fts4" : _ftsModule;
 }
 
-- (void)setNotindexeds:(NSArray<NSString *> *)notindexeds{
+- (void)setFtsTokenizer:(NSString *)ftsTokenizer{
     if(_fromTable) return;
-    _notindexeds = notindexeds;
+    _ftsTokenizer = ftsTokenizer;
+}
+
+- (void)setFtsNotindexeds:(NSArray<NSString *> *)ftsNotindexeds{
+    if(_fromTable) return;
+    _ftsNotindexeds = ftsNotindexeds;
     [self resetFields];
 }
 
-- (instancetype)module:(NSString *)module{
-    self.module = module;
+- (instancetype)ftsModule:(NSString *)ftsModule{
+    self.ftsModule = ftsModule;
     return self;
 }
 
-- (instancetype)tokenizer:(NSString *)tokenizer{
-    self.tokenizer = tokenizer;
+- (instancetype)ftsTokenizer:(NSString *)ftsTokenizer{
+    self.ftsTokenizer = ftsTokenizer;
     return self;
 }
 
-- (instancetype)notindexeds:(NSArray<NSString *> *)notindexeds{
-    self.notindexeds = notindexeds;
+- (instancetype)ftsNotindexeds:(NSArray<NSString *> *)ftsNotindexeds{
+    self.ftsNotindexeds = ftsNotindexeds;
     return self;
 }
 

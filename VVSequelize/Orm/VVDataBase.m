@@ -121,7 +121,7 @@
 }
 
 - (BOOL)isTableExist:(NSString *)tableName{
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and name = \"%@\"",tableName];
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = \"%@\"",tableName];
     NSArray *array = [self executeQuery:sql];
     for (NSDictionary *dic in array) {
         NSInteger count = [dic[@"count"] integerValue];

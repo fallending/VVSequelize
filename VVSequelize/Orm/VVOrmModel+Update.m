@@ -95,9 +95,8 @@
                                   field, field, @(value)];
     if(self.config.logAt){
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-        [setString appendFormat:@",\"%@\" = \"%@\",",kVsUpdateAt,@(now)];
+        [setString appendFormat:@",\"%@\" = \"%@\"",kVsUpdateAt,@(now)];
     }
-    [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
     NSString *where = [VVSqlGenerator where:condition];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",self.tableName,setString,where];
     BOOL ret = [self.vvdb executeUpdate:sql];
