@@ -30,6 +30,10 @@
     return [_fmdb openWithFlags:flags];
 }
 
+- (BOOL)setEncryptKey:(NSString * _Nullable)encryptKey {
+    return [_fmdb setKey:encryptKey];
+}
+
 - (BOOL)close{
     return [_fmdb close];
 }
@@ -50,11 +54,5 @@
 - (BOOL)executeUpdate:(NSString *)sql values:(NSArray *)values error:(NSError *__autoreleasing  _Nullable *)error{
     return [_fmdb executeUpdate:sql values:values error:error];
 }
-
-
-- (BOOL)setEncryptKey:(NSString * _Nullable)encryptKey {
-    return [_fmdb setKey:encryptKey];
-}
-
 
 @end

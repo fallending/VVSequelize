@@ -12,7 +12,7 @@
 * [x] 原生SQL语句支持
 * [x] 常规查询支持,max,min,sum,count...
 * [x] 主键支持(可自动主键),唯一性约束支持.
-* [x] Queue,Transaction支持(使用FMDB,串行Queue)
+* [x] Transaction支持
 * [x] Object直接处理
 * [x] 数据存储,OC类型支持: NSData, NSURL, NSSelector, NSValue, NSDate, NSArray, NSDictionary, NSSet,...
 * [x] 数据存储,C类型支持: char *, struct, union
@@ -20,39 +20,21 @@
 * [x] OrmModel查询缓存
 
 ## 开发中(0.3.0)
-* [x] 索引支持
-* [x] check约束支持
-* [ ] FTS支持
-* [ ] 去除FMDB关联,仅提供SQL语句生成
+* [ ] FTS全文搜索
 
-## 改动(0.2.1)
-1. 加入FMDB的FTS源码
-2. 分离VVCipherHelper
-3. 移除三方`Dictionary/Object`工具支持
-4. podspec添加`standard`,`fts`分支
+## 改动(0.3.0-beta0)
+1. 去除FMDB关联,仅提供SQL语句生成
+2. 索引支持,尚未测试...
+3. FTS创建表,尚未测试...
 
 ## 安装
-目前版本基本可食用,以后根据需求不定期更新.
+使用测试版本:
 ```ruby
-pod 'VVSequelize'
-```
-如果要在Podfile中是使用`use_frameworks!`, 需要在 Podfile 结尾加上hook,为 FMDB 添加头文件搜索路径,解决FMDB编译失败的问题.
-```ruby
-target 'targetxxxx' do
     pod 'VVSequelize', :git => 'https://github.com/pozi119/VVSequelize.git'
-end
-
-post_install do |installer|
-    print "Add 'SQLCipher' to FMDB 'HEADER_SEARCH_PATHS' \n"
-    installer.pods_project.targets.each do |target|
-        if target.name == "FMDB"
-            target.build_configurations.each do |config|
-                header_search = {"HEADER_SEARCH_PATHS" => "SQLCipher"}
-                config.build_settings.merge!(header_search)
-            end
-        end
-    end
-end
+```
+使用稳定版本:
+```ruby
+    pod 'VVSequelize', '0.2.1'
 ```
 ## 注意
 1. 子对象会保存成为Json字符串,子对象内的NSData也会保存为16进制字符串.
@@ -62,23 +44,36 @@ end
 ## 用法
 此处主要列出一些基本用法,详细用法请阅读代码注释.
 
-### 定义ORM模型 
-可自定义表名,各字段的参数,不保存的字段, 存放的数据库文件,是否记录创建和更新时间等.
+### 全局配置
+sqlite3封装类请参考`VVSequelize_Tests`中`VVTestDBClass`的实现方式.
+```objc
+    // 必须设置sqlite3封装类
+    [VVSequelize setDbClass:VVTestDBClass.class];
+    
+    [VVSequelize setTrace:^(NSString *sql, NSArray *values, id results, NSError *error) { 
+        //加入对每个sql执行情况的跟踪
+    }];
+```
 
-生成的模型将使用dbName和tableName生成的字符串作为Key,存放至一个模型池中,若下次使用相同的数据库和表名创建模型,这先从模型池中查找.
+### 打开/创建数据库文件
+```objc
+    self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite"];
+```
+
+### 定义ORM配置
+使用`VVOrmConfig`统一表配置,方便复用,支持链式赋值.
+```objc
+    VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestMobile.class] primaryKey:@"mobile"];
+``` 
+
+### 定义ORM模型 
+可自定义表名和存放的数据库文件.
+生成的模型将不在保存在ModelPool中,防止表过多导致内存占用大,需要请自行实现.
 
 示例如下:
 
 ```objc
-self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
-VVOrmSchemaItem *column1 =[VVOrmSchemaItem schemaItemWithDic:@{@"name":@"mobile",@"pk":@(YES)}];
-self.mobileModel = [VVOrmModel ormModelWithClass:VVTestMobile.class
-                                         manuals:@[column1]
-                                        blackList:nil
-                                       tableName:@"mobiles"
-                                        dataBase:self.vvdb
-                                          logAt:YES];
-
+    self.mobileModel = [VVOrmModel ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
 ```
 ### 增删改查
 使用ORM模型进行增删改查等操作.
