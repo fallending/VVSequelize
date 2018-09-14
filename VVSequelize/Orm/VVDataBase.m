@@ -129,21 +129,21 @@
     return NO;
 }
 
-//MARK: - 线程安全操作
-- (id)inQueue:(id (^)(void))block{
-    __block id ret = nil;
-    [self.fmdbQueue inDatabase:^(FMDatabase *db) {
-        ret = block();
-    }];
-    return ret;
+//MARK: 事务操作
+- (BOOL)beginTransaction {
+    return [self executeUpdate:@"begin exclusive transaction"];
 }
 
-- (id)inTransaction:(id (^)(BOOL * rollback))block{
-    __block id ret = nil;
-    [self.fmdbQueue inTransaction:^(FMDatabase * db, BOOL * rollback) {
-        ret = block(rollback);
-    }];
-    return ret;
+- (BOOL)beginDeferredTransaction {
+    return [self executeUpdate:@"begin deferred transaction"];
+}
+
+- (BOOL)rollback {
+    return [self executeUpdate:@"rollback transaction"];
+}
+
+- (BOOL)commit {
+    return [self executeUpdate:@"commit transaction"];
 }
 
 //MARK: - 其他操作

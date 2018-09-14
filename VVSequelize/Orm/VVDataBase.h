@@ -79,24 +79,37 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (BOOL)isTableExist:(NSString *)tableName;
 
-//MARK: - 线程安全操作
-/**
- 线程安全操作
- 
- @param block 数据库操作
- @note FMDBQueue是serial的dispatch_queue_t, 实际是同步执行,所以直接返回结果. 若要处理大量数据,可以将inQueue放入异步线程
- @warning `ormModelWithClass`已使用Queue,不能放入block.
- */
-- (id)inQueue:(nonnull id (^)(void))block;
+//MARK: 事务操作
 
 /**
- 事务操作
+ 开始EXCLUSIVE事务.
+ EXCLUSIVE事务会试着获取对数据库的EXCLUSIVE锁。这与IMMEDIATE类似，但是一旦成功，EXCLUSIVE事务保证没有其它的连接，所以就可对数据库进行读写操作了.
  
- @param block 数据库事务操作
- @note FMDBQueue是serial的dispatch_queue_t, 实际是同步执行,所以直接返回结果. 若要处理大量数据,可以将inTransaction放入异步线程
- @warning `ormModelWithClass`已使用Queue,不能放入block.
+ @return 是否成功开始
  */
-- (id)inTransaction:(nonnull id (^)(BOOL * rollback))block;
+- (BOOL)beginTransaction;
+
+/**
+ 开始DEFERRED事务.
+ 一个DEFERRED事务不获取任何锁(直到它需要锁的时候)
+ 
+ @return 是否开始成功
+ */
+- (BOOL)beginDeferredTransaction;
+
+/**
+ 回滚操作,在事务操作失败后执行
+
+ @return 是否回滚成功
+ */
+- (BOOL)rollback;
+
+/**
+ 提交事务
+
+ @return 是否提交成功
+ */
+- (BOOL)commit;
 
 //MARK: - 其他操作
 /**

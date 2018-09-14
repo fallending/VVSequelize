@@ -66,13 +66,6 @@
     if(array && obj) {}
 }
 
-- (void)testInQueue{
-    id obj = [self.mobileModel.vvdb inQueue:^id{
-        return [self.mobileModel findAll:nil fields:nil orderBy:nil range:NSMakeRange(0, 100)];
-    }];
-    NSLog(@"obj:%@",obj);
-}
-
 - (void)testInTransaction{
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (NSInteger i = 0; i < 100; i ++) {
@@ -84,17 +77,17 @@
         mobile.relative = arc4random_uniform(100) * 1.0 / 100.0;
         [array addObject:mobile];
     }
-
-    id obj = [self.mobileModel.vvdb inTransaction:^id(BOOL *rollback) {
-        for (VVTestMobile *m in array) {
-            BOOL ret = [self.mobileModel insertOne:m];
-            if(!ret){
-                *rollback = YES;
-            }
-        }
-        return @(YES);
-    }];
-    NSLog(@"obj:%@",obj);
+    VVDataBase *vvdb = self.mobileModel.vvdb;
+    BOOL ret = [vvdb beginTransaction];
+    if(ret) {
+        ret = [self.mobileModel insertMulti:array];
+    }
+    if(ret) {
+        [vvdb commit];
+    }else{
+        [vvdb rollback];
+    }
+    NSLog(@"ret: %@",@(ret));
 }
 
 - (void)testMobileModel{

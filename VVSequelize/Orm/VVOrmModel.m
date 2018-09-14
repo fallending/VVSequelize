@@ -122,10 +122,14 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
         sql = [self commonTableCreateSQL];
     }
     // 执行建表SQL
-    NSNumber *ret = [_vvdb inQueue:^id{
-        return @([self->_vvdb executeUpdate:sql]);
-    }];
-    NSAssert1(ret.boolValue, @"Failure to create a table: %@", _tableName);
+    BOOL ret = [_vvdb beginTransaction];
+    if(ret) ret = [_vvdb executeUpdate:sql];
+    if(ret) {
+        [_vvdb commit];
+    }else{
+        [_vvdb rollback];
+    }
+    NSAssert1(ret, @"Failure to create a table: %@", _tableName);
     [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableCreatedNotification object:self];
 }
 
@@ -177,10 +181,14 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 
 - (void)renameToTempTable:(NSString *)tempTableName{
     NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
-    NSNumber *ret = [_vvdb inQueue:^id{
-        return @([self->_vvdb executeUpdate:sql]);
-    }];
-    NSAssert1(ret.boolValue, @"Failure to create a temporary table: %@", tempTableName);
+    BOOL ret = [_vvdb beginTransaction];
+    if(ret) ret = [_vvdb executeUpdate:sql];
+    if(ret) {
+        [_vvdb commit];
+    }else{
+        [_vvdb rollback];
+    }
+    NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
 }
 
 - (void)migrationDataFormTempTable:(NSString *)tempTableName{
@@ -190,25 +198,23 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     }
     if(allFields.length > 1) {
         [allFields deleteCharactersInRange:NSMakeRange(allFields.length - 1, 1)];
-        NSNumber *result = [_vvdb inTransaction:^id(BOOL *rollback) {
-            // 将旧表数据复制至新表
-            NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self->_tableName, allFields, allFields, tempTableName];
-            BOOL ret = [self->_vvdb executeUpdate:sql];
-            // 数据复制成功则删除旧表
+        NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self->_tableName, allFields, allFields, tempTableName];
+        BOOL ret = [_vvdb beginTransaction];
+        if(ret) {
+            ret = [_vvdb executeUpdate:sql];
             if(ret){
                 sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
-                ret = [self->_vvdb executeUpdate:sql];
+                ret = [_vvdb executeUpdate:sql];
             }
-            if(!ret){
-                *rollback = YES;
-#if DEBUG
-                NSLog(@"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
-#endif
-            }
-            return @(ret);
-        }];
-        if(result.boolValue){
+        }
+        if(ret) {
+            [_vvdb commit];
             [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+        }else{
+            [_vvdb rollback];
+#if DEBUG
+            NSLog(@"Warning: copying data from old table (%@) to new table (%@) failed!",tempTableName,self->_tableName);
+#endif
         }
     }
 }
@@ -237,13 +243,15 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     if(indexFields.length > 1) [indexFields deleteCharactersInRange:NSMakeRange(indexFields.length - 1, 1)];
     NSString *createIdxSQL = nil;
     if(indexFields.length > 0) createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX \"%@\" on \"%@\" (%@);",indexName,_tableName,indexFields];
-    NSNumber *ret = [_vvdb inQueue:^id{
-        BOOL r = YES;
-        if(dropIdxSQL.length > 0)        {r = [self->_vvdb executeUpdate:dropIdxSQL];}
-        if(r && createIdxSQL.length > 0) {r = [self->_vvdb executeUpdate:createIdxSQL];}
-        return @(r);
-    }];
-    if(!ret.boolValue){
+    BOOL ret = [_vvdb beginTransaction];
+    if(ret) {
+        if(dropIdxSQL.length > 0)          {ret = [_vvdb executeUpdate:dropIdxSQL];}
+        if(ret && createIdxSQL.length > 0) {ret = [self->_vvdb executeUpdate:createIdxSQL];}
+    }
+    if(ret) {
+        [_vvdb commit];
+    }else{
+        [_vvdb rollback];
 #if DEBUG
         NSLog(@"Warning: Failed create index for table (%@)!",self->_tableName);
 #endif
