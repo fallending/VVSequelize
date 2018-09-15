@@ -1,16 +1,20 @@
 //
-//  NSString+VVOrmModel.m
+//  NSString+VVOrm.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/13.
 //
 
-#import "NSString+VVOrmModel.h"
+#import "NSString+VVOrm.h"
 
-@implementation NSString (VVOrmModel)
+@implementation NSString (VVOrm)
 
 - (NSString *)trim{
     return [self stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+- (NSString *)strip{
+    return [self stringByReplacingOccurrencesOfString:@" +" withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, self.length)];
 }
 
 - (BOOL)isMatchRegex:(NSString *)regex{
@@ -24,5 +28,6 @@
     tmp = [tmp stringByReplacingOccurrencesOfString:@"'|\"" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, tmp.length)];
     return tmp.trim;
 }
+
 
 @end

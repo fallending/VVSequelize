@@ -1,19 +1,19 @@
 //
-//  VVOrmModel+Update.m
+//  VVOrm+Update.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/12.
 //
 
-#import "VVOrmModel+Update.h"
+#import "VVOrm+Update.h"
 #import "NSObject+VVKeyValue.h"
-#import "VVSqlGenerator.h"
+#import "VVClause.h"
 
-@implementation VVOrmModel (Update)
+@implementation VVOrm (Update)
 
 - (BOOL)innerUpdate:(id)condition
              values:(NSDictionary *)values{
-    NSString *where = [VVSqlGenerator where:condition];
+    NSString *where = [[VVClause prepare:condition] where];
     NSMutableString *setString = [NSMutableString stringWithCapacity:0];
     NSMutableArray *objs = [NSMutableArray arrayWithCapacity:0];
     [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -95,7 +95,7 @@
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
         [setString appendFormat:@",\"%@\" = \"%@\"",kVsUpdateAt,@(now)];
     }
-    NSString *where = [VVSqlGenerator where:condition];
+    NSString *where = [[VVClause prepare:condition] where];
     NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@",self.tableName,setString,where];
     BOOL ret = [self.vvdb executeUpdate:sql];
     [self handleResult:ret action:VVOrmActionUpdate];

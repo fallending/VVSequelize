@@ -8,7 +8,7 @@
 #import "VVOrmConfig.h"
 #import "VVSequelize.h"
 #import "VVClassInfo.h"
-#import "NSString+VVOrmModel.h"
+#import "NSString+VVOrm.h"
 
 #define VVSqlTypeInteger @"INTEGER"
 #define VVSqlTypeText    @"TEXT"

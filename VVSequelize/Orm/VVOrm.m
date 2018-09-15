@@ -1,22 +1,22 @@
 //
-//  VVOrmModel.m
+//  VVOrm.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/6/6.
 //
 
-#import "VVOrmModel.h"
+#import "VVOrm.h"
 #import "VVSequelize.h"
-#import "NSString+VVOrmModel.h"
+#import "NSString+VVOrm.h"
 
-NSNotificationName const VVOrmModelDataChangeNotification   = @"VVOrmModelDataChangeNotification";
-NSNotificationName const VVOrmModelDataInsertNotification   = @"VVOrmModelDataInsertNotification";
-NSNotificationName const VVOrmModelDataUpdateNotification   = @"VVOrmModelDataUpdateNotification";
-NSNotificationName const VVOrmModelDataDeleteNotification   = @"VVOrmModelDataDeleteNotification";
-NSNotificationName const VVOrmModelTableCreatedNotification = @"VVOrmModelTableCreatedNotification";
-NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableDeletedNotification";
+NSNotificationName const VVOrmDataChangeNotification   = @"VVOrmDataChangeNotification";
+NSNotificationName const VVOrmDataInsertNotification   = @"VVOrmDataInsertNotification";
+NSNotificationName const VVOrmDataUpdateNotification   = @"VVOrmDataUpdateNotification";
+NSNotificationName const VVOrmDataDeleteNotification   = @"VVOrmDataDeleteNotification";
+NSNotificationName const VVOrmTableCreatedNotification = @"VVOrmTableCreatedNotification";
+NSNotificationName const VVOrmTableDeletedNotification = @"VVOrmTableDeletedNotification";
 
-@implementation VVOrmModel
+@implementation VVOrm
 
 
 //MARK: - Public
@@ -30,7 +30,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
     if(!config || !config.cls) return nil;
     NSString *tbname = tableName.length > 0 ?  tableName : NSStringFromClass(config.cls);
     VVDataBase   *db = vvdb ? vvdb : VVDataBase.defalutDb;
-    VVOrmModel *model = [[VVOrmModel alloc] init];
+    VVOrm *model = [[VVOrm alloc] init];
     model->_config = config;
     model->_tableName = tbname;
     model->_vvdb = db;
@@ -47,16 +47,16 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
 - (void)handleResult:(BOOL)result action:(VVOrmAction)action{
     if(!result) return;
     [_cache removeAllObjects];
-    [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+    [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmDataChangeNotification object:self];
     switch (action) {
             case VVOrmActionInsert:
-            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataInsertNotification object:self];
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmDataInsertNotification object:self];
             break;
             case VVOrmActionUpdate:
-            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataUpdateNotification object:self];
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmDataUpdateNotification object:self];
             break;
             case VVOrmActionDelete:
-            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataDeleteNotification object:self];
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmDataDeleteNotification object:self];
             break;
         default:
             break;
@@ -130,7 +130,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
         [_vvdb rollback];
     }
     NSAssert1(ret, @"Failure to create a table: %@", _tableName);
-    [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableCreatedNotification object:self];
+    [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmTableCreatedNotification object:self];
 }
 
 - (NSString *)commonFieldCreateSQL:(VVOrmField *)field{
@@ -209,7 +209,7 @@ NSNotificationName const VVOrmModelTableDeletedNotification = @"VVOrmModelTableD
         }
         if(ret) {
             [_vvdb commit];
-            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelDataChangeNotification object:self];
+            [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmDataChangeNotification object:self];
         }else{
             [_vvdb rollback];
 #if DEBUG

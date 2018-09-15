@@ -1,21 +1,22 @@
 //
-//  VVOrmModel+Delete.m
+//  VVOrm+Delete.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/12.
 //
 
-#import "VVOrmModel+Delete.h"
-#import "VVSqlGenerator.h"
+#import "VVOrm+Delete.h"
+#import "VVClause.h"
+#import "NSString+VVClause.h"
 
-@implementation VVOrmModel (Delete)
+@implementation VVOrm (Delete)
 - (BOOL)drop{
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"",self.tableName];
     BOOL ret = [self.vvdb executeUpdate:sql];
     [self handleResult:ret action:VVOrmActionDelete];
     if(ret){
         // 此处还需发送表删除通知
-        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmModelTableDeletedNotification object:self];
+        [[NSNotificationCenter defaultCenter] postNotificationName:VVOrmTableDeletedNotification object:self];
     }
     return ret;
 }
@@ -23,7 +24,7 @@
 - (BOOL)deleteOne:(id)object{
     NSDictionary *condition = [self uniqueConditionForObject:object];
     if(condition.count == 0) return NO;
-    NSString *where = [VVSqlGenerator where:condition];
+    NSString *where = [[VVClause prepare:condition] where];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",self.tableName, where];
     BOOL ret = [self.vvdb executeUpdate:sql];
     [self handleResult:ret action:VVOrmActionDelete];
@@ -40,7 +41,7 @@
         if(val) [vals addObject:val];
     }
     if(vals.count == 0) return 0;
-    NSString *where = [VVSqlGenerator where:@{key:@{kVsOpIn:vals}}];
+    NSString *where = [[VVClause prepare:[key in:vals]] where];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",self.tableName, where];
     BOOL ret = [self.vvdb executeUpdate:sql];
     [self handleResult:ret action:VVOrmActionDelete];
@@ -48,7 +49,7 @@
 }
 
 - (BOOL)delete:(id)condition{
-    NSString *where = [VVSqlGenerator where:condition];
+    NSString *where = [[VVClause prepare:condition] where];
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@",self.tableName, where];
     BOOL ret = [self.vvdb executeUpdate:sql];
     [self handleResult:ret action:VVOrmActionDelete];

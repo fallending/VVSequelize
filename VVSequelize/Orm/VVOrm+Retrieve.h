@@ -1,13 +1,13 @@
 //
-//  VVOrmModel+Retrieve.h
+//  VVOrm+Retrieve.h
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/12.
 //
 
-#import "VVOrmModel.h"
+#import "VVOrm.h"
 
-@interface VVOrmModel (Retrieve)
+@interface VVOrm (Retrieve)
 /**
  根据主键的值,查询一条数据
  

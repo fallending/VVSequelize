@@ -1,5 +1,5 @@
 //
-//  VVOrmModel.h
+//  VVOrm.h
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/6/6.
@@ -19,14 +19,14 @@ typedef NS_ENUM(NSUInteger, VVOrmAction) {
 
 #define VVRangeAll      NSMakeRange(0, 0)   ///< 数据查询时不限定范围
 
-FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataChangeNotification;    ///< 数据发生变化通知
-FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataInsertNotification;    ///< 数据插入成功通知
-FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataUpdateNotification;    ///< 数据更新成功通知
-FOUNDATION_EXPORT NSNotificationName const VVOrmModelDataDeleteNotification;    ///< 数据删除成功通知
-FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableCreatedNotification;  ///< 数据表创建成功通知
-FOUNDATION_EXPORT NSNotificationName const VVOrmModelTableDeletedNotification;  ///< 数据表删除成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmDataChangeNotification;    ///< 数据发生变化通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmDataInsertNotification;    ///< 数据插入成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmDataUpdateNotification;    ///< 数据更新成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmDataDeleteNotification;    ///< 数据删除成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmTableCreatedNotification;  ///< 数据表创建成功通知
+FOUNDATION_EXPORT NSNotificationName const VVOrmTableDeletedNotification;  ///< 数据表删除成功通知
 
-@interface VVOrmModel : NSObject
+@interface VVOrm : NSObject
 
 @property (nonatomic, strong, readonly) VVOrmConfig *config;    ///< ORM配置
 @property (nonatomic, strong, readonly) VVDataBase  *vvdb;      ///< 数据库,可执行某些自定义查询/更新

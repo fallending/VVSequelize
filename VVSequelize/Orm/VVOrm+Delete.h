@@ -1,13 +1,13 @@
 //
-//  VVOrmModel+Delete.h
+//  VVOrm+Delete.h
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/12.
 //
 
-#import "VVOrmModel.h"
+#import "VVOrm.h"
 
-@interface VVOrmModel (Delete)
+@interface VVOrm (Delete)
 /**
  删除表
  

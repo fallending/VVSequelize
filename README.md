@@ -74,7 +74,7 @@ sqlite3封装类请参考`VVSequelize_Tests`中`VVTestDBClass`的实现方式.
 示例如下:
 
 ```objc
-    self.mobileModel = [VVOrmModel ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
+    self.mobileModel = [VVOrm ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
 ```
 ### 增删改查
 使用ORM模型进行增删改查等操作.
@@ -89,33 +89,7 @@ NSArray *array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 
 ```
 
 ### 生成Where语句
-采用了类似sequelize.js的方式生成where语句.具体说明请参考```VVSqlGenerator.h```中的注释.
-
-示例如下:
-
-```objc
-NSArray *conditions = @[
-    @{@"name":@"zhangsan", @"age":@(26)},
-    @{@"$or":@[@{@"name":@"zhangsan",@"age":@(26)},@{@"age":@(30)}]},
-    @{@"age":@{@"$lt":@(30)}},
-    @{@"$or":@[@{@"name":@"zhangsan"},@{@"age":@{@"$lt":@(30)}}]},
-    @{@"type":@{@"$in":@[@"a",@"b",@"c"]}},
-    @{@"score":@{@"$between":@[@"20",@"40"]}},
-    @{@"text":@{@"$like":@"%%haha"}},
-    @{@"score":@{@"$gt":@(60),@"$lte":@(80)}},
-    @{@"age":@{@"$or":@[
-            @{@"age":@{@"$gt":@(10)}},
-            @{@"age":@{@"$lte":@(30)}}
-        ]},
-        @"name":@{@"$notLike":@"%%zhangsan"},
-        @"$or":@[@{@"score":@{@"$gt":@(60),@"$lte":@(80)}},@{@"score":@{@"$gt":@(20),@"$lte":@(40)}}]
-    }
-];
-for (NSDictionary *condition in conditions) {
-    NSString *where = [VVSqlGenerator where:condition];
-    NSLog(@"where sentence : %@", where);
-}
-```
+待定...
 
 ## Author
 

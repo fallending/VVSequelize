@@ -1,13 +1,13 @@
 //
-//  VVOrmModel+Update.h
+//  VVOrm+Update.h
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/12.
 //
 
-#import "VVOrmModel.h"
+#import "VVOrm.h"
 
-@interface VVOrmModel (Update)
+@interface VVOrm (Update)
 /**
  根据条件更新数据
  

@@ -15,7 +15,7 @@
 
 @interface Tests : XCTestCase
 @property (nonatomic, strong) VVDataBase *vvdb;
-@property (nonatomic, strong) VVOrmModel *mobileModel;
+@property (nonatomic, strong) VVOrm *mobileModel;
 @end
 
 @implementation Tests
@@ -46,7 +46,7 @@
 
     self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
     VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestMobile.class] primaryKey:@"mobile"];
-    self.mobileModel = [VVOrmModel ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
+    self.mobileModel = [VVOrm ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
 }
 
 - (void)tearDown
@@ -60,10 +60,8 @@
     array = [self.mobileModel findAll:nil fields:nil orderBy:nil range:NSMakeRange(0, 10)];
     array = [self.mobileModel findAll:nil fields:@[@"",@""] orderBy:nil range:NSMakeRange(0, 10)];
     array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
-    array = [self.mobileModel findAll:@{@"mobile":@{kVsOpGt:@(15000000000)}} orderBy:@[@{@"mobile":kVsOrderAsc},@{@"city":kVsOrderDesc}] range:NSMakeRange(0, 5)];
     array = [self.mobileModel findAll:@"mobile > 15000000000" orderBy:@"mobile ASC,city DESC" range:NSMakeRange(0, 5)];
-    id obj = [self.mobileModel findOne:nil orderBy:@[@{@"mobile":kVsOrderDesc},@{@"city":kVsOrderDesc}]];
-    obj = [self.mobileModel findOne:nil orderBy:@"mobile DESC,city ASC"];
+    id obj = [self.mobileModel findOne:nil orderBy:@"mobile DESC,city ASC"];
     if(array && obj) {}
 }
 
@@ -163,7 +161,7 @@
     VVOrmField *field4 = VVFIELD_UNIQUE_NOTNULL(@"arr");
     VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestPerson.class] manuals:@[field1,field2,field3,field4]];
 
-    VVOrmModel *personModel1 = [VVOrmModel ormModelWithConfig:config tableName:@"persons" dataBase:nil];
+    VVOrm *personModel1 = [VVOrm ormModelWithConfig:config tableName:@"persons" dataBase:nil];
     NSUInteger maxrowid = [personModel1 maxRowid];
 //    NSLog(@"%@", personModel);
     NSLog(@"maxrowid: %@", @(maxrowid));
@@ -174,27 +172,27 @@
 }
 
 - (void)testWhere{
-    NSArray *conditions = @[
-                            @{@"name":@"zhangsan", @"age":@(26)},
-                            @{@"$or":@[@{@"name":@"zhangsan",@"age":@(26)},@{@"age":@(30)}]},
-                            @{@"age":@{@"$lt":@(30)}},
-                            @{@"$or":@[@{@"name":@"zhangsan"},@{@"age":@{@"$lt":@(30)}}]},
-                            @{@"type":@{@"$in":[NSSet setWithArray:@[@"a",@"b",@"c"]]}},
-                            @{@"score":@{@"$between":@[@"20",@"40"]}},
-                            @{@"text":@{@"$like":@"%%haha"}},
-                            @{@"score":@{@"$gt":@(60),@"$lte":@(80)}},
-                            @{@"age":@{@"$or":@[
-                                      @{@"age":@{@"$gt":@(10)}},
-                                      @{@"age":@{@"$lte":@(30)}}
-                                      ]},
-                              @"name":@{@"$notLike":@"%%zhangsan"},
-                              @"$or":@[@{@"score":@{@"$gt":@(60),@"$lte":@(80)}},@{@"score":@{@"$gt":@(20),@"$lte":@(40)}}]
-                              }
-                            ];
-    for (NSDictionary *condition in conditions) {
-        NSString *where = [VVSqlGenerator where:condition];
-        NSLog(@"where sentence : %@", where);
-    }
+//    NSArray *conditions = @[
+//                            @{@"name":@"zhangsan", @"age":@(26)},
+//                            @{@"$or":@[@{@"name":@"zhangsan",@"age":@(26)},@{@"age":@(30)}]},
+//                            @{@"age":@{@"$lt":@(30)}},
+//                            @{@"$or":@[@{@"name":@"zhangsan"},@{@"age":@{@"$lt":@(30)}}]},
+//                            @{@"type":@{@"$in":[NSSet setWithArray:@[@"a",@"b",@"c"]]}},
+//                            @{@"score":@{@"$between":@[@"20",@"40"]}},
+//                            @{@"text":@{@"$like":@"%%haha"}},
+//                            @{@"score":@{@"$gt":@(60),@"$lte":@(80)}},
+//                            @{@"age":@{@"$or":@[
+//                                      @{@"age":@{@"$gt":@(10)}},
+//                                      @{@"age":@{@"$lte":@(30)}}
+//                                      ]},
+//                              @"name":@{@"$notLike":@"%%zhangsan"},
+//                              @"$or":@[@{@"score":@{@"$gt":@(60),@"$lte":@(80)}},@{@"score":@{@"$gt":@(20),@"$lte":@(40)}}]
+//                              }
+//                            ];
+//    for (NSDictionary *condition in conditions) {
+//        NSString *where = [VVSqlGenerator where:condition];
+//        NSLog(@"where sentence : %@", where);
+//    }
 }
 
 - (void)testExample
@@ -239,7 +237,7 @@
     VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
     NSLog(@"obj: %@",nOne);
     VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestOne.class] primaryKey:@"oneId"];
-    VVOrmModel *orm = [VVOrmModel ormModelWithConfig:config];
+    VVOrm *orm = [VVOrm ormModelWithConfig:config];
     [orm upsertOne:one];
     VVTestOne *mOne = [orm findOne:nil];
     NSLog(@"mOne: %@",mOne);
@@ -271,7 +269,7 @@
     VVTestMix *mix2 = [VVTestMix vv_objectWithKeyValues:mixkvs];
     NSLog(@"mix2: %@",mix2);
     VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestMix.class] primaryKey:@"num"];
-    VVOrmModel *orm = [VVOrmModel ormModelWithConfig:config];
+    VVOrm *orm = [VVOrm ormModelWithConfig:config];
     [orm upsertOne:mix];
     VVTestMix *mix3 = [orm findOne:nil];
     NSLog(@"mix3: %@",mix3);

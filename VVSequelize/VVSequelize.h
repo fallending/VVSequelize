@@ -12,13 +12,12 @@
 #import "VVOrmField.h"
 #import "VVOrmConfig.h"
 
-#import "VVOrmModel.h"
-#import "VVOrmModel+Create.h"
-#import "VVOrmModel+Update.h"
-#import "VVOrmModel+Retrieve.h"
-#import "VVOrmModel+Delete.h"
+#import "VVOrm.h"
+#import "VVOrm+Create.h"
+#import "VVOrm+Update.h"
+#import "VVOrm+Retrieve.h"
+#import "VVOrm+Delete.h"
 
-#import "VVSqlGenerator.h"
 #import "VVDataBaseHelper.h"
 #import "NSObject+VVKeyValue.h"
 

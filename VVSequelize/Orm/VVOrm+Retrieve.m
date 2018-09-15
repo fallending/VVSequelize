@@ -1,15 +1,16 @@
 //
-//  VVOrmModel+Retrieve.m
+//  VVOrm+Retrieve.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/12.
 //
 
-#import "VVOrmModel+Retrieve.h"
-#import "VVSqlGenerator.h"
+#import "VVOrm+Retrieve.h"
+#import "VVClause.h"
+#import "VVSelect.h"
 #import "NSObject+VVKeyValue.h"
 
-@implementation VVOrmModel (Retrieve)
+@implementation VVOrm (Retrieve)
 
 - (id)findOneByPKVal:(id)PKVal{
     if(!PKVal || self.config.primaryKey.length == 0) return nil;
@@ -49,36 +50,13 @@
              orderBy:(id)orderBy
                range:(NSRange)range
           jsonResult:(BOOL)jsonResult{
-    NSString *fieldsStr = @"*";
-    if(fields.count > 0){
-        NSMutableString *tempStr = [NSMutableString stringWithCapacity:0];
-        for (NSString *field in fields) {
-            if(field.length > 0) [tempStr appendFormat:@"\"%@\",",field];
-        }
-        if(tempStr.length > 1) {
-            [tempStr deleteCharactersInRange:NSMakeRange(tempStr.length - 1, 1)];
-            fieldsStr = tempStr;
-        }
-    }
-    NSString *where = [VVSqlGenerator where:condition];
-    NSString *order = [VVSqlGenerator orderBy:orderBy];
-    NSString *limit = [VVSqlGenerator limit:range];
-    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM \"%@\"%@%@%@ ", fieldsStr, self.tableName,where,order,limit];
-    NSArray *results = [self.cache objectForKey:sql];
-    if(!results){
-        NSArray *jsonArray = [self.vvdb executeQuery:sql];
-        results = jsonArray;
-        if(!jsonResult && [fieldsStr isEqualToString:@"*"]){
-            results = [self.config.cls vv_objectsWithKeyValuesArray:jsonArray];
-        }
-        [self.cache setObject:results forKey:sql];
-    }
-    return results;
+    VVSelect *select = [[[[VVSelect prepareWithOrm:self] where:condition] fields:fields] limit:range];
+    return [select findAll:jsonResult];
 }
 
 - (NSInteger)count:(id)condition{
-    NSString *where = [VVSqlGenerator where:condition];
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\"%@", self.tableName,where];
+    NSString *where = [[VVClause prepare:condition] where];
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\" %@", self.tableName, where];
     NSArray *array = [self.cache objectForKey:sql];
     if(!array){
         array = [self.vvdb executeQuery:sql];

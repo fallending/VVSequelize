@@ -1,14 +1,14 @@
 //
-//  VVOrmModel+Create.m
+//  VVOrm+Create.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/9/12.
 //
 
-#import "VVOrmModel+Create.h"
+#import "VVOrm+Create.h"
 #import "NSObject+VVKeyValue.h"
 
-@implementation VVOrmModel (Create)
+@implementation VVOrm (Create)
 
 -(BOOL)innerInsertOne:(id)object upsert:(BOOL)upsert{
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];

@@ -1,14 +1,13 @@
 //
-//  VVWhere.h
+//  NSString+VVClause.h
 //  VVSequelize
 //
-//  Created by Jinbo Li on 2018/9/14.
+//  Created by Jinbo Li on 2018/9/15.
 //
 
 #import <Foundation/Foundation.h>
 
-
-@interface NSString (VVWhere)
+@interface NSString (VVClause)
 - (NSString *)and:(NSString *)and;
 
 - (NSString *)or:(NSString *)and;
@@ -48,24 +47,5 @@
 - (NSString *)asc;
 
 - (NSString *)desc;
-
-@end
-
-@interface NSDictionary (VVWhere)
-
-- (NSString *)where;
-
-@end
-
-
-@interface NSArray (VVWhere)
-
-- (NSString *)where;
-
-- (NSString *)asc;
-
-- (NSString *)desc;
-
-- (NSString *)sqlJoin:(BOOL)quota;
 
 @end
