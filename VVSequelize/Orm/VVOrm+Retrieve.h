@@ -19,7 +19,7 @@
 /**
  查询一条数据
  
- @param condition 查询条件,格式详见VVSqlGenerator
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
  @return 查询结果,对象
  */
 - (nullable id)findOne:(nullable id)condition;
@@ -27,8 +27,8 @@
 /**
  查询一条数据
  
- @param condition 查询条件,格式详见VVSqlGenerator
- @param orderBy 排序方式
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param orderBy 排序条件
  @return 查询结果,对象
  */
 - (nullable id)findOne:(nullable id)condition
@@ -37,7 +37,7 @@
 /**
  根据条件查询所有数据
  
- @param condition 查询条件,格式详见VVSqlGenerator
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
  @return 查询结果,对象数组
  */
 - (NSArray *)findAll:(nullable id)condition;
@@ -45,9 +45,9 @@
 /**
  根据条件查询数据
  
- @param condition 查询条件,格式详见VVSqlGenerator
- @param orderBy 排序方式
- @param range 数据范围,用于翻页,range.length为0时,查询所有数据
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param orderBy 排序条件
+ @param range 数据范围
  @return 查询结果,对象数组
  */
 - (NSArray *)findAll:(nullable id)condition
@@ -57,39 +57,59 @@
 /**
  根据条件查询数据
  
- @param condition 查询条件,格式详见VVSqlGenerator
- @param fields 指定查询的字段
- @param orderBy 排序方式
- @param range 数据范围,用于翻页,range.length为0时,查询所有数据
- @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param groupBy 分组条件
+ @param range 数据范围
  */
 - (NSArray *)findAll:(nullable id)condition
-              fields:(nullable NSArray<NSString *> *)fields
-             orderBy:(nullable id)orderBy
+             groupBy:(nullable id)groupBy
                range:(NSRange)range;
 
 /**
  根据条件查询数据
  
- @param condition 查询条件,格式详见VVSqlGenerator
- @param fields 指定查询的字段
- @param orderBy 排序方式
- @param range 数据范围,用于翻页,range.length为0时,查询所有数据
- @param jsonResult 是否强制返回JsonOjbects.YES-强制返回JsonObject,NO-根据fields参数确定返回结果
+ @param condition 查询条件.
+ 1.支持原生sql,可传入`where`及之后的所有语句
+ 2.非套嵌的dictionary,key和value用`=`连接,不同的key value用`and`连接
+ 3.非套嵌的dictionary数组, 每个dictionary用`or`连接
+
+ @param distinct 是否过滤重复结果
+
+ @param fields 指定查询的字段.
+ 1. string: `"field1","field2",...`, `count(*) as count`, ...
+ 2. array: ["field1","field2",...]
+ 
+ @param groupBy 分组条件
+ 1. string: "field1","field2",...
+ 2. array: ["field1","field2",...]
+
+ @param having 分组过滤条件, 和condition一致
+ 
+ @param orderBy 排序条件
+ 1. string: "field1 asc","field1,field2 desc","field1 asc,field2,field3 desc",...
+ 2. array: ["field1 asc","field2,field3 desc",...]
+
+ @param range 数据范围,用于翻页.`range.location == NSNotFound`或`range.length == 0`时,查询所有数据
+ 
+ @param useJson 是否强制返回JsonOjbects.YES-强制返回JsonObject,NO-根据fields参数确定返回结果
+ 
  @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
- @note 定义ORM时允许记录时间,则jsonResult可能会包含vv_createAt, vv_updateAt
- @attention 若使用VVKeyValue作为对象/字典互转工具,某些数据转成字典后为NSData的描述字符串,不能直接使用.
+ 
+ @note 定义ORM时允许记录时间,则字典数组可能会包含vv_createAt, vv_updateAt
  */
 - (NSArray *)findAll:(nullable id)condition
+            distinct:(BOOL)distinct
               fields:(nullable NSArray<NSString *> *)fields
+             groupBy:(nullable id)groupBy
+              having:(nullable id)having
              orderBy:(nullable id)orderBy
                range:(NSRange)range
-          jsonResult:(BOOL)jsonResult;
+             useJson:(BOOL)useJson;
 
 /**
  根据条件统计数据条数
  
- @param condition 查询条件,格式详见VVSqlGenerator
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
  @return 数据条数
  */
 - (NSInteger)count:(nullable id)condition;
@@ -105,7 +125,7 @@
 /**
  根据条件查询数据和数据数量.数量只根据查询条件获取,不受range限制.
  
- @param condition 查询条件,格式详见VVSqlGenerator
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 数据(对象数组)和数据数量,格式为{"count":100,list:[object]}

@@ -31,10 +31,7 @@
               "results: %@\n"
               "error  : %@\n"
               @"-------------------------------\n",
-              sql, values.firstObject,
-              [results isKindOfClass:NSArray.class] ? [results firstObject] :
-              [results isKindOfClass:NSDictionary.class] ? [results allObjects].firstObject : results,
-              error);
+              sql, values, results, error);
     }];
     
     NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
@@ -56,10 +53,8 @@
 }
 
 - (void)testFind{
-    NSArray *array = [self.mobileModel findAll:nil fields:@[@"mobile",@"city"] orderBy:nil range:NSMakeRange(0, 10)];
-    array = [self.mobileModel findAll:nil fields:nil orderBy:nil range:NSMakeRange(0, 10)];
-    array = [self.mobileModel findAll:nil fields:@[@"",@""] orderBy:nil range:NSMakeRange(0, 10)];
-    array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
+    NSArray *array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
+    array = [self.mobileModel findAll:nil orderBy:@[@"mobile",@"city"].desc range:NSMakeRange(0, 10)];
     array = [self.mobileModel findAll:@"mobile > 15000000000" orderBy:@"mobile ASC,city DESC" range:NSMakeRange(0, 5)];
     id obj = [self.mobileModel findOne:nil orderBy:@"mobile DESC,city ASC"];
     if(array && obj) {}
@@ -172,27 +167,35 @@
 }
 
 - (void)testWhere{
-//    NSArray *conditions = @[
-//                            @{@"name":@"zhangsan", @"age":@(26)},
-//                            @{@"$or":@[@{@"name":@"zhangsan",@"age":@(26)},@{@"age":@(30)}]},
-//                            @{@"age":@{@"$lt":@(30)}},
-//                            @{@"$or":@[@{@"name":@"zhangsan"},@{@"age":@{@"$lt":@(30)}}]},
-//                            @{@"type":@{@"$in":[NSSet setWithArray:@[@"a",@"b",@"c"]]}},
-//                            @{@"score":@{@"$between":@[@"20",@"40"]}},
-//                            @{@"text":@{@"$like":@"%%haha"}},
-//                            @{@"score":@{@"$gt":@(60),@"$lte":@(80)}},
-//                            @{@"age":@{@"$or":@[
-//                                      @{@"age":@{@"$gt":@(10)}},
-//                                      @{@"age":@{@"$lte":@(30)}}
-//                                      ]},
-//                              @"name":@{@"$notLike":@"%%zhangsan"},
-//                              @"$or":@[@{@"score":@{@"$gt":@(60),@"$lte":@(80)}},@{@"score":@{@"$gt":@(20),@"$lte":@(40)}}]
-//                              }
-//                            ];
-//    for (NSDictionary *condition in conditions) {
-//        NSString *where = [VVSqlGenerator where:condition];
-//        NSLog(@"where sentence : %@", where);
-//    }
+    VVSelect *select = [[VVSelect prepare] table:@"mobiles"];
+    [select where:[[[@"relative" lt:@(0.3)] and:[@"mobile" gte:@(16000000000)]] and: [@"times" gte:@(0)]]];
+    NSLog(@"%@", select.sql);
+    [select where:@{@"city":@"西安", @"relative":@(0.3)}];
+    NSLog(@"%@", select.sql);
+    [select where:@[@{@"city":@"西安", @"relative":@(0.3)},@{@"relative":@(0.7)}]];
+    NSLog(@"%@", select.sql);
+    [select where:[@"relative" lt:@(0.3)]];
+    NSLog(@"%@", select.sql);
+    [select where:@"     where relative < 0.3"];
+    NSLog(@"%@", select.sql);
+    [select groupBy:@"city"];
+    NSLog(@"%@", select.sql);
+    [select groupBy:@[@"city",@"carrier"]];
+    NSLog(@"%@", select.sql);
+    [select groupBy:@" group by city carrier"];
+    NSLog(@"%@", select.sql);
+    [select having:[@"relative" lt:@(0.2)]];
+    NSLog(@"%@", select.sql);
+    [select groupBy:nil];
+    NSLog(@"%@", select.sql);
+    [select orderBy:@[@"city",@"carrier"]];
+    NSLog(@"%@", select.sql);
+    [select orderBy:@" order by relative"];
+    NSLog(@"%@", select.sql);
+    [select limit:NSMakeRange(0, 10)];
+    NSLog(@"%@", select.sql);
+    [select distinct:YES];
+    NSLog(@"%@", select.sql);
 }
 
 - (void)testExample

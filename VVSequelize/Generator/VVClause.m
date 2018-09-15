@@ -6,6 +6,7 @@
 //
 
 #import "VVClause.h"
+#import "NSString+VVOrm.h"
 #import "NSString+VVClause.h"
 #import "NSArray+VVClause.h"
 #import "NSDictionary+VVClause.h"
@@ -29,7 +30,7 @@ typedef NS_ENUM(NSUInteger, VVClauseType) {
     return clause;
 }
 
-- (NSString *)clause1{
+- (NSString *)conditionClause{
     if(!_clause) return @"";
     NSString *sub = nil;
     VVClauseType type = [VVClause clauseTypeOf:_clause];
@@ -42,7 +43,7 @@ typedef NS_ENUM(NSUInteger, VVClauseType) {
     return sub.length > 0 ? sub : @"";
 }
 
-- (NSString *)clause2{
+- (NSString *)joinClause{
     if(!_clause) return @"";
     NSString *sub = nil;
     VVClauseType type = [VVClause clauseTypeOf:_clause];
@@ -55,23 +56,32 @@ typedef NS_ENUM(NSUInteger, VVClauseType) {
 }
 
 - (NSString *)where{
-    NSString *clause = [self clause1];
-    return clause.length == 0 ? @"" : [NSString stringWithFormat:@" WHERE %@", clause];
+    NSString *clause = [self conditionClause];
+    if(clause.length == 0) return @"";
+    if([clause isMatchRegex:@"^ +WHERE "]) return clause;
+    return [NSString stringWithFormat:@" WHERE %@", clause];
 }
 
 - (NSString *)groupBy{
-    NSString *clause = [self clause2];
-    return clause.length == 0 ? @"" : [NSString stringWithFormat:@" GROUP BY %@", clause];
+    NSString *clause = [self joinClause];
+    if(clause.length == 0) return @"";
+    if([clause isMatchRegex:@"^ +GROUP +BY "]) return clause;
+    return [NSString stringWithFormat:@" GROUP BY %@", clause];
 }
 
 - (NSString *)having{
-    NSString *clause = [self clause1];
-    return clause.length == 0 ? @"" : [NSString stringWithFormat:@" HAVING %@", clause];
+    NSString *clause = [self conditionClause];
+    if(clause.length == 0) return @"";
+    if([clause isMatchRegex:@"^ +HAVING "]) return clause;
+    return [NSString stringWithFormat:@" HAVING %@", clause];
 }
 
 - (NSString *)orderBy{
-    NSString *clause = [self clause2];
-    return clause.length == 0 ? @"" : [NSString stringWithFormat:@" ORDER BY %@", clause];
+    NSString *clause = [self joinClause];
+    if(clause.length == 0) return @"";
+    if(![clause isMatchRegex:@"( +ASC *$)|( +DESC *$)"]) clause = clause.asc;
+    if([clause isMatchRegex:@"^ +ORDER +BY "]) return clause;
+    return [NSString stringWithFormat:@" ORDER BY %@", clause];
 }
 
 + (VVClauseType)clauseTypeOf:(id)val{

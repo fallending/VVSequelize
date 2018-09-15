@@ -12,7 +12,7 @@
 - (NSString *)where{
     NSMutableString *where = [NSMutableString stringWithCapacity:0];
     for (NSString *key in self) {
-        [where appendFormat:@"(%@) AND ",[key eq:self[key]]];
+        [where appendFormat:@"%@ AND ",[key eq:self[key]]];
     }
     if(where.length >= 5){
         [where deleteCharactersInRange:NSMakeRange(where.length - 5, 5)];

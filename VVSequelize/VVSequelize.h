@@ -17,9 +17,13 @@
 #import "VVOrm+Update.h"
 #import "VVOrm+Retrieve.h"
 #import "VVOrm+Delete.h"
+#import "VVSelect.h"
 
 #import "VVDataBaseHelper.h"
 #import "NSObject+VVKeyValue.h"
+#import "NSString+VVClause.h"
+#import "NSArray+VVClause.h"
+#import "NSDictionary+VVClause.h"
 
 /**
  基于FMDB的ORM封装

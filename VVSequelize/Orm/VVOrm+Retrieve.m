@@ -35,23 +35,32 @@
 - (NSArray *)findAll:(id)condition
              orderBy:(id)orderBy
                range:(NSRange)range{
-    return [self findAll:condition fields:nil orderBy:orderBy range:range];
+    return [self findAll:condition distinct:NO fields:nil groupBy:nil having:nil orderBy:orderBy range:range useJson:NO];
 }
 
 - (NSArray *)findAll:(id)condition
-              fields:(NSArray<NSString *> *)fields
-             orderBy:(id)orderBy
+             groupBy:(id)groupBy
                range:(NSRange)range{
-    return [self findAll:condition fields:fields orderBy:orderBy range:range jsonResult:NO];
+    return [self findAll:condition distinct:NO fields:nil groupBy:groupBy having:nil orderBy:nil range:range useJson:NO];
 }
 
 - (NSArray *)findAll:(id)condition
+            distinct:(BOOL)distinct
               fields:(NSArray<NSString *> *)fields
+             groupBy:(id)groupBy
+              having:(id)having
              orderBy:(id)orderBy
                range:(NSRange)range
-          jsonResult:(BOOL)jsonResult{
-    VVSelect *select = [[[[VVSelect prepareWithOrm:self] where:condition] fields:fields] limit:range];
-    return [select findAll:jsonResult];
+             useJson:(BOOL)useJson{
+    VVSelect *select = [[[[[[[[VVSelect prepareWithOrm:self]
+                              distinct:distinct]
+                             where:condition]
+                            fields:fields]
+                           groupBy:groupBy]
+                          having:having]
+                         orderBy:orderBy]
+                        limit:range];
+    return [select findAll:useJson];
 }
 
 - (NSInteger)count:(id)condition{

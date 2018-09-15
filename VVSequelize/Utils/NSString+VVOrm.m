@@ -24,10 +24,9 @@
 }
 
 - (NSString *)prepareForParseSQL{
-    NSString *tmp = [self stringByReplacingOccurrencesOfString:@" +" withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, self.length)];
+    NSString *tmp = self.trim.strip;
     tmp = [tmp stringByReplacingOccurrencesOfString:@"'|\"" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, tmp.length)];
-    return tmp.trim;
+    return tmp;
 }
-
 
 @end

@@ -35,7 +35,11 @@
 /**
  根据条件删除数据
  
- @param condition 查询条件,格式详见VVSqlGenerator
+ @param condition 查询条件
+ 1.支持原生sql,可传入`where`及之后的所有语句
+ 2.非套嵌的dictionary,key和value用`=`连接,不同的key value用`and`连接
+ 3.非套嵌的dictionary数组, 每个dictionary用`or`连接
+
  @return 是否删除成功
  */
 - (BOOL)delete:(nullable id)condition;
