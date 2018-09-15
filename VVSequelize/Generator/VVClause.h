@@ -19,6 +19,13 @@
 
 /**
  根据传入的数据生成where子句
+ 
+ @return where子句,不包含`where`关键字
+ */
+- (NSString *)condition;
+
+/**
+ 根据传入的数据生成where子句
 
  @return where子句,包含`where`关键字
  */

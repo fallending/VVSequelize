@@ -17,6 +17,7 @@
 #import "VVOrm+Update.h"
 #import "VVOrm+Retrieve.h"
 #import "VVOrm+Delete.h"
+#import "VVOrm+FTS.h"
 #import "VVSelect.h"
 
 #import "VVDataBaseHelper.h"

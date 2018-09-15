@@ -29,11 +29,18 @@
 /**
  从数据库查询结果
 
- @param useJson 是否使用json格式结果
- @return 查询结果,字典数组或对象数组
+ @return 查询结果,对象数组.若设置了fields,则可能返回字典数组.
  @note 仅支持由`+prepareWithOrm:`创建的VVSelect对象
  */
-- (NSArray *)findAll:(BOOL)useJson;
+- (NSArray *)allObjects;
+
+/**
+ 从数据库查询结果,强制使用字典数组
+ 
+ @return 查询结果,字典数组
+ @note 仅支持由`+prepareWithOrm:`创建的VVSelect对象
+ */
+- (NSArray *)allJsons;
 
 //MARK: 链式调用
 

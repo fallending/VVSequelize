@@ -142,9 +142,9 @@
 }
 
 - (void)testMaxMinSum{
-    id max = [self.mobileModel max:@"relative"];
-    id min = [self.mobileModel min:@"relative"];
-    id sum = [self.mobileModel sum:@"relative"];
+    id max = [self.mobileModel max:@"relative" condition:nil];
+    id min = [self.mobileModel min:@"relative" condition:nil];
+    id sum = [self.mobileModel sum:@"relative" condition:nil];
     NSLog(@"max : %@, min : %@, sum : %@", max, min, sum);
 }
 

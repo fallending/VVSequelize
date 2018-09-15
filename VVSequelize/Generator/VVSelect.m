@@ -42,7 +42,15 @@
     return select;
 }
 
-- (NSArray *)findAll:(BOOL)useJson{
+- (NSArray *)allObjects{
+    return [self allObjects:NO];
+}
+
+- (NSArray *)allJsons{
+    return [self allObjects:YES];
+}
+
+- (NSArray *)allObjects:(BOOL)useJson{
     NSAssert(self.orm, @"请使用`+prepareWithOrm:`创建VVSelect对象!");
     NSString *sql = self.sql;
     NSArray *results = [self.orm.cache objectForKey:sql];

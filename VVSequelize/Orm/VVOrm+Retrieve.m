@@ -18,30 +18,30 @@
 }
 
 - (id)findOne:(id)condition{
-    NSArray *array = [self findAll:condition orderBy:nil range:NSMakeRange(0, 1)];
-    return array.count > 0 ? array.firstObject : nil;
+    NSArray *array = [[[VVSelect prepareWithOrm:self] where:condition] limit:NSMakeRange(0, 1)].allObjects;
+    return array.firstObject;
 }
 
 - (id)findOne:(id)condition
       orderBy:(id)orderBy{
-    NSArray *array = [self findAll:condition orderBy:orderBy range:NSMakeRange(0, 1)];
-    return array.count > 0 ? array.firstObject : nil;
+    NSArray *array = [[[[VVSelect prepareWithOrm:self] where:condition] orderBy:orderBy] limit:NSMakeRange(0, 1)].allObjects;
+    return array.firstObject;
 }
 
 - (NSArray *)findAll:(id)condition{
-    return [self findAll:condition orderBy:nil range:VVRangeAll];
+    return [[VVSelect prepareWithOrm:self] where:condition].allObjects;
 }
 
 - (NSArray *)findAll:(id)condition
              orderBy:(id)orderBy
                range:(NSRange)range{
-    return [self findAll:condition distinct:NO fields:nil groupBy:nil having:nil orderBy:orderBy range:range useJson:NO];
+    return [[[[VVSelect prepareWithOrm:self] where:condition] orderBy:orderBy] limit:range].allObjects;
 }
 
 - (NSArray *)findAll:(id)condition
              groupBy:(id)groupBy
                range:(NSRange)range{
-    return [self findAll:condition distinct:NO fields:nil groupBy:groupBy having:nil orderBy:nil range:range useJson:NO];
+    return [[[[VVSelect prepareWithOrm:self] where:condition] groupBy:groupBy] limit:range].allObjects;
 }
 
 - (NSArray *)findAll:(id)condition
@@ -50,33 +50,13 @@
              groupBy:(id)groupBy
               having:(id)having
              orderBy:(id)orderBy
-               range:(NSRange)range
-             useJson:(BOOL)useJson{
-    VVSelect *select = [[[[[[[[VVSelect prepareWithOrm:self]
-                              distinct:distinct]
-                             where:condition]
-                            fields:fields]
-                           groupBy:groupBy]
-                          having:having]
-                         orderBy:orderBy]
-                        limit:range];
-    return [select findAll:useJson];
+               range:(NSRange)range{
+    VVSelect *select = [[[[[[[[VVSelect prepareWithOrm:self] distinct:distinct] where:condition] fields:fields] groupBy:groupBy] having:having] orderBy:orderBy] limit:range];
+    return [select allObjects];
 }
 
 - (NSInteger)count:(id)condition{
-    NSString *where = [[VVClause prepare:condition] where];
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as \"count\" FROM \"%@\" %@", self.tableName, where];
-    NSArray *array = [self.cache objectForKey:sql];
-    if(!array){
-        array = [self.vvdb executeQuery:sql];
-        [self.cache setObject:array forKey:sql];
-    }
-    NSInteger count = 0;
-    if (array.count > 0) {
-        NSDictionary *dic = array.firstObject;
-        count = [dic[@"count"] integerValue];
-    }
-    return count;
+    return [[self calc:@"*" method:@"count" condition:condition] unsignedIntegerValue];
 }
 
 - (BOOL)isExist:(id)object{
@@ -100,36 +80,31 @@
  通常iOS App内嵌数据库单表的数据量不会达到rowid最大值，此处取`max(rowid)`可以做唯一值, `max(rowid) + 1`为下一条将插入的数据的自动主键值.
  */
 - (NSUInteger)maxRowid{
-    return [[self max:@"rowid"] unsignedIntegerValue];
+    return [[self max:@"rowid" condition:nil] unsignedIntegerValue];
 }
 
-- (id)max:(NSString *)field{
-    return [self calc:field method:@"max"];
+- (id)max:(NSString *)field condition:(id)condition{
+    return [self calc:field method:@"max" condition:condition];
 }
 
-- (id)min:(NSString *)field{
-    return [self calc:field method:@"min"];
+- (id)min:(NSString *)field condition:(id)condition{
+    return [self calc:field method:@"min" condition:condition];
 }
 
-- (id)sum:(NSString *)field{
-    return [self calc:field method:@"sum"];
+- (id)sum:(NSString *)field condition:(id)condition{
+    return [self calc:field method:@"sum" condition:condition];
 }
 
-- (id)calc:(NSString *)field method:(NSString *)method{
+- (id)calc:(NSString *)field method:(NSString *)method condition:(id)condition{
     if(!([method isEqualToString:@"max"]
          || [method isEqualToString:@"min"]
-         || [method isEqualToString:@"sum"])) return nil;
-    NSString *sql = [NSString stringWithFormat:@"SELECT %@(\"%@\") AS \"%@\" FROM \"%@\"", method, field, method, self.tableName];
-    NSArray *array = [self.cache objectForKey:sql];
-    if(!array){
-        array = [self.vvdb executeQuery:sql];
-        [self.cache setObject:array forKey:sql];
-    }
-    id result = nil;
-    if(array.count > 0){
-        NSDictionary *dic = array.firstObject;
-        result = dic[method];
-    }
+         || [method isEqualToString:@"sum"]
+         || [method isEqualToString:@"count"])) return nil;
+    NSString *fields = [NSString stringWithFormat:@"%@(\"%@\") AS %@", method, field, method];
+    VVSelect *select = [[[VVSelect prepareWithOrm:self] where:condition] fields: fields];
+    NSArray *array = [select allJsons];
+    NSDictionary *dic = array.firstObject;
+    id result = dic[method];
     return [result isKindOfClass:NSNull.class] ? nil : result;
 }
 

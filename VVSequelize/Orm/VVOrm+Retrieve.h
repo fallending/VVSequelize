@@ -19,7 +19,7 @@
 /**
  查询一条数据
  
- @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @return 查询结果,对象
  */
 - (nullable id)findOne:(nullable id)condition;
@@ -27,7 +27,7 @@
 /**
  查询一条数据
  
- @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @param orderBy 排序条件
  @return 查询结果,对象
  */
@@ -37,7 +37,7 @@
 /**
  根据条件查询所有数据
  
- @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @return 查询结果,对象数组
  */
 - (NSArray *)findAll:(nullable id)condition;
@@ -45,7 +45,7 @@
 /**
  根据条件查询数据
  
- @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @param orderBy 排序条件
  @param range 数据范围
  @return 查询结果,对象数组
@@ -57,7 +57,7 @@
 /**
  根据条件查询数据
  
- @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @param groupBy 分组条件
  @param range 数据范围
  */
@@ -91,9 +91,7 @@
 
  @param range 数据范围,用于翻页.`range.location == NSNotFound`或`range.length == 0`时,查询所有数据
  
- @param useJson 是否强制返回JsonOjbects.YES-强制返回JsonObject,NO-根据fields参数确定返回结果
- 
- @return 查询结果,若指定了fields,则返回字典数组,否则返回对象数组
+ @return 查询结果,对象数组.若指定了fields,则可能返回字典数组
  
  @note 定义ORM时允许记录时间,则字典数组可能会包含vv_createAt, vv_updateAt
  */
@@ -103,13 +101,12 @@
              groupBy:(nullable id)groupBy
               having:(nullable id)having
              orderBy:(nullable id)orderBy
-               range:(NSRange)range
-             useJson:(BOOL)useJson;
+               range:(NSRange)range;
 
 /**
  根据条件统计数据条数
  
- @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @return 数据条数
  */
 - (NSInteger)count:(nullable id)condition;
@@ -125,7 +122,7 @@
 /**
  根据条件查询数据和数据数量.数量只根据查询条件获取,不受range限制.
  
- @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:useJson:`
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
  @return 数据(对象数组)和数据数量,格式为{"count":100,list:[object]}
@@ -146,24 +143,27 @@
  获取某个字段的最大值
  
  @param field 字段名
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @return 最大值.因Text也可以计算最大值,故返回值为id类型
  */
-- (id)max:(nonnull NSString *)field;
+- (id)max:(nonnull NSString *)field condition:(nullable id)condition;
 
 /**
  获取某个字段的最小值
  
  @param field 字段名
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @return 最小值.因Text也可以计算最小值,故返回值为id类型
  */
-- (id)min:(nonnull NSString *)field;
+- (id)min:(nonnull NSString *)field condition:(nullable id)condition;
 
 /**
  获取某个字段的求和
  
  @param field 字段名
+ @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @return 求和
  */
-- (id)sum:(nonnull NSString *)field;
+- (id)sum:(nonnull NSString *)field condition:(nullable id)condition;
 
 @end

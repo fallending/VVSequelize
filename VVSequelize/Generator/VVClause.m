@@ -30,7 +30,7 @@ typedef NS_ENUM(NSUInteger, VVClauseType) {
     return clause;
 }
 
-- (NSString *)conditionClause{
+- (NSString *)condition{
     if(!_clause) return @"";
     NSString *sub = nil;
     VVClauseType type = [VVClause clauseTypeOf:_clause];
@@ -56,7 +56,7 @@ typedef NS_ENUM(NSUInteger, VVClauseType) {
 }
 
 - (NSString *)where{
-    NSString *clause = [self conditionClause];
+    NSString *clause = [self condition];
     if(clause.length == 0) return @"";
     if([clause isMatchRegex:@"^ +WHERE "]) return clause;
     return [NSString stringWithFormat:@" WHERE %@", clause];
@@ -70,7 +70,7 @@ typedef NS_ENUM(NSUInteger, VVClauseType) {
 }
 
 - (NSString *)having{
-    NSString *clause = [self conditionClause];
+    NSString *clause = [self condition];
     if(clause.length == 0) return @"";
     if([clause isMatchRegex:@"^ +HAVING "]) return clause;
     return [NSString stringWithFormat:@" HAVING %@", clause];
