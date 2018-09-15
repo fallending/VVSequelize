@@ -25,8 +25,11 @@
 
 ## 改动(0.3.0-beta0)
 1. 去除FMDB关联,仅提供SQL语句生成
-2. 索引支持,尚未测试...
-3. FTS创建表,尚未测试...
+2. 去除原VVSqlGenerator,各种子句现只支持原生sql子句,非套嵌的字典和字典数组
+3. 对NSString进行扩展,可辅助写各种sql语句,复杂语句建议使用原生语句
+4. 添加VVSelect类,用于查询数据.
+5. 索引支持,尚未测试...
+6. FTS创建表,尚未测试...
 
 ## 安装
 使用测试版本:
@@ -88,8 +91,52 @@ NSArray *array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 
 ...
 ```
 
-### 生成Where语句
-待定...
+### 生成SQL子句
+现在仅支持非套嵌的字典或字典数组,转换方式如下:
+```
+//where/having :
+{field1:val1,field2:val2} --> field1 = "val1" AND field2 = "val2"
+[{field1:val1,field2:val2},{field3:val3}] --> (field1 = "val1" AND field2 = "val2") OR (field3 = "val3")
+//group by:
+[filed1,field2] --> "field1","field2"
+//order by
+[filed1,field2] --> "field1","field2" ASC
+[filed1,field2].desc --> "field1","field2" DESC
+```
+示例: 
+```objc
+- (void)testClause{
+    VVSelect *select = [[VVSelect prepare] table:@"mobiles"];
+    [select where:[[[@"relative" lt:@(0.3)] and:[@"mobile" gte:@(16000000000)]] and: [@"times" gte:@(0)]]];
+    NSLog(@"%@", select.sql);
+    [select where:@{@"city":@"西安", @"relative":@(0.3)}];
+    NSLog(@"%@", select.sql);
+    [select where:@[@{@"city":@"西安", @"relative":@(0.3)},@{@"relative":@(0.7)}]];
+    NSLog(@"%@", select.sql);
+    [select where:[@"relative" lt:@(0.3)]];
+    NSLog(@"%@", select.sql);
+    [select where:@"     where relative < 0.3"];
+    NSLog(@"%@", select.sql);
+    [select groupBy:@"city"];
+    NSLog(@"%@", select.sql);
+    [select groupBy:@[@"city",@"carrier"]];
+    NSLog(@"%@", select.sql);
+    [select groupBy:@" group by city carrier"];
+    NSLog(@"%@", select.sql);
+    [select having:[@"relative" lt:@(0.2)]];
+    NSLog(@"%@", select.sql);
+    [select groupBy:nil];
+    NSLog(@"%@", select.sql);
+    [select orderBy:@[@"city",@"carrier"]];
+    NSLog(@"%@", select.sql);
+    [select orderBy:@" order by relative"];
+    NSLog(@"%@", select.sql);
+    [select limit:NSMakeRange(0, 10)];
+    NSLog(@"%@", select.sql);
+    [select distinct:YES];
+    NSLog(@"%@", select.sql);
+}
+```
 
 ## Author
 

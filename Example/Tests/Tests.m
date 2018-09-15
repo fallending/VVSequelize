@@ -166,7 +166,7 @@
     NSLog(@"%@",@(ret));
 }
 
-- (void)testWhere{
+- (void)testClause{
     VVSelect *select = [[VVSelect prepare] table:@"mobiles"];
     [select where:[[[@"relative" lt:@(0.3)] and:[@"mobile" gte:@(16000000000)]] and: [@"times" gte:@(0)]]];
     NSLog(@"%@", select.sql);
