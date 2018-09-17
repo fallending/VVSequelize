@@ -125,7 +125,7 @@
  @param condition 查询条件,见`-findAll:fields:groupBy:having:orderBy:range:`
  @param orderBy 排序方式
  @param range 数据范围,用于翻页,range.length为0时,查询所有数据
- @return 数据(对象数组)和数据数量,格式为{"count":100,list:[object]}
+ @return 数据(对象数组)和数据数量,格式:{"count":100,list:[object]}
  */
 - (NSDictionary *)findAndCount:(nullable id)condition
                        orderBy:(nullable id)orderBy

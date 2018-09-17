@@ -148,7 +148,7 @@ NSNotificationName const VVOrmTableDeletedNotification = @"VVOrmTableDeletedNoti
         [fieldsSQL appendFormat:@"%@,", [self commonFieldCreateSQL:_config.fields[name]]];
     }
     [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
-    return [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)", _tableName, fieldsSQL];
+    return [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)", _tableName, fieldsSQL].strip;
 }
 
 - (NSString *)ftsTableCreateSQL{
@@ -172,9 +172,8 @@ NSNotificationName const VVOrmTableDeletedNotification = @"VVOrmTableDeletedNoti
     [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
     if(notIndexed.length > 1) [notIndexed deleteCharactersInRange:NSMakeRange(notIndexed.length - 1, 1)];
     NSString *tokenizer = _config.ftsTokenizer.length == 0 ? @"" : [NSString stringWithFormat:@",tokenizer = %@", _config.ftsTokenizer];
-    [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
     return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS \"%@\" USING %@(%@ %@ %@)",
-           _tableName, _config.ftsModule, fieldsSQL, notIndexed, tokenizer];
+           _tableName, _config.ftsModule, fieldsSQL, notIndexed, tokenizer].strip;
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName{

@@ -16,6 +16,7 @@
 @interface Tests : XCTestCase
 @property (nonatomic, strong) VVDataBase *vvdb;
 @property (nonatomic, strong) VVOrm *mobileModel;
+@property (nonatomic, strong) VVOrm *ftsModel;
 @end
 
 @implementation Tests
@@ -44,6 +45,13 @@
     self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
     VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestMobile.class] primaryKey:@"mobile"];
     self.mobileModel = [VVOrm ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
+    VVOrmConfig *ftsConfig = [[[VVOrmConfig configWithClass:VVTestMobile.class] ftsModule:@"fts4"] fts:YES];
+    self.ftsModel = [VVOrm ormModelWithConfig:ftsConfig tableName:@"fts_mobiles" dataBase:self.vvdb];
+    //复制数据到fts表
+    NSUInteger count = [self.ftsModel count:nil];
+    if(count == 0){
+        [self.vvdb executeUpdate:@"INSERT INTO fts_mobiles (mobile, province, city, carrier, industry, relative, times) SELECT mobile, province, city, carrier, industry, relative, times FROM mobiles"];
+    }
 }
 
 - (void)tearDown
@@ -52,6 +60,7 @@
     [super tearDown];
 }
 
+//MARK: - 普通表
 - (void)testFind{
     NSArray *array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
     array = [self.mobileModel findAll:nil orderBy:@[@"mobile",@"city"].desc range:NSMakeRange(0, 10)];
@@ -327,6 +336,14 @@
         NSLog(@"update-> 0.1.5");
     } forVersion:@"0.1.5"];
     [VVDataBaseHelper updateDataBasesFromVersion:@"0.1.2"];
+}
+
+//MARK: - FTS表
+- (void)testMatch{
+    NSArray *array = [self.ftsModel match:@"181*" condition:nil orderBy:@"carrier" range:NSMakeRange(0, 10) attributes:@{NSForegroundColorAttributeName:[UIColor greenColor]}];
+    array = [self.ftsModel match:@"181*" condition:nil groupBy:@"carrier" range:NSMakeRange(0, 10) attributes:@{NSForegroundColorAttributeName:[UIColor greenColor]}];
+    NSUInteger count = [self.ftsModel matchCount:@"181*" condition:nil];
+    if(array && count){}
 }
 @end
 

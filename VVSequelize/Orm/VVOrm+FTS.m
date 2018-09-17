@@ -34,7 +34,9 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
 - (NSArray *)match:(NSString *)pattern
          condition:(id)condition
            orderBy:(id)orderBy
-             range:(NSRange)range{
+             range:(NSRange)range
+        attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs
+{
     NSString *where = [self clauseOf:pattern condition:condition];
     if(self.config.ftsVersion == 5){
         NSString *fields  = [NSString stringWithFormat:@"*,snippet(\"%@\",-1,'<b>','</b>','',2) as %@",self.tableName, VVOrmFtsSnippet];
@@ -55,18 +57,20 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
                 NSArray  *ranges = multi[idx];
                 NSString *text   = dic[col];
                 NSString *key    = [col stringByAppendingString:@"_attrText"];
-                result[key] = [VVOrm attrTextWith:text cRanges:ranges color:@{NSForegroundColorAttributeName: [UIColor redColor]}];
+                result[key] = [VVOrm attrTextWith:text cRanges:ranges attributes:attrs];
             }
             [results addObject:result];
         }
-        return array;
+        return results;
     }
 }
 
 - (NSArray *)match:(NSString *)pattern
          condition:(id)condition
            groupBy:(id)groupBy
-             range:(NSRange)range{
+             range:(NSRange)range
+        attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs
+{
     NSString *where   = [self clauseOf:pattern condition:condition];
     NSString *fields  = [NSString stringWithFormat:@"rowid,count(*) as %@", VVOrmFtsCount];
     NSString *orderBy = @"rowid".desc;
@@ -75,13 +79,16 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
     for(NSDictionary *dic in array){
         [rowids addObject:dic[@"rowid"]];
     }
-    NSString *newWhere  = [where and:[@"rowid" in:rowids]];
-    NSArray *objOffsets = [self match:pattern condition:newWhere orderBy:orderBy range:NSMakeRange(0, rowids.count)];
+    NSString *newWhere = [[VVClause prepare:condition] condition];
+    NSString *inrowids = [@"rowid" in:rowids];
+    newWhere = newWhere.length > 0 ? [where and:inrowids] : inrowids;
+    NSArray *objOffsets = [self match:pattern condition:newWhere orderBy:orderBy range:NSMakeRange(0, rowids.count) attributes:attrs];
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:objOffsets.count];
     for (NSUInteger i = 0; i < objOffsets.count; i ++) {
-        NSMutableDictionary *one = [objOffsets[i] mutableCopy];
+        NSMutableDictionary *result = [objOffsets[i] mutableCopy];
         NSNumber *count = [array[i] objectForKey:VVOrmFtsCount];
-        one[VVOrmFtsCount] = count;
+        result[VVOrmFtsCount] = count;
+        [results addObject:result];
     }
     return results;
 }
@@ -98,23 +105,12 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
 - (NSDictionary *)matchAndCount:(NSString *)pattern
                       condition:(id)condition
                         orderBy:(id)orderBy
-                          range:(NSRange)range{
+                          range:(NSRange)range
+                     attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs
+{
     NSUInteger count = [self matchCount:pattern condition:condition];
-    NSArray *array   = [self match:pattern condition:condition orderBy:orderBy range:range];
+    NSArray *array   = [self match:pattern condition:condition orderBy:orderBy range:range attributes:attrs];
     return @{@"count":@(count), @"list":array};
-}
-
-- (NSArray *)match:(NSString *)pattern
-         condition:(id)condition
-          distinct:(BOOL)distinct
-            fields:(id)fields
-           groupBy:(id)groupBy
-            having:(id)having
-           orderBy:(id)orderBy
-             range:(NSRange)range{
-    NSString *where = [self clauseOf:pattern condition:condition];
-    VVSelect *select = [[[[[[[[VVSelect prepareWithOrm:self] distinct:distinct] where:where] fields:fields] groupBy:groupBy] having:having] orderBy:orderBy] limit:range];
-    return [select allJsons];
 }
 
 //MARK: - 处理FTS3,4的offsets()
@@ -139,7 +135,7 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
 
 + (NSAttributedString *)attrTextWith:(NSString *)text
                              cRanges:(NSArray *)offsets
-                               color:(NSDictionary<NSAttributedStringKey, id> *)attrs{
+                          attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs{
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text];
     const char *utf8str = text.UTF8String;
     for (NSArray *offset in offsets) {
