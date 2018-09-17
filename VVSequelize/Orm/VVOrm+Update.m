@@ -17,7 +17,7 @@
     NSMutableString *setString = [NSMutableString stringWithCapacity:0];
     NSMutableArray *objs = [NSMutableArray arrayWithCapacity:0];
     [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        if(key && obj && [self.config.fieldNames containsObject:key]){
+        if(key && obj && [self.config.columns containsObject:key]){
             [setString appendFormat:@"\"%@\" = ?,",key];
             [objs addObject:[obj vv_dbStoreValue]];
         }

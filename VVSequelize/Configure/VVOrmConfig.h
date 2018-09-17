@@ -20,7 +20,7 @@
 @property (nonatomic, assign) BOOL     logAt;          ///< 是否自动记录时间,默认为YES
 
 //MARK: 创建表时使用的参数
-@property (nonatomic, strong, readonly) NSArray *fieldNames;  ///< 所有字段名,格式:[字段名]
+@property (nonatomic, strong, readonly) NSArray *columns;  ///< 所有字段名,按sqlite存储顺序排列,格式:[字段名]
 @property (nonatomic, strong, readonly) NSDictionary *fields; ///< 字段配置,格式:{字段名:配置}
 
 //MARK: - Public
@@ -116,6 +116,7 @@
 @property (nonatomic, copy  ) NSString *ftsModule;     ///< FTS模块:fts3,fts4,fts5...默认为fts4
 @property (nonatomic, copy  ) NSString *ftsTokenizer;  ///< FTS分词器:porter,unicode61,icu,...
 @property (nonatomic, strong) NSArray<NSString *>  *ftsNotindexeds; ///< 不索引的的字段
+@property (nonatomic, assign, readonly) NSUInteger ftsVersion; ///< FTS模块版本:3,4,5. @note 模块名有可能为fts4aux
 
 /**
  设置FTS模块

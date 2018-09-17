@@ -154,19 +154,17 @@ NSNotificationName const VVOrmTableDeletedNotification = @"VVOrmTableDeletedNoti
 - (NSString *)ftsTableCreateSQL{
     NSMutableString *fieldsSQL  = [NSMutableString stringWithCapacity:0];
     NSMutableString *notIndexed = [NSMutableString stringWithCapacity:0];
-    NSInteger ftsType = 3;
-    if([_config.ftsModule isMatchRegex:@"fts4"]) ftsType = 4;
-    if([_config.ftsModule isMatchRegex:@"fts5"]) ftsType = 5;
-
+    
+    NSUInteger ftsVersion = _config.ftsVersion;
     for (NSString *name in _config.fields) {
         VVOrmField *field = _config.fields[name];
-        if(ftsType == 5){
+        if(ftsVersion == 5){
             [fieldsSQL appendFormat:@"%@%@,", name , field.fts_notindexed ? @" NOTINDEXED" : @""];
         }
         else{
             [fieldsSQL appendFormat:@"%@ %@,", name, field.type];
         }
-        if(ftsType != 5 && field.fts_notindexed){
+        if(ftsVersion != 5 && field.fts_notindexed){
             [notIndexed appendFormat:@"notindexed = %@,",name];
         }
     }

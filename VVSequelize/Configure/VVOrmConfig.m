@@ -60,9 +60,10 @@
 
 @implementation VVOrmConfig{
     NSDictionary<NSString *,VVOrmField *> *_fields;
-    NSArray<NSString *> *_fieldNames;
+    NSArray<NSString *> *_columns;
     NSMutableDictionary *_privateFields;
     NSString *_ftsModule; // FTS模块名
+    NSUInteger _ftsVersion;
 }
 
 - (instancetype)init{
@@ -116,6 +117,7 @@
     NSArray *infos              = [vvdb executeQuery:tableInfoSql];
     NSMutableDictionary *fields = [NSMutableDictionary dictionaryWithCapacity:0];
     NSMutableArray *uniques     = [NSMutableArray arrayWithCapacity:0];
+    NSMutableArray *colmuns     = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in infos) {
         VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
         if(field.pk) {
@@ -123,6 +125,7 @@
             if(count == 1) { field.pk = VVOrmPkAutoincrement; } // 自增主键
         }
         fields[field.name] = field;
+        [colmuns addObject:field.name];
     }
     // 获取表的索引字段
     NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(\"%@\");",tableName];
@@ -141,6 +144,7 @@
     }
     config.uniques = uniques.copy;
     config->_fields  = fields;
+    config->_columns = colmuns;
     config->_logAt   = [fields.allKeys containsObject:kVsCreateAt] && [fields.allKeys containsObject:kVsUpdateAt];
     return config;
 }
@@ -164,6 +168,7 @@
     NSArray *infos              = [vvdb executeQuery:tableInfoSql];
     NSMutableDictionary *fields = [NSMutableDictionary dictionaryWithCapacity:0];
     NSMutableArray *notindexds  = [NSMutableArray arrayWithCapacity:0];
+    NSMutableArray *colmuns     = [NSMutableArray arrayWithCapacity:0];
     for (NSDictionary *dic in infos) {
         VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
         fields[field.name] = field;
@@ -172,9 +177,11 @@
             field.fts_notindexed = NO;
             [notindexds addObject:field.name];
         }
+        [colmuns addObject:field.name];
     }
     config.ftsNotindexeds = notindexds;
-    config->_fields      = fields;
+    config->_fields       = fields;
+    config->_columns      = colmuns;
     return config;
 }
 
@@ -261,11 +268,11 @@
     return _fields;
 }
 
-- (NSArray<NSString *> *)fieldNames{
-    if(!_fieldNames){
-        _fieldNames = self.fields.allKeys;
+- (NSArray<NSString *> *)columns{
+    if(!_columns){
+        _columns = self.fields.allKeys;
     }
-    return _fieldNames;
+    return _columns;
 }
 
 //MARK: - setter
@@ -352,7 +359,7 @@
 //MARK: - Private
 - (void)resetFields{
     _fields = nil;
-    _fieldNames = nil;
+    _columns = nil;
 }
 
 //MARK: - Common
@@ -371,9 +378,20 @@
 }
 
 //MARK: - FTS
+
+- (NSUInteger)ftsVersion{
+    if(_ftsVersion < 3){
+        _ftsVersion = 3;
+        if([self.ftsModule isMatchRegex:@"fts4"]) _ftsVersion = 4;
+        if([self.ftsModule isMatchRegex:@"fts5"]) _ftsVersion = 5;
+    }
+    return _ftsVersion;
+}
+
 -(void)setFtsModule:(NSString *)ftsModule{
     if(_fromTable) return;
-    _ftsModule = ftsModule;
+    _ftsModule  = ftsModule;
+    _ftsVersion = 0; //重置ftsVersion
 }
 
 - (NSString *)ftsModule{
