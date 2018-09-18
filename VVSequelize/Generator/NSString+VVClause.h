@@ -15,23 +15,23 @@
 /**
  使用`and`连接
 
- @param and 要连接的字符串
+ @param andstr 要连接的字符串
  @return 连接后的语句,如: `(field1 = val1) AND (field2 = val2)`
  */
-- (NSString *)and:(NSString *)and;
+- (NSString *)and:(NSString *)andstr;
 
 /**
  使用`or`连接
  
- @param or 要连接的字符串
+ @param orstr 要连接的字符串
  @return 连接后的语句,如: `(field1 = val1) OR (field2 = val2)`
  */
-- (NSString *)or:(NSString *)or;
+- (NSString *)or:(NSString *)orstr;
 
 /**
  使用`=`连接
 
- @param eq 要连接的字符串
+ @param eq 等于的值
  @return 连接后的语句,如: `field1 = val1`
  */
 - (NSString *)eq:(id)eq;
@@ -39,7 +39,7 @@
 /**
  使用`!=`连接
  
- @param ne 要连接的字符串
+ @param ne 不等于的值
  @return 连接后的语句,如: `field1 != val1`
  */
 - (NSString *)ne:(id)ne;
@@ -47,7 +47,7 @@
 /**
  使用`>`连接
  
- @param gt 要连接的字符串
+ @param gt 大于的值
  @return 连接后的语句,如: `field1 > val1`
  */
 - (NSString *)gt:(id)gt;
@@ -55,7 +55,7 @@
 /**
  使用`>=`连接
  
- @param gte 要连接的字符串
+ @param gte 大于等于的值
  @return 连接后的语句,如: `field1 >= val1`
  */
 - (NSString *)gte:(id)gte;
@@ -63,7 +63,7 @@
 /**
  使用`<`连接
  
- @param lt 要连接的字符串
+ @param lt 小于的值
  @return 连接后的语句,如: `field1 < val1`
  */
 - (NSString *)lt:(id)lt;
@@ -71,7 +71,7 @@
 /**
  使用`<=`连接
  
- @param lte 要连接的字符串
+ @param lte 小于等于的值
  @return 连接后的语句,如: `field1 <= val1`
  */
 - (NSString *)lte:(id)lte;
@@ -79,10 +79,10 @@
 /**
  使用`is not`连接
  
- @param not 要连接的字符串
+ @param notval 不等同的值
  @return 连接后的语句,如: `field1 IS NOT val1`
  */
-- (NSString *)not:(id)not;
+- (NSString *)not:(id)notval;
 
 /**
  使用`between`连接
@@ -105,7 +105,7 @@
 /**
  使用`in`连接
  
- @param array 要连接的字符串
+ @param array 包含的值
  @return 连接后的语句,如: `field1 IN (val1,val2,...)`
  */
 - (NSString *)in:(id)array;
@@ -113,7 +113,7 @@
 /**
  使用`not in`连接
  
- @param array 要连接的字符串
+ @param array 不包含的值
  @return 连接后的语句,如: `field1 NOT IN (val1,val2,...)`
  */
 - (NSString *)notIn:(NSArray *)array;
@@ -121,7 +121,7 @@
 /**
  使用`like`连接
  
- @param like 要连接的字符串
+ @param like 模糊匹配的值,支持 % 和 _
  @return 连接后的语句,如: `field1 LIKE "val1"`
  */
 - (NSString *)like:(id)like;
@@ -129,7 +129,7 @@
 /**
  使用`not like`连接
  
- @param notLike 要连接的字符串
+ @param notLike 模糊不匹配的值,支持 % 和 _
  @return 连接后的语句,如: `field1 NOT LIKE "val1"`
  */
 - (NSString *)notLike:(id)notLike;
@@ -137,7 +137,7 @@
 /**
  使用`glob`连接
  
- @param glob 要连接的字符串
+ @param glob 模糊匹配的值,支持 * 和 ?
  @return 连接后的语句,如: `field1 GLOB "val1"`
  */
 - (NSString *)glob:(id)glob;
@@ -145,7 +145,7 @@
 /**
  使用`not glob`连接
  
- @param notGlob 要连接的字符串
+ @param notGlob 模糊不匹配的值,支持 * 和 ?
  @return 连接后的语句,如: `field1 NOT GLOB "val1"`
  */
 - (NSString *)notGlob:(id)notGlob;
@@ -153,7 +153,7 @@
 /**
  使用`match`连接
  
- @param match 要连接的字符串
+ @param match FTS全文搜索匹配的值,支持 * 和 ?
  @return 连接后的语句,如: `tableName match "val1"`
  */
 - (NSString *)match:(id)match;

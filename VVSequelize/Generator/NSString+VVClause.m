@@ -9,12 +9,12 @@
 #import "NSArray+VVClause.h"
 
 @implementation NSString (VVClause)
-- (NSString *)and:(NSString *)and{
-    return [NSString stringWithFormat:@"%@ AND %@", self, and];
+- (NSString *)and:(NSString *)andstr{
+    return [NSString stringWithFormat:@"%@ AND %@", self, andstr];
 }
 
-- (NSString *)or:(NSString *)or{
-    return [NSString stringWithFormat:@"(%@) OR (%@)", self, or];
+- (NSString *)or:(NSString *)orstr{
+    return [NSString stringWithFormat:@"(%@) OR (%@)", self, orstr];
 }
 
 - (NSString *)eq:(id)eq{
@@ -41,8 +41,8 @@
     return [self stringByAppendingFormat:@" <= \"%@\"", lte];
 }
 
-- (NSString *)not:(id)not{
-    return [self stringByAppendingFormat:@" IS NOT \"%@\"", not];
+- (NSString *)not:(id)notstr{
+    return [self stringByAppendingFormat:@" IS NOT \"%@\"", notstr];
 }
 
 - (NSString *)between:(id)val1 _:(id)val2{
