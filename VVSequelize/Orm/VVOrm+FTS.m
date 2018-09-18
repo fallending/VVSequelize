@@ -15,8 +15,6 @@
 #import "NSString+VVOrm.h"
 
 NSString * const VVOrmFtsCount   = @"vvorm_fts_count";
-NSString * const VVOrmFtsOffsets = @"vvorm_fts_offsets";
-NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
 
 @implementation VVOrm (FTS)
 
@@ -35,62 +33,20 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
          condition:(id)condition
            orderBy:(id)orderBy
              range:(NSRange)range
-        attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs
 {
     NSString *where = [self clauseOf:pattern condition:condition];
-    if(self.config.ftsVersion == 5){
-        NSString *fields  = [NSString stringWithFormat:@"*,snippet(\"%@\",-1,'<b>','</b>','',2) as %@",self.tableName, VVOrmFtsSnippet];
-        return [[[[[[VVSelect prepareWithOrm:self] where:where] fields:fields] orderBy:orderBy] limit:range] allJsons];
-    }
-    else{
-        NSString *fields  = [NSString stringWithFormat:@"*,offsets(\"%@\") as %@",self.tableName, VVOrmFtsOffsets];
-        NSArray *array = [[[[[[VVSelect prepareWithOrm:self] where:where] fields:fields] orderBy:orderBy] limit:range] allJsons];
-        NSMutableArray *results = [NSMutableArray arrayWithCapacity:array.count];
-        for (NSDictionary *dic in array) {
-            NSMutableDictionary *result = dic.mutableCopy;
-            NSString *offsetsStr = dic[VVOrmFtsOffsets];
-            NSDictionary *multi  = [VVOrm cRangesWithOffsetString:offsetsStr];
-            NSArray *columns     = self.config.columns;
-            for (NSString *idx in multi) {
-                NSInteger i      = [idx integerValue];
-                NSString *col    = columns[i];
-                NSArray  *ranges = multi[idx];
-                NSString *text   = dic[col];
-                NSString *key    = [col stringByAppendingString:@"_attrText"];
-                result[key] = [VVOrm attrTextWith:text cRanges:ranges attributes:attrs];
-            }
-            [results addObject:result];
-        }
-        return results;
-    }
+    return [[[[[VVSelect prepareWithOrm:self] where:where] orderBy:orderBy] limit:range] allObjects];
 }
 
 - (NSArray *)match:(NSString *)pattern
          condition:(id)condition
            groupBy:(id)groupBy
              range:(NSRange)range
-        attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs
 {
     NSString *where   = [self clauseOf:pattern condition:condition];
-    NSString *fields  = [NSString stringWithFormat:@"rowid,count(*) as %@", VVOrmFtsCount];
+    NSString *fields  = [NSString stringWithFormat:@"*,count(*) as %@", VVOrmFtsCount];
     NSString *orderBy = @"rowid".desc;
-    NSArray *array = [[[[[[[VVSelect prepareWithOrm:self] where:where] fields:fields] groupBy:groupBy] orderBy:orderBy] limit:range] allJsons];
-    NSMutableArray *rowids = [NSMutableArray arrayWithCapacity:array.count];
-    for(NSDictionary *dic in array){
-        [rowids addObject:dic[@"rowid"]];
-    }
-    NSString *newWhere = [[VVClause prepare:condition] condition];
-    NSString *inrowids = [@"rowid" in:rowids];
-    newWhere = newWhere.length > 0 ? [where and:inrowids] : inrowids;
-    NSArray *objOffsets = [self match:pattern condition:newWhere orderBy:orderBy range:NSMakeRange(0, rowids.count) attributes:attrs];
-    NSMutableArray *results = [NSMutableArray arrayWithCapacity:objOffsets.count];
-    for (NSUInteger i = 0; i < objOffsets.count; i ++) {
-        NSMutableDictionary *result = [objOffsets[i] mutableCopy];
-        NSNumber *count = [array[i] objectForKey:VVOrmFtsCount];
-        result[VVOrmFtsCount] = count;
-        [results addObject:result];
-    }
-    return results;
+    return [[[[[[[VVSelect prepareWithOrm:self] where:where] fields:fields] groupBy:groupBy] orderBy:orderBy] limit:range] allJsons];
 }
 
 - (NSUInteger)matchCount:(NSString *)pattern
@@ -106,15 +62,16 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
                       condition:(id)condition
                         orderBy:(id)orderBy
                           range:(NSRange)range
-                     attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs
 {
     NSUInteger count = [self matchCount:pattern condition:condition];
-    NSArray *array   = [self match:pattern condition:condition orderBy:orderBy range:range attributes:attrs];
+    NSArray *array   = [self match:pattern condition:condition orderBy:orderBy range:range];
     return @{@"count":@(count), @"list":array};
 }
 
-//MARK: - 处理FTS3,4的offsets()
-+ (NSDictionary<NSString *, NSArray *> *)cRangesWithOffsetString:(NSString *)offsetsString{
+//MARK: - 对FTS搜索结果进行处理
+
+//MARK: 使用C语言方式处理FTS3,4的offsets()
++ (NSDictionary<NSString *, NSArray *> *)cRangesWithOffsetsString:(NSString *)offsetsString{
     NSArray *temp = [offsetsString componentsSeparatedByString:@" "];
     NSMutableDictionary *ranges = [NSMutableDictionary dictionaryWithCapacity:0];
     if(temp.count % 4 != 0) return nil;
@@ -133,14 +90,14 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
     return ranges;
 }
 
-+ (NSAttributedString *)attrTextWith:(NSString *)text
-                             cRanges:(NSArray *)offsets
-                          attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs{
-    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text];
-    const char *utf8str = text.UTF8String;
-    for (NSArray *offset in offsets) {
-        NSInteger loc = [offset[0] integerValue];
-        NSInteger len = [offset[1] integerValue];
++ (NSAttributedString *)attributedStringWith:(NSString *)string
+                                     cRanges:(NSArray *)cRanges
+                                  attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs{
+    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:string];
+    const char *utf8str = string.UTF8String;
+    for (NSArray *cRange in cRanges) {
+        NSInteger loc = [cRange[0] integerValue];
+        NSInteger len = [cRange[1] integerValue];
         char *lstr = (char *)malloc(loc + 1);
         strncpy(lstr, utf8str, loc);
         lstr[loc] = '\0';
@@ -151,9 +108,34 @@ NSString * const VVOrmFtsSnippet = @"vvorm_fts_snippet";
         NSString *ltext = [NSString stringWithUTF8String:lstr];
         NSString *word = [NSString stringWithUTF8String:matchstr];
         NSRange range = NSMakeRange(ltext.length, word.length);
-        [attrText addAttributes:attrs range:range];
+        [attrString addAttributes:attrs range:range];
     }
-    return attrText;
+    return attrString;
+}
+
+//MARK: 使用Objective-C处理
++ (NSString *)regularExpressionForKeyword:(NSString *)keyword{
+    NSString *temp = [keyword stringByReplacingOccurrencesOfString:@"*" withString:@".*"];
+    return [temp stringByReplacingOccurrencesOfString:@"?" withString:@"."];
+}
+
++ (NSAttributedString *)attributedStringWith:(NSString *)string
+                                      prefix:(NSString *)prefix
+                                       match:(NSString *)regex
+                                  attributes:(NSDictionary<NSAttributedStringKey, id> *)attrs{
+    if(string.length == 0) return nil;
+    
+    NSRange range = [string rangeOfString:regex options:NSRegularExpressionSearch | NSCaseInsensitiveSearch];
+    if(range.location == NSNotFound || range.length == 0) return nil;
+    
+    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:string];
+    [attrString addAttributes:attrs range:range];
+    
+    if(prefix.length > 0){
+        NSAttributedString *attrPrefix = [[NSAttributedString alloc] initWithString:prefix];
+        [attrString insertAttributedString:attrPrefix atIndex:0];
+    }
+    return attrString;
 }
 
 @end

@@ -340,10 +340,14 @@
 
 //MARK: - FTS表
 - (void)testMatch{
-    NSArray *array = [self.ftsModel match:@"181*" condition:nil orderBy:@"carrier" range:NSMakeRange(0, 10) attributes:@{NSForegroundColorAttributeName:[UIColor greenColor]}];
-    array = [self.ftsModel match:@"181*" condition:nil groupBy:@"carrier" range:NSMakeRange(0, 10) attributes:@{NSForegroundColorAttributeName:[UIColor greenColor]}];
-    NSUInteger count = [self.ftsModel matchCount:@"181*" condition:nil];
-    if(array && count){}
+    NSString *keyword = @"181*";
+    NSArray *array1 = [self.ftsModel match:keyword condition:nil orderBy:@"carrier" range:NSMakeRange(0, 10)];
+    NSArray *array2 = [self.ftsModel match:keyword condition:nil groupBy:@"carrier" range:NSMakeRange(0, 10)];
+    NSUInteger count = [self.ftsModel matchCount:keyword condition:nil];
+    NSString *regex = [VVOrm regularExpressionForKeyword:keyword];
+    VVTestMobile *mobile = array1.firstObject;
+    NSAttributedString *attrText  = [VVOrm attributedStringWith:mobile.mobile prefix:@"手机:" match:regex attributes:@{NSForegroundColorAttributeName:[UIColor redColor]}];
+    if(array1 && array2 && count && attrText){}
 }
 @end
 
