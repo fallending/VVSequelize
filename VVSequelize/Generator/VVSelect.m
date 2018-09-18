@@ -60,7 +60,9 @@
         if(!useJson && [self.fieldsString isEqualToString:@"*"]){
             results = [self.orm.config.cls vv_objectsWithKeyValuesArray:jsonArray];
         }
-        [self.orm.cache setObject:results forKey:sql];
+        if(results) {
+            [self.orm.cache setObject:results forKey:sql];
+        }
     }
     return results;
 }
