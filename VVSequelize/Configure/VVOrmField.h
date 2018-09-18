@@ -7,6 +7,8 @@
 
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 //MARK: - 使用宏定义字段配置
 #define VVFIELD_PK(name)               [[VVOrmField alloc] initWithName:(name) pk:YES notnull:NO  unique:NO  indexed:NO  dflt_value:nil]
 #define VVFIELD_PK_NOTNULL(name)       [[VVOrmField alloc] initWithName:(name) pk:YES notnull:YES unique:NO  indexed:NO  dflt_value:nil]
@@ -85,3 +87,5 @@ typedef NS_ENUM(NSUInteger, VVOrmPkType) {
               fts_notindexed:(BOOL)fts_notindexed;
 
 @end
+
+NS_ASSUME_NONNULL_END

@@ -7,6 +7,8 @@
 
 #import "VVOrm.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface VVOrm (Retrieve)
 /**
  根据主键的值,查询一条数据
@@ -167,3 +169,5 @@
 - (id)sum:(nonnull NSString *)field condition:(nullable id)condition;
 
 @end
+
+NS_ASSUME_NONNULL_END

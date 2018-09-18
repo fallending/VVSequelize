@@ -7,6 +7,8 @@
 
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @protocol VVSQLiteDB <NSObject>
 
 /**
@@ -81,3 +83,5 @@
                 error:(NSError * _Nullable __autoreleasing *)error;
 
 @end
+
+NS_ASSUME_NONNULL_END
