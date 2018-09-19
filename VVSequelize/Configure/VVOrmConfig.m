@@ -156,6 +156,7 @@
 
     VVOrmConfig *config = [[VVOrmConfig alloc] init];
     config.fromTable = YES;
+    config->_fts = YES;
     
     NSDictionary *dic = cols.firstObject;
     NSString *tableSQL = dic[@"sql"];
