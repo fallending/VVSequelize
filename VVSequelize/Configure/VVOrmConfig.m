@@ -89,10 +89,10 @@
     VVOrmConfig *config = nil;
     BOOL isFtsTable = [self isFtsTable:tableName database:vvdb];
     if(isFtsTable){
-        config = [self configWithNormalTable:tableName database:vvdb];
+        config = [self configWithFtsTable:tableName database:vvdb];
     }
     else{
-        config = [self configWithFtsTable:tableName database:vvdb];
+        config = [self configWithNormalTable:tableName database:vvdb];
     }
     return config;
 }
@@ -153,15 +153,35 @@
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"",tableName];
     NSArray *cols = [vvdb executeQuery:sql];
     if(cols.count != 1) return nil;
+
+    VVOrmConfig *config = [[VVOrmConfig alloc] init];
+    config.fromTable = YES;
+    
     NSDictionary *dic = cols.firstObject;
     NSString *tableSQL = dic[@"sql"];
     
-    NSInteger ftsType = 3;
-    if([tableSQL isMatchRegex:@" +fts4"]) ftsType = 4;
-    if([tableSQL isMatchRegex:@" +fts5"]) ftsType = 5;
+    // 获取fts模块名/版本号
+    NSInteger ftsVersion = 3;
+    NSString  *ftsModule = @"fts3";
+    NSStringCompareOptions options = NSRegularExpressionSearch | NSCaseInsensitiveSearch;
+    NSRange range = [tableSQL rangeOfString:@" +fts.*(" options:options];
+    if(range.location != NSNotFound) {
+        ftsModule  = [tableSQL substringWithRange:NSMakeRange(range.location, range.length - 1)].trim;
+        ftsVersion = [[ftsModule substringWithRange:NSMakeRange(3, 1)] integerValue];
+    }
+    config->_ftsVersion = ftsVersion;
+    config->_ftsModule  = ftsModule;
     
-    VVOrmConfig *config = [[VVOrmConfig alloc] init];
-    config.fromTable = YES;
+    // 获取FTS分词器
+    range = [tableSQL rangeOfString:@"tokenize *=.*" options:options];
+    if(range.location != NSNotFound){
+        NSString *sub = [tableSQL substringWithRange:range];
+        NSArray *temp = [sub componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@",)"]];
+        NSString *tokenizeStr = temp[0];
+        range = [tokenizeStr rangeOfString:@"=.*" options:options];
+        NSString *tokenize = [tokenizeStr substringWithRange:NSMakeRange(range.location + 1, range.length - 1)].trim;
+        config->_ftsTokenize = tokenize;
+    }
     
     // 获取表的每个字段配置
     NSString *tableInfoSql      = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");",tableName];
@@ -172,16 +192,16 @@
     for (NSDictionary *dic in infos) {
         VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
         fields[field.name] = field;
-        NSString *regex = ftsType == 5 ? [NSString stringWithFormat:@"%@ +UNINDEXED",field.name] : [NSString stringWithFormat:@"UNINDEXED +%@",field.name];
+        NSString *regex = ftsVersion == 5 ? [NSString stringWithFormat:@"%@ +UNINDEXED",field.name] : [NSString stringWithFormat:@"UNINDEXED +%@",field.name];
         if([tableSQL isMatchRegex:regex]) {
             field.fts_notindexed = NO;
             [notindexds addObject:field.name];
         }
         [colmuns addObject:field.name];
     }
-    config.ftsNotindexeds = notindexds;
-    config->_fields       = fields;
-    config->_columns      = colmuns;
+    config->_ftsNotindexeds = notindexds;
+    config->_fields         = fields;
+    config->_columns        = colmuns;
     return config;
 }
 
