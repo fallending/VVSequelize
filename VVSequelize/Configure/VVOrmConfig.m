@@ -200,7 +200,7 @@
         *indexChanged = NO;
         if(self.fields.count != config.fields.count ||
            ![self.ftsModule isEqualToString:config.ftsModule] ||
-           ![self.ftsTokenizer isEqualToString:config.ftsTokenizer]){
+           ![self.ftsTokenize isEqualToString:config.ftsTokenize]){
             return NO;
         }
         NSMutableArray *compared = [NSMutableArray arrayWithCapacity:0];
@@ -398,9 +398,9 @@
     return _ftsModule.length == 0 ? @"fts4" : _ftsModule;
 }
 
-- (void)setFtsTokenizer:(NSString *)ftsTokenizer{
+- (void)setFtsTokenize:(NSString *)ftsTokenize{
     if(_fromTable) return;
-    _ftsTokenizer = ftsTokenizer;
+    _ftsTokenize = ftsTokenize;
 }
 
 - (void)setFtsNotindexeds:(NSArray<NSString *> *)ftsNotindexeds{
@@ -414,8 +414,8 @@
     return self;
 }
 
-- (instancetype)ftsTokenizer:(NSString *)ftsTokenizer{
-    self.ftsTokenizer = ftsTokenizer;
+- (instancetype)ftsTokenize:(NSString *)ftsTokenize{
+    self.ftsTokenize = ftsTokenize;
     return self;
 }
 

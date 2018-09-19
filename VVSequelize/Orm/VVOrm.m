@@ -171,9 +171,9 @@ NSNotificationName const VVOrmTableDeletedNotification = @"VVOrmTableDeletedNoti
     NSAssert(fieldsSQL.length > 1, @"无效的FTS表配置");
     [fieldsSQL deleteCharactersInRange:NSMakeRange(fieldsSQL.length - 1, 1)];
     if(notIndexed.length > 1) [notIndexed deleteCharactersInRange:NSMakeRange(notIndexed.length - 1, 1)];
-    NSString *tokenizer = _config.ftsTokenizer.length == 0 ? @"" : [NSString stringWithFormat:@",tokenizer = %@", _config.ftsTokenizer];
+    NSString *tokenize = _config.ftsTokenize.length == 0 ? @"" : [NSString stringWithFormat:@",tokenize = %@", _config.ftsTokenize];
     return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS \"%@\" USING %@(%@ %@ %@)",
-           _tableName, _config.ftsModule, fieldsSQL, notIndexed, tokenizer].strip;
+           _tableName, _config.ftsModule, fieldsSQL, notIndexed, tokenize].strip;
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName{
