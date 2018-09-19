@@ -164,7 +164,7 @@
     NSInteger ftsVersion = 3;
     NSString  *ftsModule = @"fts3";
     NSStringCompareOptions options = NSRegularExpressionSearch | NSCaseInsensitiveSearch;
-    NSRange range = [tableSQL rangeOfString:@" +fts.*(" options:options];
+    NSRange range = [tableSQL rangeOfString:@" +fts.*\\(" options:options];
     if(range.location != NSNotFound) {
         ftsModule  = [tableSQL substringWithRange:NSMakeRange(range.location, range.length - 1)].trim;
         ftsVersion = [[ftsModule substringWithRange:NSMakeRange(3, 1)] integerValue];
