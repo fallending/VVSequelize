@@ -7,9 +7,11 @@
 
 #import "VVDataBase.h"
 #import "VVSequelize.h"
+#import "VVCipherHelper.h"
 
 @interface VVDataBase ()
-@property (nonatomic, strong) id<VVSQLiteDB>    sqlitedb;
+@property (nonatomic, strong) id<VVSQLiteDB> sqlitedb;
+@property (nonatomic, copy  ) NSString *encryptStoreKey; ///< 保存密码的Key
 @end
 
 @implementation VVDataBase
@@ -68,23 +70,15 @@
             _dbName = dbName;
             _dbDir  = dirPath;
             _dbPath = dbPath;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-            if([self respondsToSelector:@selector(setUserDefaultsKey:)] &&
-               [self respondsToSelector:@selector(setEncryptKey:)]){
-                NSString *key = [NSString stringWithFormat:@"VVDBEncryptKey%@",relativePath];
-                [self performSelector:@selector(setUserDefaultsKey:) withObject:key];
-                [self performSelector:@selector(setEncryptKey:) withObject:encryptKey];
-            }
-#pragma clang diagnostic pop
+            _encryptStoreKey = [NSString stringWithFormat:@"VVDBEncryptStoreKey%@",relativePath];
+            self.encryptKey = encryptKey;
             // 执行一些设置
             [self executeQuery:@"PRAGMA synchronous='NORMAL'"];
             [self executeQuery:@"PRAGMA journal_mode=wal"];
             return self;
         }
     }
-    NSAssert1(NO, @"Open or create the database (%@) failure!",dbPath);
+    NSAssert1(sqlitedb, @"Open or create the database (%@) failure!",dbPath);
     return nil;
 }
 
@@ -145,19 +139,47 @@
 
 - (BOOL)open{
     BOOL ret = [self.sqlitedb open];
-    if(ret){
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        if([self respondsToSelector:@selector(encryptKey)] &&
-           [self respondsToSelector:@selector(setEncryptKey:)] &&
-           [_sqlitedb respondsToSelector:@selector(setEncryptKey:)]){
-            NSString *key = [self performSelector:@selector(encryptKey)];
-            if(key.length > 0) [_sqlitedb setEncryptKey:key];
-        }
-#pragma clang diagnostic pop
+    BOOL cipherSupported = VVSequelize.cipherSupported && [self.sqlitedb respondsToSelector:@selector(setEncryptKey:)];
+    if(ret && cipherSupported){
+        [self.sqlitedb setEncryptKey:self.encryptKey];
     }
     return ret;
+}
+
+- (void)setEncryptKey:(NSString *)encryptKey{
+    BOOL cipherSupported = VVSequelize.cipherSupported && [self.sqlitedb respondsToSelector:@selector(setEncryptKey:)];
+    if(!cipherSupported) return;
+    
+    static dispatch_semaphore_t lock;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        lock = dispatch_semaphore_create(1);
+    });
+    BOOL ret = YES;
+    BOOL isOpen = self.sqlitedb.isOpen;
+    if(isOpen){
+        ret = [self close];
+    }
+    NSAssert1(ret, @"[encrypt] close the database (%@) failure!",_dbPath);
+    NSString *origin = [[NSUserDefaults standardUserDefaults] stringForKey:_encryptStoreKey];
+    dispatch_semaphore_wait(lock, DISPATCH_TIME_FOREVER);
+    ret = [VVCipherHelper changeKeyForDatabase:self.dbPath originKey:origin newKey:encryptKey];
+    dispatch_semaphore_signal(lock);
+    if(ret){
+        if(encryptKey == nil){
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:_encryptStoreKey];
+        }
+        else{
+            [[NSUserDefaults standardUserDefaults] setObject:encryptKey forKey:_encryptStoreKey];
+        }
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        _encryptKey = encryptKey;
+    }
+    NSAssert1(ret, @"[encrypt] set encrypt key for database (%@) failure!",_dbPath);
+    if(isOpen){
+        ret = [self open];
+        NSAssert1(ret, @"[encrypt] reopen the database (%@) failure!",_dbPath);
+    }
 }
 
 @end

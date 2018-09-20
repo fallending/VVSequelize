@@ -1,49 +1,49 @@
 //
-//  VVDBVersionManager.m
+//  VVDBHelper.m
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/8/11.
 //
 
-#import "VVDataBaseHelper.h"
+#import "VVDBHelper.h"
 
-static VVDataBaseHelper *_defaultHelper;
+static VVDBHelper *_defaultHelper;
 
-NSString * const VVDataBaseLastVersionKey = @"VVDataBaseLastVersionKey";
+NSString * const VVDBLastVersionKey = @"VVDataBaseLastVersionKey";
 
-@interface VVDataBaseHelper ()
+@interface VVDBHelper ()
 @property (nonatomic, strong) NSArray<NSString *> *versions; ///< 数据库版本列表
 @property (nonatomic, strong) NSMutableDictionary<NSString *,void (^)(void)> *updates; ///< 所有更新操作
 @end
 
-@implementation VVDataBaseHelper
+@implementation VVDBHelper
 
 + (instancetype)defaultHelper{
     if (!_defaultHelper) {
-        _defaultHelper = [[VVDataBaseHelper alloc] init];
+        _defaultHelper = [[VVDBHelper alloc] init];
         _defaultHelper.updates = [NSMutableDictionary dictionaryWithCapacity:0];
     }
     return _defaultHelper;
 }
 
 + (void)setVersions:(NSArray *)versions{
-    [VVDataBaseHelper defaultHelper].versions = versions;
+    [VVDBHelper defaultHelper].versions = versions;
 }
 
 + (void)setUpdateBlock:(void (^)(void))block forVersion:(NSString *)version{
-    [VVDataBaseHelper defaultHelper].updates[version] = block;
+    [VVDBHelper defaultHelper].updates[version] = block;
 }
 
 + (void)updateDataBases{
     // 每次打开App只能运行一次
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSString *startVersion = [[NSUserDefaults standardUserDefaults] stringForKey:VVDataBaseLastVersionKey];
+        NSString *startVersion = [[NSUserDefaults standardUserDefaults] stringForKey:VVDBLastVersionKey];
         [self updateDataBasesFromVersion:startVersion];
         // 更新LastVersion
-        NSArray *versions = [VVDataBaseHelper defaultHelper].versions;
+        NSArray *versions = [VVDBHelper defaultHelper].versions;
         if (versions.count > 0) {
-            [[NSUserDefaults standardUserDefaults] setObject:versions.lastObject forKey:VVDataBaseLastVersionKey];
+            [[NSUserDefaults standardUserDefaults] setObject:versions.lastObject forKey:VVDBLastVersionKey];
             [[NSUserDefaults standardUserDefaults] synchronize];
         }
         // 清理缓存数据
@@ -52,8 +52,8 @@ NSString * const VVDataBaseLastVersionKey = @"VVDataBaseLastVersionKey";
 }
 
 + (void)updateDataBasesFromVersion:(NSString *)startVersion{
-    NSArray *versions = [VVDataBaseHelper defaultHelper].versions;
-    NSDictionary *updateBlocks = [VVDataBaseHelper defaultHelper].updates;
+    NSArray *versions = [VVDBHelper defaultHelper].versions;
+    NSDictionary *updateBlocks = [VVDBHelper defaultHelper].updates;
     if (versions.count == 0) return;
     
     // 取得LastVersion在所有版本中的位置

@@ -1,5 +1,5 @@
 //
-//  VVDBVersionManager.h
+//  VVDBHelper.h
 //  VVSequelize
 //
 //  Created by Jinbo Li on 2018/8/11.
@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface VVDataBaseHelper : NSObject
+@interface VVDBHelper : NSObject
 
 //MAKR: - 版本管理
 /**

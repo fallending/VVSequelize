@@ -6,7 +6,6 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "VVDataBase.h"
 
 @interface VVCipherHelper : NSObject
 /**
@@ -70,9 +69,4 @@
                    originKey:(NSString *)originKey
                       newKey:(NSString *)newKey;
 
-@end
-
-@interface VVDataBase (VVCipherHelper)
-@property (nonatomic, copy  ) NSString *userDefaultsKey;    ///< 保存密码的Key
-@property (nonatomic, strong) NSString *encryptKey;         ///< 加密Key,可设置
 @end

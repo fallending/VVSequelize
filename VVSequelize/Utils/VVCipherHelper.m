@@ -6,7 +6,6 @@
 //
 
 #import "VVCipherHelper.h"
-#import <objc/runtime.h>
 #import <sqlite3.h>
 
 @implementation VVCipherHelper
@@ -99,10 +98,10 @@
         return NO;
     }
     else if(originKey.length == 0){
-        return [[self class] encryptDatabase:dbPath encryptKey:newKey];
+        return [self encryptDatabase:dbPath encryptKey:newKey];
     }
     else if(newKey.length == 0){
-        return [[self class] decryptDatabase:dbPath encryptKey:originKey];
+        return [self decryptDatabase:dbPath encryptKey:originKey];
     }
     sqlite3 *encrypted_DB;
     if (sqlite3_open([dbPath UTF8String], &encrypted_DB) == SQLITE_OK) {
@@ -116,52 +115,6 @@
         NSAssert1(NO, @"Failed to open database with message '%s'.", sqlite3_errmsg(encrypted_DB));
         return NO;
     }
-}
-
-@end
-
-static void *_userDefaultsKey = &_userDefaultsKey;
-static void *_encryptKey = &_encryptKey;
-
-@implementation VVDataBase (VVCipherHelper)
-
-- (void)setUserDefaultsKey:(NSString *)userDefaultsKey{
-    objc_setAssociatedObject(self, &_userDefaultsKey, userDefaultsKey, OBJC_ASSOCIATION_COPY);
-}
-
-- (NSString *)userDefaultsKey{
-    return objc_getAssociatedObject(self, &_userDefaultsKey);
-}
-
-- (void)setEncryptKey:(NSString *)encryptKey{
-    static dispatch_semaphore_t lock;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        lock = dispatch_semaphore_create(1);
-    });
-    NSString * userDefaultsKey = self.userDefaultsKey;
-    if(userDefaultsKey.length > 0){
-        NSString *origin = [[NSUserDefaults standardUserDefaults] stringForKey:userDefaultsKey];
-        [self close];
-        dispatch_semaphore_wait(lock, DISPATCH_TIME_FOREVER);
-        BOOL ret = [VVCipherHelper changeKeyForDatabase:self.dbPath originKey:origin newKey:encryptKey];
-        dispatch_semaphore_signal(lock);
-        if(ret){
-            if(encryptKey == nil){
-                [[NSUserDefaults standardUserDefaults] removeObjectForKey:userDefaultsKey];
-            }
-            else{
-                [[NSUserDefaults standardUserDefaults] setObject:encryptKey forKey:userDefaultsKey];
-            }
-            [[NSUserDefaults standardUserDefaults] synchronize];
-            objc_setAssociatedObject(self, &_encryptKey, encryptKey, OBJC_ASSOCIATION_COPY);
-        }
-        [self open];
-    }
-}
-
-- (NSString *)encryptKey{
-    return objc_getAssociatedObject(self, &_encryptKey);
 }
 
 @end

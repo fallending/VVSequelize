@@ -58,29 +58,29 @@ typedef NS_ENUM(NSUInteger, VVClauseType) {
 - (NSString *)where{
     NSString *clause = [self condition];
     if(clause.length == 0) return @"";
-    if([clause isMatchRegex:@"^ +WHERE "]) return clause;
+    if([clause isMatch:@"^ +WHERE "]) return clause;
     return [NSString stringWithFormat:@" WHERE %@", clause];
 }
 
 - (NSString *)groupBy{
     NSString *clause = [self joinClause];
     if(clause.length == 0) return @"";
-    if([clause isMatchRegex:@"^ +GROUP +BY "]) return clause;
+    if([clause isMatch:@"^ +GROUP +BY "]) return clause;
     return [NSString stringWithFormat:@" GROUP BY %@", clause];
 }
 
 - (NSString *)having{
     NSString *clause = [self condition];
     if(clause.length == 0) return @"";
-    if([clause isMatchRegex:@"^ +HAVING "]) return clause;
+    if([clause isMatch:@"^ +HAVING "]) return clause;
     return [NSString stringWithFormat:@" HAVING %@", clause];
 }
 
 - (NSString *)orderBy{
     NSString *clause = [self joinClause];
     if(clause.length == 0) return @"";
-    if(![clause isMatchRegex:@"( +ASC *$)|( +DESC *$)"]) clause = clause.asc;
-    if([clause isMatchRegex:@"^ +ORDER +BY "]) return clause;
+    if(![clause isMatch:@"( +ASC *$)|( +DESC *$)"]) clause = clause.asc;
+    if([clause isMatch:@"^ +ORDER +BY "]) return clause;
     return [NSString stringWithFormat:@" ORDER BY %@", clause];
 }
 

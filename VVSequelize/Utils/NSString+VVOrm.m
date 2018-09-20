@@ -17,7 +17,7 @@
     return [self stringByReplacingOccurrencesOfString:@" +" withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, self.length)];
 }
 
-- (BOOL)isMatchRegex:(NSString *)regex{
+- (BOOL)isMatch:(NSString *)regex{
     NSStringCompareOptions options = NSRegularExpressionSearch | NSCaseInsensitiveSearch;
     NSRange range = [self rangeOfString:regex options:options];
     return range.location != NSNotFound;

@@ -21,6 +21,13 @@ NS_ASSUME_NONNULL_BEGIN
 + (id<VVSQLiteDB>)dbWithPath:(NSString * _Nonnull)path;
 
 /**
+ 获取数据库的打开状态
+
+ @return 数据库的打开状态
+ */
+- (BOOL)isOpen;
+
+/**
  打开数据库
 
  @return 是否打开成功
@@ -87,7 +94,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)openWithFlags:(int)flags;
 
 /**
- 设置sqlite3加密
+ 设置sqlite3加密,不会改变数据库的打开状态
  
  @param encryptKey 加密Key,nil表示不加密
  @return 是否设置成功

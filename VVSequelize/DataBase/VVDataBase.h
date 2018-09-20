@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) NSString *dbPath;   ///< 数据库文件全路径
 @property (nonatomic, strong, readonly) NSString *dbName;   ///< 数据库文件名
 @property (nonatomic, strong, readonly) NSString *dbDir;    ///< 数据库文件所在目录名
+@property (nonatomic, copy) NSString *encryptKey;           ///< 加密Key,可设置
 
 //MARK: - 创建数据库
 /**

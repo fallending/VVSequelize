@@ -20,7 +20,7 @@
 #import "VVOrm+FTS.h"
 #import "VVSelect.h"
 
-#import "VVDataBaseHelper.h"
+#import "VVDBHelper.h"
 #import "NSObject+VVKeyValue.h"
 #import "NSString+VVClause.h"
 #import "NSArray+VVClause.h"
@@ -32,8 +32,8 @@
 @interface VVSequelize : NSObject
 
 @property (nonatomic, strong, class) Class<VVSQLiteDB> dbClass; ///< 设置sqlite3封装类
-
-@property (nonatomic, assign, class) BOOL useCache; ///< 是否使用缓存
+@property (nonatomic, assign, class) BOOL useCache;             ///< 是否使用缓存
+@property (nonatomic, assign, class) BOOL cipherSupported;      ///< 是否支持SQLCipher
 
 /**
  跟踪SQL语句执行情况.

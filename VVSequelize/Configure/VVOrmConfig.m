@@ -80,7 +80,7 @@
     if(cols.count != 1) return nil;
     NSDictionary *dic = cols.firstObject;
     NSString *tableSQL = dic[@"sql"];
-    return [tableSQL isMatchRegex:@"CREATE +VIRTUAL +TABLE"];
+    return [tableSQL isMatch:@"CREATE +VIRTUAL +TABLE"];
 }
 
 + (instancetype)configWithTable:(NSString *)tableName
@@ -194,7 +194,7 @@
         VVOrmField *field = [VVOrmField fieldWithDictionary:dic];
         fields[field.name] = field;
         NSString *regex = ftsVersion == 5 ? [NSString stringWithFormat:@"%@ +UNINDEXED",field.name] : [NSString stringWithFormat:@"UNINDEXED +%@",field.name];
-        if([tableSQL isMatchRegex:regex]) {
+        if([tableSQL isMatch:regex]) {
             field.fts_notindexed = NO;
             [notindexds addObject:field.name];
         }
@@ -403,8 +403,8 @@
 - (NSUInteger)ftsVersion{
     if(_ftsVersion < 3){
         _ftsVersion = 3;
-        if([self.ftsModule isMatchRegex:@"fts4"]) _ftsVersion = 4;
-        if([self.ftsModule isMatchRegex:@"fts5"]) _ftsVersion = 5;
+        if([self.ftsModule isMatch:@"fts4"]) _ftsVersion = 4;
+        if([self.ftsModule isMatch:@"fts5"]) _ftsVersion = 5;
     }
     return _ftsVersion;
 }

@@ -10,6 +10,7 @@
 @interface VVSequelizeInnerPrivate: NSObject
 @property (nonatomic, strong) Class<VVSQLiteDB> dbClass; ///< 设置sqlite3封装类
 @property (nonatomic, assign) BOOL useCache;             ///< 是否使用缓存
+@property (nonatomic, assign) BOOL cipherSupported;      ///< 是否支持SQLCipher
 @property (nonatomic, copy  ) void (^trace)(NSString *, NSArray *, id, NSError *); ///< 跟踪SQL执行
 @end
 
@@ -45,6 +46,14 @@
 
 +(void)setUseCache:(BOOL)useCache{
     [self innerPrivate].useCache = useCache;
+}
+
++ (BOOL)cipherSupported{
+    return [self innerPrivate].cipherSupported;
+}
+
++ (void)setCipherSupported:(BOOL)cipherSupported{
+    [self innerPrivate].cipherSupported = cipherSupported;
 }
 
 + (void (^)(NSString *, NSArray *, id, NSError *))trace{

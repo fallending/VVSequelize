@@ -10,6 +10,6 @@
 @interface NSString (VVOrm)
 - (NSString *)trim;
 - (NSString *)strip;
-- (BOOL)isMatchRegex:(NSString *)regex;
+- (BOOL)isMatch:(NSString *)regex;
 - (NSString *)prepareForParseSQL;
 @end

@@ -41,8 +41,8 @@
     return [self stringByAppendingFormat:@" <= \"%@\"", lte];
 }
 
-- (NSString *)not:(id)notstr{
-    return [self stringByAppendingFormat:@" IS NOT \"%@\"", notstr];
+- (NSString *)not:(id)notval{
+    return [self stringByAppendingFormat:@" IS NOT \"%@\"", notval];
 }
 
 - (NSString *)between:(id)val1 _:(id)val2{
