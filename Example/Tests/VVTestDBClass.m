@@ -22,6 +22,10 @@
     return dbClass;
 }
 
+- (BOOL)isOpen {
+    return [_fmdb goodConnection];
+}
+
 - (BOOL)open{
     return [_fmdb open];
 }

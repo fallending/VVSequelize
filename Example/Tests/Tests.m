@@ -44,6 +44,18 @@
     
     NSString *vvdb = [path stringByAppendingPathComponent:@"mobiles.sqlite"];
     self.vvdb = [[VVDataBase alloc] initWithPath:vvdb];
+    
+    NSString *dbp = [path stringByAppendingPathComponent:@"test1.sqlite"];
+
+    @autoreleasepool {
+        VVDataBase *db1 = [[VVDataBase alloc] initWithPath:dbp];
+//        db1 = nil;
+        VVDataBase *db2 = [[VVDataBase alloc] initWithPath:dbp];
+//        db2 = nil;
+        VVDataBase *db3 = [[VVDataBase alloc] initWithPath:dbp];
+        if(db1 && db2 && db3) {}
+    }
+    
     VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestMobile.class] primaryKey:@"mobile"];
     self.mobileModel = [VVOrm ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
     VVOrmConfig *ftsConfig = [[[VVOrmConfig configWithClass:VVTestMobile.class] ftsModule:@"fts4"] fts:YES];

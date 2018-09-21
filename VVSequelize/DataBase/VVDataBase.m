@@ -17,6 +17,15 @@
 
 @implementation VVDataBase
 
++ (NSMapTable *)dbpool{
+    static NSMapTable *_dbpool;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _dbpool = [NSMapTable mapTableWithKeyOptions:NSPointerFunctionsStrongMemory valueOptions:NSPointerFunctionsWeakMemory];
+    });
+    return _dbpool;
+}
+
 //MARK: - 创建数据库
 /**
  创建数据库单例
@@ -52,6 +61,12 @@
         name = path.lastPathComponent;
         dir  = [path stringByDeletingLastPathComponent];
     }
+    
+    // 从数据库池中获取
+    VVDataBase *vvdb = [VVDataBase.dbpool objectForKey:fullpath];
+    if(vvdb) return vvdb;
+    
+    // 新建数据库对象
     BOOL isdir = NO;
     BOOL exist = [[NSFileManager defaultManager] fileExistsAtPath:dir isDirectory:&isdir];
     if(!(exist && isdir)){
@@ -74,9 +89,11 @@
             _path = fullpath;
             _encryptStoreKey = [NSString stringWithFormat:@"VVDBEncryptStoreKey%@",relativePath];
             self.encryptKey = encryptKey;
+            if(!sqlitedb.isOpen) [self open];
             // 执行一些设置
             [self executeQuery:@"PRAGMA synchronous='NORMAL'"];
             [self executeQuery:@"PRAGMA journal_mode=wal"];
+            [VVDataBase.dbpool setObject:self forKey:fullpath];
             return self;
         }
     }
