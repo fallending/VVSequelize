@@ -41,8 +41,9 @@
         NSString *sourcePath = [[NSBundle mainBundle] pathForResource:@"mobiles.sqlite" ofType:nil];
         [[NSFileManager defaultManager] copyItemAtPath:sourcePath toPath:targetPath error:nil];
     }
-
-    self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite" dirPath:nil encryptKey:nil];
+    
+    NSString *vvdb = [path stringByAppendingPathComponent:@"mobiles.sqlite"];
+    self.vvdb = [[VVDataBase alloc] initWithPath:vvdb];
     VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestMobile.class] primaryKey:@"mobile"];
     self.mobileModel = [VVOrm ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
     VVOrmConfig *ftsConfig = [[[VVOrmConfig configWithClass:VVTestMobile.class] ftsModule:@"fts4"] fts:YES];
@@ -319,23 +320,23 @@
 }
 
 - (void)testUpdateDatabase{
-    [VVDataBaseHelper setVersions:@[@"0.1.0",@"0.1.1",@"0.1.3",@"0.1.5"]];
-    [VVDataBaseHelper setUpdateBlock:^{
+    [VVDBHelper setVersions:@[@"0.1.0",@"0.1.1",@"0.1.3",@"0.1.5"]];
+    [VVDBHelper setUpdateBlock:^{
         NSLog(@"update-> 0.1.1");
     } forVersion:@"0.1.1"];
-    [VVDataBaseHelper setUpdateBlock:^{
+    [VVDBHelper setUpdateBlock:^{
         NSLog(@"update-> 0.1.2");
     } forVersion:@"0.1.2"];
-    [VVDataBaseHelper setUpdateBlock:^{
+    [VVDBHelper setUpdateBlock:^{
         NSLog(@"update-> 0.1.3");
     } forVersion:@"0.1.3"];
-    [VVDataBaseHelper setUpdateBlock:^{
+    [VVDBHelper setUpdateBlock:^{
         NSLog(@"update-> 0.1.4");
     } forVersion:@"0.1.4"];
-    [VVDataBaseHelper setUpdateBlock:^{
+    [VVDBHelper setUpdateBlock:^{
         NSLog(@"update-> 0.1.5");
     } forVersion:@"0.1.5"];
-    [VVDataBaseHelper updateDataBasesFromVersion:@"0.1.2"];
+    [VVDBHelper updateDataBasesFromVersion:@"0.1.2"];
 }
 
 //MARK: - FTS表

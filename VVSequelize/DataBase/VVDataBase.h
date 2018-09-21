@@ -12,10 +12,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface VVDataBase : NSObject
 
-@property (nonatomic, strong, readonly) NSString *dbPath;   ///< 数据库文件全路径
-@property (nonatomic, strong, readonly) NSString *dbName;   ///< 数据库文件名
-@property (nonatomic, strong, readonly) NSString *dbDir;    ///< 数据库文件所在目录名
-@property (nonatomic, copy) NSString *encryptKey;           ///< 加密Key,可设置
+@property (nonatomic, strong, readonly) NSString *name;   ///< 数据库文件名
+@property (nonatomic, strong, readonly) NSString *dir;    ///< 数据库文件所在目录名
+@property (nonatomic, strong, readonly) NSString *path;   ///< 数据库文件全路径
+@property (nonatomic, copy) NSString *encryptKey;         ///< 加密Key,可设置
 
 //MARK: - 创建数据库
 /**
@@ -28,22 +28,27 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  初始化数据库
  
- @param dbName 数据库文件名,如:abc.sqlite, abc.db
+ @param path 数据库文件全路径
  @return 数据库对象
  */
-- (instancetype)initWithDBName:(nullable NSString *)dbName;
+- (instancetype)initWithPath:(nullable NSString *)path;
 
 /**
  初始化数据库
  
- @param dbName 数据库文件名,如:abc.sqlite, abc.db
- @param dirPath 数据库存储路径,若为nil,则路径默认为NSDocumentDirectory
+ @param path 数据库文件全路径
  @param encryptKey 数据库密码,使用SQLCipher加密的密码.若为nil,则不加密.
  @return 数据库对象
  */
-- (instancetype)initWithDBName:(nullable NSString *)dbName
-                       dirPath:(nullable NSString *)dirPath
-                    encryptKey:(nullable NSString *)encryptKey;
+- (instancetype)initWithPath:(nullable NSString *)path
+                  encryptKey:(nullable NSString *)encryptKey;
+
+/**
+ 初始化内存数据库
+
+ @return 内存数据库对象
+ */
+- (instancetype)initMemoryDb;
 
 //MARK: - 原始SQL语句
 

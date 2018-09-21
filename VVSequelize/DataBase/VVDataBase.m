@@ -12,6 +12,7 @@
 @interface VVDataBase ()
 @property (nonatomic, strong) id<VVSQLiteDB> sqlitedb;
 @property (nonatomic, copy  ) NSString *encryptStoreKey; ///< 保存密码的Key
+@property (nonatomic, assign) BOOL isMemoryDb;           ///< 是否是内存数据库
 @end
 
 @implementation VVDataBase
@@ -26,50 +27,51 @@
     static VVDataBase *_vvdb;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _vvdb = [[self alloc] initWithDBName:nil];
+        _vvdb = [[VVDataBase alloc] initWithPath:nil];
     });
     return _vvdb;
 }
 
-- (instancetype)initWithDBName:(NSString *)dbName{
-    return [self initWithDBName:dbName dirPath:nil encryptKey:nil];
+- (instancetype)initWithPath:(NSString *)path{
+    return [self initWithPath:path encryptKey:nil];
 }
 
-- (instancetype)initWithDBName:(NSString *)dbName
-                      dirPath:(NSString *)dirPath
-                   encryptKey:(NSString *)encryptKey{
+- (instancetype)initWithPath:(NSString *)path
+                  encryptKey:(NSString *)encryptKey{
     NSAssert(VVSequelize.dbClass, @"请先设置全局的sqlite3封装类: `VVSequelize.dbClass`");
-    if (dbName.length == 0) {
-        dbName = @"vvsequlize.sqlite";
+    NSString *fullpath = nil;
+    NSString *dir = nil;
+    NSString *name = nil;
+    if (path.length == 0) {
+        path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+        name = @"vvsequlize.sqlite";
+        fullpath = [path stringByAppendingPathComponent:name];
     }
-    NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
-    if(dirPath && dirPath.length > 0){
-        BOOL isDir = NO;
-        BOOL exist = [[NSFileManager defaultManager] fileExistsAtPath:dirPath isDirectory:&isDir];
-        BOOL valid = exist && isDir;
-        if(!valid){
-            valid = [[NSFileManager defaultManager] createDirectoryAtPath:dirPath withIntermediateDirectories:YES attributes:nil error:nil];
-        }
-        if(valid){
-            path = dirPath;
-        }
+    else{
+        fullpath = path;
+        name = path.lastPathComponent;
+        dir  = [path stringByDeletingLastPathComponent];
     }
-    NSString *dbPath =  [path stringByAppendingPathComponent:dbName];
+    BOOL isdir = NO;
+    BOOL exist = [[NSFileManager defaultManager] fileExistsAtPath:dir isDirectory:&isdir];
+    if(!(exist && isdir)){
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+    }
     NSString *homePath = NSHomeDirectory();
-    NSRange range = [dbPath rangeOfString:homePath];
+    NSRange range = [fullpath rangeOfString:homePath];
     NSString *relativePath = range.location == NSNotFound ?
-        dbPath : [dbPath substringFromIndex:range.location + range.length];
+        fullpath : [fullpath substringFromIndex:range.location + range.length];
 #if DEBUG
-    NSLog(@"Open or create the database: %@", dbPath);
+    NSLog(@"Open or create the database: %@", fullpath);
 #endif
-    id<VVSQLiteDB> sqlitedb = [VVSequelize.dbClass dbWithPath:dbPath];
+    id<VVSQLiteDB> sqlitedb = [VVSequelize.dbClass dbWithPath:fullpath];
     if (sqlitedb) {
         self = [self init];
         if (self) {
             _sqlitedb = sqlitedb;
-            _dbName = dbName;
-            _dbDir  = dirPath;
-            _dbPath = dbPath;
+            _name = name;
+            _dir  = dir;
+            _path = fullpath;
             _encryptStoreKey = [NSString stringWithFormat:@"VVDBEncryptStoreKey%@",relativePath];
             self.encryptKey = encryptKey;
             // 执行一些设置
@@ -78,8 +80,28 @@
             return self;
         }
     }
-    NSAssert1(sqlitedb, @"Open or create the database (%@) failure!",dbPath);
+    NSAssert1(sqlitedb, @"Open or create the database (%@) failure!",fullpath);
     return nil;
+}
+
+- (instancetype)initMemoryDb{
+    BOOL supported = [VVSequelize.dbClass respondsToSelector:@selector(createMemoryDb)];
+    if(!supported){ return nil; }
+    id<VVSQLiteDB> sqlitedb = [VVSequelize.dbClass createMemoryDb];
+    if(sqlitedb){
+        self = [self init];
+        if (self) {
+            _sqlitedb   = sqlitedb;
+            _isMemoryDb = YES;
+        }
+        return self;
+    }
+    NSAssert(sqlitedb, @"create sqlite in memory failure!");
+    return nil;
+}
+
+- (void)dealloc{
+    [self.sqlitedb close];
 }
 
 //MARK: - 原始SQL语句
@@ -147,7 +169,7 @@
 }
 
 - (void)setEncryptKey:(NSString *)encryptKey{
-    BOOL cipherSupported = VVSequelize.cipherSupported && [self.sqlitedb respondsToSelector:@selector(setEncryptKey:)];
+    BOOL cipherSupported = !self.isMemoryDb && VVSequelize.cipherSupported && [self.sqlitedb respondsToSelector:@selector(setEncryptKey:)];
     if(!cipherSupported) return;
     
     static dispatch_semaphore_t lock;
@@ -160,10 +182,10 @@
     if(isOpen){
         ret = [self close];
     }
-    NSAssert1(ret, @"[encrypt] close the database (%@) failure!",_dbPath);
+    NSAssert1(ret, @"[encrypt] close the database (%@) failure!",_path);
     NSString *origin = [[NSUserDefaults standardUserDefaults] stringForKey:_encryptStoreKey];
     dispatch_semaphore_wait(lock, DISPATCH_TIME_FOREVER);
-    ret = [VVCipherHelper changeKeyForDatabase:self.dbPath originKey:origin newKey:encryptKey];
+    ret = [VVCipherHelper changeKeyForDatabase:self.path originKey:origin newKey:encryptKey];
     dispatch_semaphore_signal(lock);
     if(ret){
         if(encryptKey == nil){
@@ -175,10 +197,10 @@
         [[NSUserDefaults standardUserDefaults] synchronize];
         _encryptKey = encryptKey;
     }
-    NSAssert1(ret, @"[encrypt] set encrypt key for database (%@) failure!",_dbPath);
+    NSAssert1(ret, @"[encrypt] set encrypt key for database (%@) failure!",_path);
     if(isOpen){
         ret = [self open];
-        NSAssert1(ret, @"[encrypt] reopen the database (%@) failure!",_dbPath);
+        NSAssert1(ret, @"[encrypt] reopen the database (%@) failure!",_path);
     }
 }
 

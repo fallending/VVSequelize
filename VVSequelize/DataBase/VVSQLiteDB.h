@@ -79,8 +79,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  创建内存数据库
-
- @return 内存数据库
+ 
+ @return 内存数据库对象
  */
 + (id<VVSQLiteDB>)createMemoryDb;
 
