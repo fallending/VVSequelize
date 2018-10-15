@@ -332,23 +332,14 @@
 }
 
 - (void)testUpdateDatabase{
-    [VVDBHelper setVersions:@[@"0.1.0",@"0.1.1",@"0.1.3",@"0.1.5"]];
-    [VVDBHelper setUpdateBlock:^{
-        NSLog(@"update-> 0.1.1");
-    } forVersion:@"0.1.1"];
-    [VVDBHelper setUpdateBlock:^{
-        NSLog(@"update-> 0.1.2");
-    } forVersion:@"0.1.2"];
-    [VVDBHelper setUpdateBlock:^{
-        NSLog(@"update-> 0.1.3");
-    } forVersion:@"0.1.3"];
-    [VVDBHelper setUpdateBlock:^{
-        NSLog(@"update-> 0.1.4");
-    } forVersion:@"0.1.4"];
-    [VVDBHelper setUpdateBlock:^{
-        NSLog(@"update-> 0.1.5");
-    } forVersion:@"0.1.5"];
-    [VVDBHelper updateDataBasesFromVersion:@"0.1.2"];
+    VVUpgrader *upgrader = [[VVUpgrader alloc] init];
+    upgrader.versions = @[@"0.1.0",@"0.1.1",@"0.1.3",@"0.1.5"];
+    upgrader.upgrades[@"0.1.1"] = ^{ NSLog(@"update-> 0.1.1"); };
+    upgrader.upgrades[@"0.1.2"] = ^{ NSLog(@"update-> 0.1.2"); };
+    upgrader.upgrades[@"0.1.3"] = ^{ NSLog(@"update-> 0.1.3"); };
+    upgrader.upgrades[@"0.1.4"] = ^{ NSLog(@"update-> 0.1.4"); };
+    upgrader.upgrades[@"0.1.5"] = ^{ NSLog(@"update-> 0.1.5"); };
+    [upgrader upgradeFrom:@"0.1.2"];
 }
 
 //MARK: - FTS表

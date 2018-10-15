@@ -20,7 +20,7 @@
 #import "VVOrm+FTS.h"
 #import "VVSelect.h"
 
-#import "VVDBHelper.h"
+#import "VVUpgrader.h"
 #import "NSObject+VVKeyValue.h"
 #import "NSString+VVClause.h"
 #import "NSArray+VVClause.h"
