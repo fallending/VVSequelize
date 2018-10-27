@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.3.0-beta2'
+  s.version          = '0.3.0-beta3'
   s.summary          = '基于FMDB的ORM模型封装.'
   s.description      = <<-DESC
                        基于FMDB的ORM模型封装.
@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Valo Lee' => 'pozi119@163.com' }
   s.source           = { :git => 'https://github.com/pozi119/VVSequelize.git', :tag => s.version.to_s }
-  s.ios.deployment_target = '8.0'
+  s.ios.deployment_target = '9.0'
   s.source_files = "VVSequelize/**/*"
 
 end

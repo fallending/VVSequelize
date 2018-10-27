@@ -15,7 +15,7 @@ NSString * const VVUpgraderLastVersionKey = @"VVUpgraderLastVersionKey";
 {
     self = [super init];
     if (self) {
-        self.versions = [NSArray array];
+        self.versions = [NSMutableArray arrayWithCapacity:0];
         self.upgrades = [NSMutableDictionary dictionaryWithCapacity:0];
         [self setLastVersionGetter:^NSString *{
             return [[NSUserDefaults standardUserDefaults] stringForKey:VVUpgraderLastVersionKey];
@@ -33,13 +33,14 @@ NSString * const VVUpgraderLastVersionKey = @"VVUpgraderLastVersionKey";
     return self;
 }
 
-- (void)upgrade{
+- (void)upgrade:(NSProgress *)progress{
     NSString *last = self.lastVersionGetter();
-    [self upgradeFrom:last];
+    [self upgradeFrom:last progress:progress];
     self.lastVersionSetter(self.versions.lastObject);
 }
 
-- (void)upgradeFrom:(NSString *)version{
+- (void)upgradeFrom:(NSString *)version
+           progress:(NSProgress *)progress{
     if (self.versions.count == 0) return;
     
     // 取得version在所有版本中的位置
@@ -63,10 +64,16 @@ NSString * const VVUpgraderLastVersionKey = @"VVUpgraderLastVersionKey";
     
     // 进行更新操作
     if (idx != NSNotFound) {
+        NSInteger total = self.versions.count - idx;
         for (NSUInteger i = idx; i < self.versions.count; i ++) {
             NSString *ver = self.versions[i];
-            void(^upgradeBlock)(void) = self.upgrades[ver];
-            !upgradeBlock ? : upgradeBlock();
+            NSProgress *sub = nil;
+            if(progress) {
+                sub = [NSProgress progressWithTotalUnitCount:100 parent:progress pendingUnitCount:progress.totalUnitCount / total];
+            }
+            void(^upgradeBlock)(NSProgress *) = self.upgrades[ver];
+            !upgradeBlock ? : upgradeBlock(sub);
+            sub.completedUnitCount = sub.totalUnitCount;
         }
     }
 }

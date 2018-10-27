@@ -334,12 +334,44 @@
 - (void)testUpdateDatabase{
     VVUpgrader *upgrader = [[VVUpgrader alloc] init];
     upgrader.versions = @[@"0.1.0",@"0.1.1",@"0.1.3",@"0.1.5"];
-    upgrader.upgrades[@"0.1.1"] = ^{ NSLog(@"update-> 0.1.1"); };
-    upgrader.upgrades[@"0.1.2"] = ^{ NSLog(@"update-> 0.1.2"); };
-    upgrader.upgrades[@"0.1.3"] = ^{ NSLog(@"update-> 0.1.3"); };
-    upgrader.upgrades[@"0.1.4"] = ^{ NSLog(@"update-> 0.1.4"); };
-    upgrader.upgrades[@"0.1.5"] = ^{ NSLog(@"update-> 0.1.5"); };
-    [upgrader upgradeFrom:@"0.1.2"];
+    upgrader.upgrades[@"0.1.1"] = ^(NSProgress *progress){
+        NSLog(@"update-> 0.1.1");
+        for (NSInteger i = 0; i < 100; i ++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+        }
+    };
+    upgrader.upgrades[@"0.1.2"] = ^(NSProgress *progress){
+        NSLog(@"update-> 0.1.2");
+        for (NSInteger i = 0; i < 100; i ++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+        }
+    };
+    upgrader.upgrades[@"0.1.3"] = ^(NSProgress *progress){
+        NSLog(@"update-> 0.1.3");
+//        for (NSInteger i = 0; i < 100; i ++) {
+//            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+//        }
+    };
+    upgrader.upgrades[@"0.1.4"] = ^(NSProgress *progress){
+        NSLog(@"update-> 0.1.4");
+        for (NSInteger i = 0; i < 100; i ++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+        }
+    };
+    upgrader.upgrades[@"0.1.5"] = ^(NSProgress *progress){
+        NSLog(@"update-> 0.1.5");
+//        for (NSInteger i = 0; i < 100; i ++) {
+//            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+//        }
+    };
+    NSProgress *progress = [NSProgress progressWithTotalUnitCount:100];
+    [progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
+    [upgrader upgradeFrom:@"0.1.2" progress:progress];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
+    NSProgress *progress = object;
+    NSLog(@"progress: %@",@(progress.fractionCompleted));
 }
 
 //MARK: - FTS表
