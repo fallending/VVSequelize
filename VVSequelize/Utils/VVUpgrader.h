@@ -32,7 +32,7 @@
 
 //MAKR: - 升级管理
 /**
- 升级到最新版本,暂不支持更新进度的反馈
+ 升级到最新版本
  
  依次使用步骤为:
  
@@ -48,9 +48,9 @@
 - (void)upgrade:(NSProgress *)progress;
 
 /**
- 从某个指定版本升级到最新版本,暂不支持更新进度的反馈
+ 从某个指定版本升级到最新版本
 
- @param version 指定从某个版本号开始升级; nil 不会执行任何更新操作(相当于全新安装).
+ @param version 指定从某个版本号开始升级; nil 会执行所有更新操作(全新安装或第一次使用更新).
  @param progress 升级进度
  */
 - (void)upgradeFrom:(NSString *)version

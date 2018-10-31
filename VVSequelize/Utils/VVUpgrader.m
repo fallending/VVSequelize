@@ -61,20 +61,18 @@ NSString * const VVUpgraderLastVersionKey = @"VVUpgraderLastVersionKey";
             idx = idx + 1;
         }
     }
-    
+    if (idx == NSNotFound) idx = 0;
     // 进行更新操作
-    if (idx != NSNotFound) {
-        NSInteger total = self.versions.count - idx;
-        for (NSUInteger i = idx; i < self.versions.count; i ++) {
-            NSString *ver = self.versions[i];
-            NSProgress *sub = nil;
-            if(progress) {
-                sub = [NSProgress progressWithTotalUnitCount:100 parent:progress pendingUnitCount:progress.totalUnitCount / total];
-            }
-            void(^upgradeBlock)(NSProgress *) = self.upgrades[ver];
-            !upgradeBlock ? : upgradeBlock(sub);
-            sub.completedUnitCount = sub.totalUnitCount;
+    NSInteger total = self.versions.count - idx;
+    for (NSUInteger i = idx; i < self.versions.count; i ++) {
+        NSString *ver = self.versions[i];
+        NSProgress *sub = nil;
+        if(progress) {
+            sub = [NSProgress progressWithTotalUnitCount:100 parent:progress pendingUnitCount:progress.totalUnitCount / total];
         }
+        void(^upgradeBlock)(NSProgress *) = self.upgrades[ver];
+        !upgradeBlock ? : upgradeBlock(sub);
+        sub.completedUnitCount = sub.totalUnitCount;
     }
 }
 
