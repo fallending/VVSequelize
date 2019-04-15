@@ -10,8 +10,9 @@
 * [x] Where语句生成,可满足大部分常规场景
 * [x] 数据库加解密(SQLCipher)
 * [x] 原生SQL语句支持
-* [x] 常规查询支持,max,min,sum,count...
-* [x] 主键支持(可自动主键),唯一性约束支持.
+* [x] 常规查询函数支持,max(),min(),sum(),count()...
+* [x] 支持主键,可多主键,单主键可自增.
+* [x] 支持唯一性约束
 * [x] Transaction支持
 * [x] Object直接处理
 * [x] 数据存储,OC类型支持: NSData, NSURL, NSSelector, NSValue, NSDate, NSArray, NSDictionary, NSSet,...
@@ -25,6 +26,11 @@
 1. 优化结构
 2. 可自定义FTS分词器
 3. 移除全局配置
+4. 多主键支持
+5. 部分API调整
+
+## 结构
+![](VVSequelize.png)
 
 ## 安装
 使用测试版本:
@@ -45,14 +51,29 @@
 
 ### 打开/创建数据库文件
 ```objc
-    self.vvdb = [[VVDataBase alloc] initWithDBName:@"mobiles.sqlite"];
+    self.vvdb = [[VVDatabase alloc] initWithPath:dbPath];
 ```
 
 ### 定义ORM配置
-使用`VVOrmConfig`统一表配置,方便复用,支持链式赋值.
+使用`VVOrmConfig`统一表配置,可复用.
+
+普通表配置:
 ```objc
-    VVOrmConfig *config = [[VVOrmConfig configWithClass:VVTestMobile.class] primaryKey:@"mobile"];
+    VVOrmConfig *config = [VVOrmConfig configFromClass:VVTestMobile.class];
+    config.primaries = @[@"mobile"];
 ``` 
+
+Fts表配置
+```objc
+    VVOrmConfig *ftsConfig = [VVOrmConfig configFromClass:VVTestMobile.class];
+    ftsConfig.fts = YES;
+    ftsConfig.ftsModule = @"fts5";
+    ftsConfig.ftsTokenizer = @"jieba pinyin";
+    ftsConfig.indexes = @[@"mobile", @"industry"];
+```
+**FTS表配置特别注意**:
+* 需设置`ftsConfig.fts=YES`,否则视为普通表.
+* fts3以上版本需设置索引字段`ftsConfig.indexes`,否则不会缩影任何字段,无法搜索
 
 ### 定义ORM模型 
 可自定义表名和存放的数据库文件.
@@ -61,7 +82,7 @@
 示例如下:
 
 ```objc
-    self.mobileModel = [VVOrm ormModelWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
+    self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
 ```
 ### 增删改查
 使用ORM模型进行增删改查等操作.
@@ -69,9 +90,9 @@
 示例如下:
 
 ```objc
-NSInteger count = [self.mobileModel count:nil];
-BOOL ret = [self.mobileModel increase:nil field:@"times" value:-1];
-NSArray *array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 10)];
+    NSInteger count = [self.mobileModel count:nil];
+    BOOL ret = [self.mobileModel increase:nil field:@"times" value:-1];
+    NSArray *array = [self.mobileModel findAll:nil orderBy:nil limit:10 offset:0];
 ...
 ```
 
@@ -90,34 +111,35 @@ NSArray *array = [self.mobileModel findAll:nil orderBy:nil range:NSMakeRange(0, 
 示例: 
 ```objc
 - (void)testClause{
-    VVSelect *select = [[VVSelect prepare] table:@"mobiles"];
-    [select where:[[[@"relative" lt:@(0.3)] and:[@"mobile" gte:@(16000000000)]] and: [@"times" gte:@(0)]]];
+    VVSelect *select =  [VVSelect new];
+    select.table(@"mobiles");
+    select.where([[[@"relative" lt:@(0.3)] and:[@"mobile" gte:@(16000000000)]] and: [@"times" gte:@(0)]]);
     NSLog(@"%@", select.sql);
-    [select where:@{@"city":@"西安", @"relative":@(0.3)}];
+    select.where(@{@"city":@"西安", @"relative":@(0.3)});
     NSLog(@"%@", select.sql);
-    [select where:@[@{@"city":@"西安", @"relative":@(0.3)},@{@"relative":@(0.7)}]];
+    select.where(@[@{@"city":@"西安", @"relative":@(0.3)},@{@"relative":@(0.7)}]);
     NSLog(@"%@", select.sql);
-    [select where:[@"relative" lt:@(0.3)]];
+    select.where([@"relative" lt:@(0.3)]);
     NSLog(@"%@", select.sql);
-    [select where:@"     where relative < 0.3"];
+    select.where(@"     where relative < 0.3");
     NSLog(@"%@", select.sql);
-    [select groupBy:@"city"];
+    select.groupBy(@"city");
     NSLog(@"%@", select.sql);
-    [select groupBy:@[@"city",@"carrier"]];
+    select.groupBy(@[@"city",@"carrier"]);
     NSLog(@"%@", select.sql);
-    [select groupBy:@" group by city carrier"];
+    select.groupBy(@" group by city carrier");
     NSLog(@"%@", select.sql);
-    [select having:[@"relative" lt:@(0.2)]];
+    select.having([@"relative" lt:@(0.2)]);
     NSLog(@"%@", select.sql);
-    [select groupBy:nil];
+    select.groupBy(nil);
     NSLog(@"%@", select.sql);
-    [select orderBy:@[@"city",@"carrier"]];
+    select.orderBy(@[@"city",@"carrier"]);
     NSLog(@"%@", select.sql);
-    [select orderBy:@" order by relative"];
+    select.orderBy(@" order by relative");
     NSLog(@"%@", select.sql);
-    [select limit:NSMakeRange(0, 10)];
+    select.limit(10);
     NSLog(@"%@", select.sql);
-    [select distinct:YES];
+    select.distinct(YES);
     NSLog(@"%@", select.sql);
 }
 ```
