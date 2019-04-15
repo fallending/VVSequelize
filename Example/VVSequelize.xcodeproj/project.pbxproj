@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		036488F43616D4EFAD2F6D53 /* Pods_VVSequelize_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E679B3A14912D1E429203B2 /* Pods_VVSequelize_Example.framework */; };
 		3E698E1E223F66B300D5C10A /* 神话纪元.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3E698E1D223F66B300D5C10A /* 神话纪元.txt */; };
+		3E953E1022646238006E27E0 /* VVTestClasses.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E953E0F22646238006E27E0 /* VVTestClasses.m */; };
+		3E953E122264635F006E27E0 /* mobiles.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 3E953E112264635F006E27E0 /* mobiles.sqlite */; };
+		3E953E132264673B006E27E0 /* mobiles.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 3E953E112264635F006E27E0 /* mobiles.sqlite */; };
 		3EC56B1E2239E9050086D6F5 /* VVMock.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EC56B142239E9050086D6F5 /* VVMock.m */; };
 		3EC56B1F2239E9050086D6F5 /* VVItem.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EC56B172239E9050086D6F5 /* VVItem.m */; };
 		3EC56B212239E9050086D6F5 /* VVMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EC56B1B2239E9050086D6F5 /* VVMessage.m */; };
@@ -45,6 +48,9 @@
 		2D8D1872045C1A727096D539 /* Pods_VVSequelize_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VVSequelize_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		37F83894CE045279640D3A3D /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		3E698E1D223F66B300D5C10A /* 神话纪元.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "神话纪元.txt"; sourceTree = "<group>"; };
+		3E953E0E22646238006E27E0 /* VVTestClasses.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VVTestClasses.h; sourceTree = "<group>"; };
+		3E953E0F22646238006E27E0 /* VVTestClasses.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VVTestClasses.m; sourceTree = "<group>"; };
+		3E953E112264635F006E27E0 /* mobiles.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = mobiles.sqlite; sourceTree = "<group>"; };
 		3EC56B142239E9050086D6F5 /* VVMock.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VVMock.m; sourceTree = "<group>"; };
 		3EC56B172239E9050086D6F5 /* VVItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VVItem.m; sourceTree = "<group>"; };
 		3EC56B1A2239E9050086D6F5 /* VVMock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VVMock.h; sourceTree = "<group>"; };
@@ -185,6 +191,9 @@
 		6003F5B5195388D20070C39A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				3E953E112264635F006E27E0 /* mobiles.sqlite */,
+				3E953E0E22646238006E27E0 /* VVTestClasses.h */,
+				3E953E0F22646238006E27E0 /* VVTestClasses.m */,
 				6003F5BB195388D20070C39A /* Tests.m */,
 				6003F5B6195388D20070C39A /* Supporting Files */,
 			);
@@ -303,6 +312,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3E698E1E223F66B300D5C10A /* 神话纪元.txt in Resources */,
+				3E953E132264673B006E27E0 /* mobiles.sqlite in Resources */,
 				71719F9F1E33DC2100824A3D /* LaunchScreen.storyboard in Resources */,
 				6003F5A9195388D20070C39A /* Images.xcassets in Resources */,
 				6003F598195388D20070C39A /* InfoPlist.strings in Resources */,
@@ -315,6 +325,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6003F5BA195388D20070C39A /* InfoPlist.strings in Resources */,
+				3E953E122264635F006E27E0 /* mobiles.sqlite in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -411,6 +422,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3E953E1022646238006E27E0 /* VVTestClasses.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

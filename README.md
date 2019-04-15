@@ -19,10 +19,12 @@
 * [x] 子对象存储为Json字符串
 * [x] OrmModel查询缓存
 * [x] FTS全文搜索
+* [x] 自定义FTS分词器
 
-## 改动(0.3.0-beta2)
-1. 可创建内存数据库,未测试
-2. 添加通用的版本升级辅助类`VVUpgrader`
+## 改动(0.3.0-beta4)
+1. 优化结构
+2. 可自定义FTS分词器
+3. 移除全局配置
 
 ## 安装
 使用测试版本:
@@ -40,17 +42,6 @@
 
 ## 用法
 此处主要列出一些基本用法,详细用法请阅读代码注释.
-
-### 全局配置
-sqlite3封装类请参考`VVSequelize_Tests`中`VVTestDBClass`的实现方式.
-```objc
-    // 必须设置sqlite3封装类
-    [VVSequelize setDbClass:VVTestDBClass.class];
-    
-    [VVSequelize setTrace:^(NSString *sql, NSArray *values, id results, NSError *error) { 
-        //加入对每个sql执行情况的跟踪
-    }];
-```
 
 ### 打开/创建数据库文件
 ```objc
