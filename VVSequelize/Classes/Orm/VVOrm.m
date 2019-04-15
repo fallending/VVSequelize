@@ -149,11 +149,13 @@
     }
     BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self.tableName, allFields, allFields, tempTableName];
-        BOOL r = [self.vvdb excute:sql];
-        if (!r) { return r; }
-        sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
         return [self.vvdb excute:sql];
     }];
+    
+    if (ret) {
+        NSString *sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
+        [self.vvdb excute:sql];
+    }
     
     if (!ret) {
 #if DEBUG

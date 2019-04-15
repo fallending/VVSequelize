@@ -15,12 +15,12 @@
     return @"";
 }
 
-- (NSString *)join
+- (NSString *)vv_join
 {
     return @"";
 }
 
-- (NSString *)match
+- (NSString *)vv_match
 {
     return @"";
 }
@@ -60,7 +60,7 @@
     return where;
 }
 
-- (NSString *)match
+- (NSString *)vv_match
 {
     NSMutableString *where = [NSMutableString stringWithCapacity:0];
     for (NSString *key in self) {
@@ -122,6 +122,10 @@
     return joined;
 }
 
+- (NSString *)vv_join{
+    return [self sqlJoin];
+}
+
 - (NSArray *)vv_distinctUnionOfObjects
 {
     return [self valueForKeyPath:@"@distinctUnionOfObjects.self"];
@@ -149,7 +153,7 @@
 
 + (NSString *)sqlMatch:(id)condition
 {
-    NSString *clause = [condition match];
+    NSString *clause = [condition vv_match];
     if (clause.length == 0) return @"";
     if ([clause isMatch:@"^ +WHERE "]) return clause;
     return [NSString stringWithFormat:@" WHERE %@", clause];
@@ -157,7 +161,7 @@
 
 + (NSString *)sqlGroupBy:(id)groupBy
 {
-    NSString *clause = [groupBy sqlJoin];
+    NSString *clause = [groupBy vv_join];
     if (clause.length == 0) return @"";
     if ([clause isMatch:@"^ +GROUP +BY "]) return clause;
     return [NSString stringWithFormat:@" GROUP BY %@", clause];
@@ -173,7 +177,7 @@
 
 + (NSString *)sqlOrderBy:(id)orderBy
 {
-    NSString *clause = [orderBy sqlJoin];
+    NSString *clause = [orderBy vv_join];
     if (clause.length == 0) return @"";
     if (![clause isMatch:@"( +ASC *$)|( +DESC *$)"]) clause = clause.asc;
     if ([clause isMatch:@"^ +ORDER +BY "]) return clause;
@@ -286,12 +290,12 @@
     return self;
 }
 
-- (NSString *)match
+- (NSString *)vv_match
 {
     return self;
 }
 
-- (NSString *)join
+- (NSString *)vv_join
 {
     return self;
 }

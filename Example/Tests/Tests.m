@@ -51,6 +51,7 @@
     config.primaries = @[@"mobile"];
     self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
     VVOrmConfig *ftsConfig = [VVOrmConfig configFromClass:VVTestMobile.class];
+    ftsConfig.fts = YES;
     ftsConfig.ftsModule = @"fts5";
     ftsConfig.ftsTokenizer = @"jieba pinyin";
     
@@ -88,16 +89,7 @@
         mobile.relative = arc4random_uniform(100) * 1.0 / 100.0;
         [array addObject:mobile];
     }
-    VVDatabase *vvdb = self.mobileModel.vvdb;
-    BOOL ret = [vvdb begin:VVDBTransactionImmediate];
-    if(ret) {
-        ret = [self.mobileModel insertMulti:array];
-    }
-    if(ret) {
-        [vvdb commit];
-    }else{
-        [vvdb rollback];
-    }
+    BOOL ret = [self.mobileModel insertMulti:array];
     NSLog(@"ret: %@",@(ret));
 }
 
@@ -171,12 +163,12 @@
     config.uniques   = @[@"mobile",@"arr"];
     config.notnulls  = @[@"name",@"arr"];
 
-    VVOrm *personModel1 = [VVOrm ormWithConfig:config tableName:@"persons" dataBase:nil];
+    VVOrm *personModel1 = [VVOrm ormWithConfig:config tableName:@"persons" dataBase:self.vvdb];
     NSUInteger maxrowid = [personModel1 maxRowid];
 //    NSLog(@"%@", personModel);
     NSLog(@"maxrowid: %@", @(maxrowid));
     NSString *sql = @"UPDATE \"persons\" SET \"name\" = \"lisi\" WHERE \"idcard\" = \"123456\"";
-    VVDatabase *vvdb = [personModel1 valueForKey:@"vvdb"];
+    VVDatabase *vvdb = personModel1.vvdb;
     BOOL ret = [vvdb excute:sql];
     NSLog(@"%@",@(ret));
 }
@@ -372,9 +364,9 @@
 
 //MARK: - FTS表
 - (void)testMatch{
-    NSString *keyword = @"181*";
-    NSArray *array1 = [self.ftsModel match:@{@"mobile":keyword} orderBy:@"carrier" limit:10 offset:0];
-    NSArray *array2 = [self.ftsModel match:@{@"mobile":keyword} groupBy:@"carrier" limit:10 offset:0];
+    NSString *keyword = @"180*";
+    NSArray *array1 = [self.ftsModel match:@{@"mobile":keyword} orderBy:nil limit:0 offset:0];
+    NSArray *array2 = [self.ftsModel match:@{@"mobile":keyword} groupBy:nil limit:0 offset:0];
     NSUInteger count = [self.ftsModel matchCount:@{@"mobile":keyword}];
     NSArray *highlighted = [self.ftsModel highlight:array1 field:@"mobile" keyword:keyword attributes:@{NSForegroundColorAttributeName:[UIColor redColor]}];
     if(array1 && array2 && count && highlighted){}

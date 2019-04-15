@@ -177,11 +177,11 @@
     NSString *groupBy = [NSString sqlGroupBy:_groupBy];
     NSString *having = groupBy.length == 0 ? @"" : [NSString sqlHaving:_having];
     NSString *orderBy = [NSString sqlOrderBy:_orderBy];
-    NSString *offset = [self offsetClause];
     NSString *limit = [self limitClause];
+    NSString *offset = [self offsetClause];
     NSString *sql = [NSMutableString stringWithFormat:@"SELECT %@ %@ FROM \"%@\" %@ %@ %@ %@ %@ %@",
                      _distinct ? @"DISTINCT" : @"", self.fieldsString, _table,
-                     where, groupBy, having, orderBy, offset, limit].strip;
+                     where, groupBy, having, orderBy, limit, offset].strip;
     return sql;
 }
 
