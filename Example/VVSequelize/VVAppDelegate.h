@@ -2,8 +2,8 @@
 //  VVAppDelegate.h
 //  VVSequelize
 //
-//  Created by Valo Lee on 06/06/2018.
-//  Copyright (c) 2018 Valo Lee. All rights reserved.
+//  Created by Valo on 03/13/2019.
+//  Copyright (c) 2019 Valo. All rights reserved.
 //
 
 @import UIKit;
