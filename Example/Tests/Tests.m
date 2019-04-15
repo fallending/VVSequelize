@@ -54,7 +54,8 @@
     ftsConfig.fts = YES;
     ftsConfig.ftsModule = @"fts5";
     ftsConfig.ftsTokenizer = @"jieba pinyin";
-    
+    ftsConfig.indexes = @[@"mobile", @"industry"];
+
     self.ftsModel = [VVOrm ormWithConfig:ftsConfig tableName:@"fts_mobiles" dataBase:self.vvdb];
     //复制数据到fts表
     NSUInteger count = [self.ftsModel count:nil];
