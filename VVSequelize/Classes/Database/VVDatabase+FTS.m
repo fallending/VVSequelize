@@ -393,12 +393,14 @@ static int vv_fts5_xTokenize(
 
 - (Class<VVFtsTokenizer>)ftsThreeFourTokenizerClassForName:(NSString *)name
 {
-    return _fts3ClassMap[name];
+    NSString *key = [name componentsSeparatedByString:@" "].firstObject;
+    return _fts3ClassMap[key];
 }
 
 - (Class<VVFtsTokenizer>)ftsFiveTokenizerClassForName:(NSString *)name
 {
-    return _fts5ClassMap[name];
+    NSString *key = [name componentsSeparatedByString:@" "].firstObject;
+    return _fts5ClassMap[key];
 }
 
 @end

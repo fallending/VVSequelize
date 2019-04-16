@@ -154,7 +154,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         
         [cls enumerateTokens:pText len:nText locale:nil pinyin:tokenPinyin usingBlock:^(const char *token, int len, int start, int end, BOOL *stop) {
             for (VVFts3Token *kwToken in kwTokens) {
-                if (strcmp(token, kwToken.token) != 0) continue;
+                if (strncmp(token, kwToken.token, kwToken.len) != 0) continue;
                 memcpy(tokenized + start, pText + start, end - start);
             }
         }];

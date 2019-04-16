@@ -370,6 +370,7 @@
     NSArray *array2 = [self.ftsModel match:@{@"mobile":keyword} groupBy:nil limit:0 offset:0];
     NSUInteger count = [self.ftsModel matchCount:@{@"mobile":keyword}];
     NSArray *highlighted = [self.ftsModel highlight:array1 field:@"mobile" keyword:keyword attributes:@{NSForegroundColorAttributeName:[UIColor redColor]}];
+    NSLog(@"%@",highlighted.firstObject);
     if(array1 && array2 && count && highlighted){}
 }
 @end
