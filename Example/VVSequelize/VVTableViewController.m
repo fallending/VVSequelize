@@ -74,17 +74,6 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     self.selectedIndex = 0;
     
     [VVDatabase lazyLoadTokenizers];
-    /*
-     [VVDB setTrace:^(NSString *sql, NSArray *values, id results, NSError *error) {
-     NSLog(@"\n----------VVSequelize----------\n"
-     "sql    : %@\n"
-     "values : %@\n"
-     "results: %@\n"
-     "error  : %@\n"
-     @"-------------------------------\n",
-     sql, values, results, error);
-     }];
-     */
     
     //db
     NSString *dir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
@@ -110,7 +99,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         item.dbName = normal;
         item.dbPath = [dir stringByAppendingPathComponent:item.dbName];
         item.db = [VVDatabase databaseWithPath:item.dbPath];
-        VVOrmConfig *config = [VVOrmConfig configFromClass:VVMessage.class];
+        VVOrmConfig *config = [VVOrmConfig configWithClass:VVMessage.class];
         config.primaries = @[@"message_id"];
         config.pkAutoIncrement = YES;
         item.orm = [VVOrm ormWithConfig:config tableName:item.tableName dataBase:item.db];
@@ -128,7 +117,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
             return 0;
         }];
         
-        VVOrmConfig *ftsConfig = [VVOrmConfig configFromClass:VVMessage.class];
+        VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
         ftsConfig.fts = YES;
         ftsConfig.ftsModule = @"fts5";
         ftsConfig.ftsTokenizer = @"jieba pinyin";
@@ -297,7 +286,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     [self updateUIWithAction:NO isSearch:YES logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
-        NSArray *messages = [item.orm findAll:[@"info" like:keyword]];
+        NSArray *messages = [item.orm findAll:@"info".like(keyword)];
         CFAbsoluteTime end = CFAbsoluteTimeGetCurrent();
         NSString *string = [NSString stringWithFormat:@"[query] normal: \"%@\", hit: %@, consumed: %@",
                             text, @(messages.count), @(end - begin)];
@@ -318,7 +307,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     [self updateUIWithAction:NO isSearch:YES logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
-        NSArray *messages = [item.ftsOrm findAll:[@"info" match:keyword]];
+        NSArray *messages = [item.ftsOrm findAll:@"info".match(keyword)];
         //        NSArray *messages = [item.ftsOrm match:[@"info" match:keyword] highlight:@"info" attributes:@{NSForegroundColorAttributeName:UIColor.redColor} orderBy:nil limit:0 offset:0];
         CFAbsoluteTime end = CFAbsoluteTimeGetCurrent();
         NSString *string = [NSString stringWithFormat:@"[query] fts: \"%@\", hit: %@, consumed: %@",

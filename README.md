@@ -59,13 +59,13 @@
 
 普通表配置:
 ```objc
-    VVOrmConfig *config = [VVOrmConfig configFromClass:VVTestMobile.class];
+    VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
 ``` 
 
 Fts表配置
 ```objc
-    VVOrmConfig *ftsConfig = [VVOrmConfig configFromClass:VVTestMobile.class];
+    VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVTestMobile.class];
     ftsConfig.fts = YES;
     ftsConfig.ftsModule = @"fts5";
     ftsConfig.ftsTokenizer = @"jieba pinyin";

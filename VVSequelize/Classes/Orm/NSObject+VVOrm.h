@@ -161,148 +161,148 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  使用`and`连接
  
- @param andstr 要连接的字符串
+ @note value 要连接的字符串或值
  @return 连接后的语句,如: `(field1 = val1) AND (field2 = val2)`
  */
-- (NSString *)and:(NSString *)andstr;
+- (NSString *(^)(id value))and;
 
 /**
  使用`or`连接
  
- @param orstr 要连接的字符串
+ @note value 要连接的字符串或值
  @return 连接后的语句,如: `(field1 = val1) OR (field2 = val2)`
  */
-- (NSString *)or:(NSString *)orstr;
+- (NSString *(^)(id value))or;
 
 /**
  使用`=`连接
  
- @param eq 等于的值
- @return 连接后的语句,如: `field1 = val1`
+ @note value 等于的值
+ @return 连接后的语句,如: `field1 = value`
  */
-- (NSString *)eq:(id)eq;
+- (NSString *(^)(id value))eq;
 
 /**
  使用`!=`连接
  
- @param ne 不等于的值
- @return 连接后的语句,如: `field1 != val1`
+ @note value 不等于的值
+ @return 连接后的语句,如: `field1 != value`
  */
-- (NSString *)ne:(id)ne;
+- (NSString *(^)(id value))ne;
 
 /**
  使用`>`连接
  
- @param gt 大于的值
- @return 连接后的语句,如: `field1 > val1`
+ @note value 大于的值
+ @return 连接后的语句,如: `field1 > value`
  */
-- (NSString *)gt:(id)gt;
+- (NSString *(^)(id value))gt;
 
 /**
  使用`>=`连接
  
- @param gte 大于等于的值
- @return 连接后的语句,如: `field1 >= val1`
+ @note value 大于等于的值
+ @return 连接后的语句,如: `field1 >= value`
  */
-- (NSString *)gte:(id)gte;
+- (NSString *(^)(id value))gte;
 
 /**
  使用`<`连接
  
- @param lt 小于的值
- @return 连接后的语句,如: `field1 < val1`
+ @note value 小于的值
+ @return 连接后的语句,如: `field1 < value`
  */
-- (NSString *)lt:(id)lt;
+- (NSString *(^)(id value))lt;
 
 /**
  使用`<=`连接
  
- @param lte 小于等于的值
- @return 连接后的语句,如: `field1 <= val1`
+ @note value 小于等于的值
+ @return 连接后的语句,如: `field1 <= value`
  */
-- (NSString *)lte:(id)lte;
+- (NSString *(^)(id value))lte;
 
 /**
  使用`is not`连接
  
- @param notval 不等同的值
- @return 连接后的语句,如: `field1 IS NOT val1`
+ @note value 不等同的值
+ @return 连接后的语句,如: `field1 IS NOT value`
  */
-- (NSString *)not:(id)notval;
+- (NSString *(^)(id value))not;
 
 /**
  使用`between`连接
  
- @param val1 between的前值
- @param val2 between的后值
- @return 连接后的语句,如: `field1 BETWEEN val1,val2`
+ @note value1 between的前值
+ @note value2 between的后值
+ @return 连接后的语句,如: `field1 BETWEEN value1,value2`
  */
-- (NSString *)between:(id)val1 _:(id)val2;
+- (NSString *(^)(id value, id value2))between;
 
 /**
  使用`not between`连接
  
- @param val1 not between的前值
- @param val2 not between的后值
- @return 连接后的语句,如: `field1 NOT BETWEEN val1,val2`
+ @note value1 not between的前值
+ @note value2 not between的后值
+ @return 连接后的语句,如: `field1 NOT BETWEEN value1,value2`
  */
-- (NSString *)notBetween:(id)val1 _:(id)val2;
+- (NSString *(^)(id value1, id value2))notBetween;
 
 /**
  使用`in`连接
  
- @param array 包含的值
- @return 连接后的语句,如: `field1 IN (val1,val2,...)`
+ @note array 包含的值
+ @return 连接后的语句,如: `field1 IN (value1,value2,...)`
  */
-- (NSString *)in:(id)array;
+- (NSString *(^)(NSArray *array))in;
 
 /**
  使用`not in`连接
  
- @param array 不包含的值
- @return 连接后的语句,如: `field1 NOT IN (val1,val2,...)`
+ @note array 不包含的值
+ @return 连接后的语句,如: `field1 NOT IN (value1,value2,...)`
  */
-- (NSString *)notIn:(NSArray *)array;
+- (NSString *(^)(NSArray *array))notIn;
 
 /**
  使用`like`连接
  
- @param like 模糊匹配的值,支持 % 和 _
- @return 连接后的语句,如: `field1 LIKE "val1"`
+ @note value 模糊匹配的值,支持 % 和 _
+ @return 连接后的语句,如: `field1 LIKE "value"`
  */
-- (NSString *)like:(id)like;
+- (NSString *(^)(id value))like;
 
 /**
  使用`not like`连接
  
- @param notLike 模糊不匹配的值,支持 % 和 _
- @return 连接后的语句,如: `field1 NOT LIKE "val1"`
+ @note value 模糊不匹配的值,支持 % 和 _
+ @return 连接后的语句,如: `field1 NOT LIKE "value"`
  */
-- (NSString *)notLike:(id)notLike;
+- (NSString *(^)(id value))notLike;
 
 /**
  使用`glob`连接
  
- @param glob 模糊匹配的值,支持 * 和 ?
- @return 连接后的语句,如: `field1 GLOB "val1"`
+ @note value 模糊匹配的值,支持 * 和 ?
+ @return 连接后的语句,如: `field1 GLOB "value"`
  */
-- (NSString *)glob:(id)glob;
+- (NSString *(^)(id value))glob;
 
 /**
  使用`not glob`连接
  
- @param notGlob 模糊不匹配的值,支持 * 和 ?
- @return 连接后的语句,如: `field1 NOT GLOB "val1"`
+ @note value 模糊不匹配的值,支持 * 和 ?
+ @return 连接后的语句,如: `field1 NOT GLOB "value"`
  */
-- (NSString *)notGlob:(id)notGlob;
+- (NSString *(^)(id value))notGlob;
 
 /**
  使用`match`连接
  
- @param match FTS全文搜索匹配的值,支持 * 和 ?
- @return 连接后的语句,如: `tableName match "val1"`
+ @note value FTS全文搜索匹配的值,支持 * 和 ?
+ @return 连接后的语句,如: `tableName match "value"`
  */
-- (NSString *)match:(id)match;
+- (NSString *(^)(id value))match;
 
 /**
  生成order by子句, 不含`order by`关键字

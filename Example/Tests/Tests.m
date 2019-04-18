@@ -47,14 +47,10 @@
     
     [self.vvdb registerFtsFiveTokenizer:VVFtsJiebaTokenizer.class forName:@"jieba"];
     
-    VVOrmConfig *config = [VVOrmConfig configFromClass:VVTestMobile.class];
+    VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
     self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
-    VVOrmConfig *ftsConfig = [VVOrmConfig configFromClass:VVTestMobile.class];
-    ftsConfig.fts = YES;
-    ftsConfig.ftsModule = @"fts5";
-    ftsConfig.ftsTokenizer = @"jieba pinyin";
-    ftsConfig.indexes = @[@"mobile", @"industry"];
+    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:@"jieba pinyin" indexes: @[@"mobile", @"industry"]];
 
     self.ftsModel = [VVOrm ormWithConfig:ftsConfig tableName:@"fts_mobiles" dataBase:self.vvdb];
     //复制数据到fts表
@@ -159,7 +155,7 @@
 }
 
 - (void)testOrmModel{
-    VVOrmConfig *config = [VVOrmConfig configFromClass:VVTestPerson.class];
+    VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestPerson.class];
     config.primaries = @[@"idcard"];
     config.uniques   = @[@"mobile",@"arr"];
     config.notnulls  = @[@"name",@"arr"];
@@ -177,13 +173,13 @@
 - (void)testClause{
     VVSelect *select =  [VVSelect new];
     select.table(@"mobiles");
-    select.where([[[@"relative" lt:@(0.3)] and:[@"mobile" gte:@(16000000000)]] and: [@"times" gte:@(0)]]);
+    select.where(@"relative".lt(@(0.3)).and(@"mobile".gte(@(1600000000))).and(@"times".gte(@(0))));
     NSLog(@"%@", select.sql);
     select.where(@{@"city":@"西安", @"relative":@(0.3)});
     NSLog(@"%@", select.sql);
     select.where(@[@{@"city":@"西安", @"relative":@(0.3)},@{@"relative":@(0.7)}]);
     NSLog(@"%@", select.sql);
-    select.where([@"relative" lt:@(0.3)]);
+    select.where(@"relative".lt(@(0.3)));
     NSLog(@"%@", select.sql);
     select.where(@"     where relative < 0.3");
     NSLog(@"%@", select.sql);
@@ -193,7 +189,7 @@
     NSLog(@"%@", select.sql);
     select.groupBy(@" group by city carrier");
     NSLog(@"%@", select.sql);
-    select.having([@"relative" lt:@(0.2)]);
+    select.having(@"relative".lt(@(0.2)));
     NSLog(@"%@", select.sql);
     select.groupBy(nil);
     NSLog(@"%@", select.sql);
@@ -248,7 +244,7 @@
     NSLog(@"dic: %@",oneDic);
     VVTestOne *nOne = [VVTestOne vv_objectWithKeyValues:oneDic];
     NSLog(@"obj: %@",nOne);
-    VVOrmConfig *config = [VVOrmConfig configFromClass:VVTestOne.class];
+    VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestOne.class];
     config.primaries = @[@"oneId"];
     VVOrm *orm = [VVOrm ormWithConfig:config];
     [orm upsertOne:one];
@@ -281,7 +277,7 @@
     NSLog(@"mix: %@", mixkvs);
     VVTestMix *mix2 = [VVTestMix vv_objectWithKeyValues:mixkvs];
     NSLog(@"mix2: %@",mix2);
-    VVOrmConfig *config = [VVOrmConfig configFromClass:VVTestMix.class];
+    VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMix.class];
     config.primaries = @[@"num"];
     VVOrm *orm = [VVOrm ormWithConfig:config];
     [orm upsertOne:mix];
@@ -370,7 +366,6 @@
     NSArray *array2 = [self.ftsModel match:@{@"mobile":keyword} groupBy:nil limit:0 offset:0];
     NSUInteger count = [self.ftsModel matchCount:@{@"mobile":keyword}];
     NSArray *highlighted = [self.ftsModel highlight:array1 field:@"mobile" keyword:keyword attributes:@{NSForegroundColorAttributeName:[UIColor redColor]}];
-    NSLog(@"%@",highlighted.firstObject);
     if(array1 && array2 && count && highlighted){}
 }
 @end

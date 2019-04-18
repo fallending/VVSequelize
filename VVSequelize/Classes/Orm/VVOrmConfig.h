@@ -18,7 +18,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 
 //MARK: fts表配置相关
 @property (nonatomic, assign) BOOL fts;              ///< 是否FTS表,默认为NO
-@property (nonatomic, copy) NSString *ftsModule;     ///< FTS模块:fts3,fts4,fts5...默认为fts4
+@property (nonatomic, copy) NSString *ftsModule;     ///< FTS模块:fts3,fts4,fts5...默认为fts5
 @property (nonatomic, copy) NSString *ftsTokenizer;  ///< FTS分词器:porter,unicode61,icu,...
 
 //MARK: 创建表时使用的参数,可设置
@@ -49,12 +49,26 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
                        database:(VVDatabase *)vvdb;
 
 /**
- 初始化ORM配置
+ 创建ORM配置
  
  @param cls 数据表要存储的类
  @return ORM配置
  */
-+ (instancetype)configFromClass:(Class)cls;
++ (instancetype)configWithClass:(Class)cls;
+
+/**
+ 创建ORM配置
+ 
+ @param cls 数据表要存储的类
+ @param module fts模块:fts3,fts4,fts5...默认为fts5
+ @param tokenizer FTS分词器:porter,unicode61,icu,需在database注册
+ @param indexes 需要全文索引的字段,仅在fts4以上版本有效,
+ @return ORM配置
+ */
++ (instancetype)ftsConfigWithClass:(Class)cls
+                            module:(NSString *)module
+                         tokenizer:(NSString *)tokenizer
+                           indexes:(NSArray<NSString *> *)indexes;
 
 /**
  处理配置.去重,处理黑白名单等.

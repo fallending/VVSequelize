@@ -226,7 +226,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     return config;
 }
 
-+ (instancetype)configFromClass:(Class)cls
++ (instancetype)configWithClass:(Class)cls
 {
     if (!cls) return nil;
     VVOrmConfig *config = [[VVOrmConfig alloc] init];
@@ -242,6 +242,19 @@ NSString *const VVSqlTypeReal = @"REAL";
     return config;
 }
 
++ (instancetype)ftsConfigWithClass:(Class)cls
+                            module:(NSString *)module
+                         tokenizer:(NSString *)tokenizer
+                           indexes:(NSArray<NSString *> *)indexes
+{
+    VVOrmConfig *config = [VVOrmConfig configWithClass:cls];
+    config.fts = YES;
+    config.ftsModule = module;
+    config.ftsTokenizer = tokenizer;
+    config.indexes = indexes;
+    return config;
+}
+
 //MARK: - setter/geter
 - (NSUInteger)ftsVersion
 {
@@ -251,6 +264,14 @@ NSString *const VVSqlTypeReal = @"REAL";
         if ([self.ftsModule isMatch:@"fts5"]) _ftsVersion = 5;
     }
     return _ftsVersion;
+}
+
+- (NSString *)ftsModule
+{
+    if (!_ftsModule) {
+        _ftsModule = @"fts5";
+    }
+    return _ftsModule;
 }
 
 //MAKR: - public
@@ -367,7 +388,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSString *format = self.ftsVersion < 5 ? @", tokenize=%@" : @", tokenize='%@'";
     NSString *tokenize = _ftsTokenizer.length > 0 ? [NSString stringWithFormat:format, _ftsTokenizer] : @"";
     return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS \"%@\" USING %@(%@ %@)",
-            tableName, _ftsModule, sql, tokenize].strip;
+            tableName, self.ftsModule, sql, tokenize].strip;
 }
 
 // MARK: - Utils

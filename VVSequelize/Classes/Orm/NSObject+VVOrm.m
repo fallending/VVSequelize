@@ -52,7 +52,7 @@
 {
     NSMutableString *where = [NSMutableString stringWithCapacity:0];
     for (NSString *key in self) {
-        [where appendFormat:@"%@ AND ", [key eq:self[key]]];
+        [where appendFormat:@"%@ AND ", key.eq(self[key])];
     }
     if (where.length >= 5) {
         [where deleteCharactersInRange:NSMakeRange(where.length - 5, 5)];
@@ -64,7 +64,7 @@
 {
     NSMutableString *where = [NSMutableString stringWithCapacity:0];
     for (NSString *key in self) {
-        [where appendFormat:@"%@ AND ", [key match:self[key]]];
+        [where appendFormat:@"%@ AND ", key.match(self[key])];
     }
     if (where.length >= 5) {
         [where deleteCharactersInRange:NSMakeRange(where.length - 5, 5)];
@@ -185,94 +185,130 @@
 }
 
 // MARK: - where
-- (NSString *)and:(NSString *)andstr
+- (NSString *(^)(id))and
 {
-    return [NSString stringWithFormat:@"%@ AND %@", self, andstr];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ AND %@", self, value];
+    };
 }
 
-- (NSString *)or:(NSString *)orstr
+- (NSString *(^)(id))or
 {
-    return [NSString stringWithFormat:@"(%@) OR (%@)", self, orstr];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"(%@) OR (%@)", self, value];
+    };
 }
 
-- (NSString *)eq:(id)eq
+- (NSString *(^)(id))eq
 {
-    return [self stringByAppendingFormat:@" = \"%@\"", eq];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ = \"%@\"", self, value];
+    };
 }
 
-- (NSString *)ne:(id)ne
+- (NSString *(^)(id))ne
 {
-    return [self stringByAppendingFormat:@" != \"%@\"", ne];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ != \"%@\"", self, value];
+    };
 }
 
-- (NSString *)gt:(id)gt
+- (NSString *(^)(id))gt
 {
-    return [self stringByAppendingFormat:@" > \"%@\"", gt];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ > \"%@\"", self, value];
+    };
 }
 
-- (NSString *)gte:(id)gte
+- (NSString *(^)(id))gte
 {
-    return [self stringByAppendingFormat:@" >= \"%@\"", gte];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ >= \"%@\"", self, value];
+    };
 }
 
-- (NSString *)lt:(id)lt
+- (NSString *(^)(id))lt
 {
-    return [self stringByAppendingFormat:@" < \"%@\"", lt];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ < \"%@\"", self, value];
+    };
 }
 
-- (NSString *)lte:(id)lte
+- (NSString *(^)(id))lte
 {
-    return [self stringByAppendingFormat:@" <= \"%@\"", lte];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ <= \"%@\"", self, value];
+    };
 }
 
-- (NSString *)not:(id)notval
+- (NSString *(^)(id))not
 {
-    return [self stringByAppendingFormat:@" IS NOT \"%@\"", notval];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ IS NOT \"%@\"", self, value];
+    };
 }
 
-- (NSString *)between:(id)val1 _:(id)val2
+- (NSString *(^)(id, id))between
 {
-    return [self stringByAppendingFormat:@" BETWEEN \"%@\",\"%@\"", val1, val2];
+    return ^(id value1, id value2) {
+        return [NSString stringWithFormat:@"%@ BETWEEN \"%@\",\"%@\"", self, value1, value2];
+    };
 }
 
-- (NSString *)notBetween:(id)val1 _:(id)val2
+- (NSString *(^)(id, id))notBetween
 {
-    return [self stringByAppendingFormat:@" NOT BETWEEN \"%@\",\"%@\"", val1, val2];
+    return ^(id value1, id value2) {
+        return [NSString stringWithFormat:@"%@ NOT BETWEEN \"%@\",\"%@\"", self, value1, value2];
+    };
 }
 
-- (NSString *)in:(NSArray *)array
+- (NSString *(^)(NSArray *))in
 {
-    return [self stringByAppendingFormat:@" IN (%@)", [array sqlJoin]];
+    return ^(NSArray *array) {
+        return [NSString stringWithFormat:@"%@ IN (%@)", self, [array sqlJoin]];
+    };
 }
 
-- (NSString *)notIn:(NSArray *)array
+- (NSString *(^)(NSArray *))notIn
 {
-    return [self stringByAppendingFormat:@" NOT IN (%@)", [array sqlJoin]];
+    return ^(NSArray *array) {
+        return [NSString stringWithFormat:@"%@ NOT IN (%@)", self, [array sqlJoin]];
+    };
 }
 
-- (NSString *)like:(id)like
+- (NSString *(^)(id))like
 {
-    return [self stringByAppendingFormat:@" LIKE \"%@\"", like];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ LIKE \"%@\"", self, value];
+    };
 }
 
-- (NSString *)notLike:(id)notLike
+- (NSString *(^)(id))notLike
 {
-    return [self stringByAppendingFormat:@" NOT LIKE \"%@\"", notLike];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ NOT LIKE \"%@\"", self, value];
+    };
 }
 
-- (NSString *)glob:(id)glob
+- (NSString *(^)(id))glob
 {
-    return [self stringByAppendingFormat:@" GLOB \"%@\"", glob];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ GLOB \"%@\"", self, value];
+    };
 }
 
-- (NSString *)notGlob:(id)notGlob
+- (NSString *(^)(id))notGlob
 {
-    return [self stringByAppendingFormat:@" NOT GLOB \"%@\"", notGlob];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ NOT GLOB \"%@\"", self, value];
+    };
 }
 
-- (NSString *)match:(id)match
+- (NSString *(^)(id))match
 {
-    return [self stringByAppendingFormat:@" MATCH \"%@\"", match];
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ MATCH \"%@\"", self, value];
+    };
 }
 
 - (NSString *)asc
