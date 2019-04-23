@@ -190,7 +190,6 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     }
     if (props) {
         free(props);
-        props = NULL;
     }
     return dic;
 }

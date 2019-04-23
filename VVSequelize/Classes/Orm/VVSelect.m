@@ -6,7 +6,6 @@
 //
 
 #import "VVSelect.h"
-#import "VVOrm.h"
 #import "NSObject+VVKeyValue.h"
 #import "NSObject+VVOrm.h"
 

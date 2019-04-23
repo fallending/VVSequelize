@@ -22,13 +22,13 @@
         uint32_t end = offset + len;
         block(token, (int)len, (int)offset, (int)end, stop);
         if (pinyin && (len % 3 == 0)) {
-            NSString *sub = [NSString stringWithUTF8String:token];
-            NSArray<NSString *> *pinyins = [sub pinyinsForTokenize];
-            for (NSString *pinyin in pinyins) {
-                if (pinyin.length == 0) continue;
-                const char *pinyinToken = pinyin.UTF8String;
-                long pinyinLen = strlen(pinyinToken);
-                block(pinyinToken, (int)pinyinLen, (int)offset, (int)end, stop);
+            NSString *tk = [NSString stringWithUTF8String:token];
+            NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
+            for (NSString *py in pinyins) {
+                if (py.length == 0) continue;
+                const char *pyToken = py.UTF8String;
+                long pyLen = strlen(pyToken);
+                block(pyToken, (int)pyLen, (int)offset, (int)end, stop);
             }
         }
     }];

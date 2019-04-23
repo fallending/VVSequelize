@@ -8,7 +8,6 @@
 
 #import "VVTestClasses.h"
 #import <VVSequelize/VVSequelize.h>
-#import <CoreLocation/CoreLocation.h>
 
 @import XCTest;
 

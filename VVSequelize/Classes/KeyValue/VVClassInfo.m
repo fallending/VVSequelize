@@ -215,7 +215,6 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
     }
     if (attrs) {
         free(attrs);
-        attrs = NULL;
     }
     _keyword = keyword;
     
@@ -285,7 +284,6 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
     }
     if (properties) {
         free(properties);
-        properties = NULL;
     }
     _propertyInfos = propertyInfos;
 }

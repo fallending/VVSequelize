@@ -9,7 +9,6 @@
 #import <CocoaLumberjack/CocoaLumberjack.h>
 #import <VVSequelize/VVSequelize.h>
 #import "VVTableViewController.h"
-#import "VVMock.h"
 #import "VVItem.h"
 #import "VVMessage.h"
 

@@ -6,10 +6,8 @@
 //
 
 #import "VVJieba.h"
-#include <stdio.h>
 #include <string>
 #include <vector>
-#include <iostream>
 #include "core/Jieba.hpp"
 
 using namespace cppjieba;

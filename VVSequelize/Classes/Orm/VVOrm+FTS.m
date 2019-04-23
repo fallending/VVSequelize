@@ -7,7 +7,6 @@
 
 #import "VVOrm+FTS.h"
 #import "VVSelect.h"
-#import "VVOrm+Retrieve.h"
 #import "NSObject+VVOrm.h"
 #import "VVDatabase+FTS.h"
 #import "VVFtsTokenizer.h"

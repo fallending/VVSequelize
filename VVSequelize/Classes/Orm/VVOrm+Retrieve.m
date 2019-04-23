@@ -7,8 +7,6 @@
 
 #import "VVOrm+Retrieve.h"
 #import "VVSelect.h"
-#import "NSObject+VVKeyValue.h"
-#import "NSObject+VVOrm.h"
 
 @implementation VVOrm (Retrieve)
 

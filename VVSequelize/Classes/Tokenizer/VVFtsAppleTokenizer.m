@@ -26,7 +26,7 @@
         NSLocale *nsLocale = [[NSLocale alloc] initWithLocaleIdentifier:identifer];
         cfLocale = (__bridge CFLocaleRef)nsLocale;
     }
-    if (!locale) {
+    if (!cfLocale) {
         cfLocale = CFLocaleCopyCurrent();
     }
     
@@ -48,13 +48,13 @@
         int end = (int)(start + len);
         block(token, len, start, end, &stop);
         if (pinyin && (len % 3 == 0)) {
-            NSString *sub = [NSString stringWithUTF8String:token];
-            NSArray<NSString *> *pinyins = [sub pinyinsForTokenize];
-            for (NSString *pinyin in pinyins) {
-                if (pinyin.length == 0) continue;
-                const char *pinyinToken = pinyin.UTF8String;
-                int pinyinLen = (int)strlen(pinyinToken);
-                block(pinyinToken, pinyinLen, start, end, &stop);
+            NSString *tk = [NSString stringWithUTF8String:token];
+            NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
+            for (NSString *py in pinyins) {
+                if (py.length == 0) continue;
+                const char *pyToken = py.UTF8String;
+                int pyLen = (int)strlen(pyToken);
+                block(pyToken, pyLen, start, end, &stop);
             }
         }
         //获取当前进程
@@ -63,7 +63,7 @@
     
     //释放
     if(cfLocale != NULL) CFRelease(cfLocale);
-    CFRelease(tokenizer);
+    if(tokenizer) CFRelease(tokenizer);
 }
 
 @end

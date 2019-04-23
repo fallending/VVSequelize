@@ -78,7 +78,7 @@
 - (NSUInteger)updateMulti:(NSArray *)objects fields:(nullable NSArray<NSString *> *)fields
 {
     __block NSUInteger count = 0;
-    return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
+    [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         for (id object in objects) {
             if ([self _updateOne:object fields:fields]) { count++; }
         }

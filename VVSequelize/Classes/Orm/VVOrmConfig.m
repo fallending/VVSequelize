@@ -213,8 +213,8 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");", tableName];
     NSArray *infos = [vvdb query:tableInfoSql];
     
-    for (NSDictionary *dic in infos) {
-        NSString *name = dic[@"name"];
+    for (NSDictionary *info in infos) {
+        NSString *name = info[@"name"];
         NSString *regex = ftsVersion == 5 ? [NSString stringWithFormat:@"\"%@\" +UNINDEXED", name] : [NSString stringWithFormat:@"notindexed *= *\"%@\"", name];
         if (![tableSQL isMatch:regex]) {
             [indexes addObject:name];

@@ -9,4 +9,8 @@
 
 @implementation VVFts3Token
 
+- (void)dealloc{
+    free((void *)_token);
+}
+
 @end

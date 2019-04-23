@@ -121,7 +121,7 @@
 
 - (BOOL)run
 {
-    int rc = -1;
+    int rc;
     do {
         rc = sqlite3_step(_stmt);
     } while (rc == SQLITE_ROW);
@@ -139,7 +139,7 @@
     if (columnCount == 0) return @[];
     
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-    BOOL rc = YES;
+    BOOL rc;
     do {
         rc = [self step];
         if (rc) {

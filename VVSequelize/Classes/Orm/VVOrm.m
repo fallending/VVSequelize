@@ -8,10 +8,6 @@
 #import "VVOrm.h"
 #import "NSObject+VVOrm.h"
 
-@interface VVOrm ()
-@property (nonatomic, copy) void (^ upgradeHandler)(void);
-@end
-
 @implementation VVOrm
 
 //MARK: - Public
