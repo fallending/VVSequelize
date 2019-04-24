@@ -21,6 +21,7 @@
 * [x] OrmModel查询缓存
 * [x] FTS全文搜索
 * [x] 自定义FTS分词器
+* [x] 支持拼音分词
 
 ## 改动(0.3.0-beta4)
 1. 优化结构
@@ -36,10 +37,6 @@
 使用测试版本:
 ```ruby
     pod 'VVSequelize', :git => 'https://github.com/pozi119/VVSequelize.git'
-```
-使用稳定版本:
-```ruby
-    pod 'VVSequelize', '0.2.1'
 ```
 ## 注意
 1. 子对象会保存成为Json字符串,子对象内的NSData也会保存为16进制字符串.
@@ -71,9 +68,14 @@ Fts表配置
     ftsConfig.ftsTokenizer = @"jieba pinyin";
     ftsConfig.indexes = @[@"mobile", @"industry"];
 ```
+或者
+```objc
+    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVMessage.class module:@"fts5" tokenizer:@"jieba pinyin" indexes:@[@"info"]];
+```
 **FTS表配置特别注意**:
 * 需设置`ftsConfig.fts=YES`,否则视为普通表.
-* fts3以上版本需设置索引字段`ftsConfig.indexes`,否则不会缩影任何字段,无法搜索
+* fts3以上版本(fts4,fts5)需设置索引字段`ftsConfig.indexes`,否则不会索引任何字段,无法搜索
+* ftsTokenizer传入参数`pinyin`,表示该表支持拼音分词,因为多音字的问题,目前只支持5个汉字以内的拼音分词
 
 ### 定义ORM模型 
 可自定义表名和存放的数据库文件.
@@ -91,8 +93,11 @@ Fts表配置
 
 ```objc
     NSInteger count = [self.mobileModel count:nil];
+    
     BOOL ret = [self.mobileModel increase:nil field:@"times" value:-1];
+    
     NSArray *array = [self.mobileModel findAll:nil orderBy:nil limit:10 offset:0];
+    
 ...
 ```
 
