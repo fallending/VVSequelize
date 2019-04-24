@@ -9,6 +9,7 @@
 
 static NSString *const kVVPinYinResourceBundle = @"VVPinYin.bundle";
 static NSString *const kVVPinYinResourceFile = @"polyphone.plist";
+static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 
 @interface VVPinYin : NSObject
 @property (nonatomic, strong) NSCache *cache;
@@ -52,6 +53,11 @@ static NSString *const kVVPinYinResourceFile = @"polyphone.plist";
 @end
 
 @implementation NSString (Tokenizer)
+
++ (void)setMaxSupportLengthOfPolyphone:(NSUInteger)maxSupportLength
+{
+    _kVVMaxSupportLengthOfPolyphone = maxSupportLength;
+}
 
 - (BOOL)hasChinese
 {
@@ -112,7 +118,7 @@ static NSString *const kVVPinYinResourceFile = @"polyphone.plist";
 
 - (NSDictionary<NSNumber *, NSArray *> *)polyphonePinyins
 {
-    if (self.length > 4) return nil;
+    if (self.length > _kVVMaxSupportLengthOfPolyphone) return nil;
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
     for (NSUInteger i = 0; i < self.length; i++) {
         dic[@(i)] = [self polyphonePinyinsAtIndex:i];
@@ -123,10 +129,11 @@ static NSString *const kVVPinYinResourceFile = @"polyphone.plist";
 + (NSArray<NSArray *> *)flatten:(NSArray *)pinyins polyphones:(NSDictionary<NSNumber *, NSArray *> *)polyphones
 {
     if (polyphones.count == 0) return @[pinyins];
+    NSUInteger chineseCount = pinyins.count;
     __block NSMutableArray *array = [@[pinyins] mutableCopy];
     [polyphones enumerateKeysAndObjectsUsingBlock:^(NSNumber *key, NSArray *polyPinyins, BOOL *stop) {
         NSUInteger idx = key.unsignedIntegerValue;
-        if (idx > array.count) {
+        if (idx >= chineseCount) {
             *stop = YES;
             return;
         }

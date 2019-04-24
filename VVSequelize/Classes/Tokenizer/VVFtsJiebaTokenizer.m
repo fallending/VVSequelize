@@ -21,7 +21,7 @@
     [VVJieba enumerateTokens:pText usingBlock:^(const char *token, uint32_t offset, uint32_t len, BOOL *stop) {
         uint32_t end = offset + len;
         block(token, (int)len, (int)offset, (int)end, stop);
-        if (pinyin && (len % 3 == 0)) {
+        if (pinyin) {
             NSString *tk = [NSString stringWithUTF8String:token];
             NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
             for (NSString *py in pinyins) {

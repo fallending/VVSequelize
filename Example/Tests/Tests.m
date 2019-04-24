@@ -367,5 +367,11 @@
     NSArray *highlighted = [self.ftsModel highlight:array1 field:@"mobile" keyword:keyword attributes:@{NSForegroundColorAttributeName:[UIColor redColor]}];
     if(array1 && array2 && count && highlighted){}
 }
+
+- (void)testPinyin{
+    NSArray *array = [@"成都曾经" pinyinsForTokenize];
+    NSLog(@"array: %@", array);
+}
+
 @end
 

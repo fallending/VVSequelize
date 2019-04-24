@@ -35,7 +35,7 @@
                 int len   = (int)strlen(token);
                 int end   = (int)(start + len);
                 block(token, len, start, end, stop);
-                if (pinyin && (len % 3 == 0)) {
+                if (pinyin) {
                     NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
                     for (NSString *py in pinyins) {
                         if (py.length == 0) continue;

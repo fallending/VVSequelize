@@ -47,7 +47,7 @@
         int len = (int)strlen(token);
         int end = (int)(start + len);
         block(token, len, start, end, &stop);
-        if (pinyin && (len % 3 == 0)) {
+        if (pinyin) {
             NSString *tk = [NSString stringWithUTF8String:token];
             NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
             for (NSString *py in pinyins) {
