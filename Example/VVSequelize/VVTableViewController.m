@@ -119,7 +119,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
         ftsConfig.fts = YES;
         ftsConfig.ftsModule = @"fts5";
-        ftsConfig.ftsTokenizer = @"jieba pinyin";
+        ftsConfig.ftsTokenizer = @"jieba zh_CN pinyin 9";
         ftsConfig.indexes = @[@"info"];
         item.ftsOrm = [VVOrm ormWithConfig:ftsConfig tableName:item.tableName dataBase:item.ftsDb];
         

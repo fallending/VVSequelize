@@ -30,23 +30,23 @@ typedef struct sqlite3_tokenizer_cursor   sqlite3_tokenizer_cursor;
 struct sqlite3_tokenizer_module {
     int iVersion;
     int (*xCreate)(
-                   int               argc,                         /* Size of argv array */
-                   const char *const *argv,                        /* Tokenizer argument strings */
-                   sqlite3_tokenizer **ppTokenizer                 /* OUT: Created tokenizer */
+                   int               argc,              /* Size of argv array */
+                   const char *const *argv,             /* Tokenizer argument strings */
+                   sqlite3_tokenizer **ppTokenizer      /* OUT: Created tokenizer */
                    );
     int (*xDestroy)(sqlite3_tokenizer *pTokenizer);
     int (*xOpen)(
-                 sqlite3_tokenizer *pTokenizer,                  /* Tokenizer object */
-                 const char *pInput, int nBytes,                 /* Input buffer */
-                 sqlite3_tokenizer_cursor **ppCursor             /* OUT: Created tokenizer cursor */
+                 sqlite3_tokenizer *pTokenizer,         /* Tokenizer object */
+                 const char *pInput, int nBytes,        /* Input buffer */
+                 sqlite3_tokenizer_cursor **ppCursor    /* OUT: Created tokenizer cursor */
                  );
     int (*xClose)(sqlite3_tokenizer_cursor *pCursor);
     int (*xNext)(
-                 sqlite3_tokenizer_cursor *pCursor,              /* Tokenizer cursor */
-                 const char **ppToken, int *pnBytes,             /* OUT: Normalized text for token */
-                 int *piStartOffset,                             /* OUT: Byte offset of token in input buffer */
-                 int *piEndOffset,                               /* OUT: Byte offset of end of token in input buffer */
-                 int *piPosition                                 /* OUT: Number of tokens returned before this one */
+                 sqlite3_tokenizer_cursor *pCursor,     /* Tokenizer cursor */
+                 const char **ppToken, int *pnBytes,    /* OUT: Normalized text for token */
+                 int *piStartOffset,                    /* OUT: Byte offset of token in input buffer */
+                 int *piEndOffset,                      /* OUT: Byte offset of end of token in input buffer */
+                 int *piPosition                        /* OUT: Number of tokens returned before this one */
                  );
     int (*xLanguageid)(sqlite3_tokenizer_cursor *pCsr, int iLangid);
     const char *xName;
@@ -57,7 +57,7 @@ struct sqlite3_tokenizer {
 };
 
 struct sqlite3_tokenizer_cursor {
-    sqlite3_tokenizer *pTokenizer;       /* Tokenizer for this cursor. */
+    sqlite3_tokenizer *pTokenizer;            /* Tokenizer for this cursor. */
 };
 
 typedef struct vv_fts3_tokenizer {
@@ -68,11 +68,11 @@ typedef struct vv_fts3_tokenizer {
 } vv_fts3_tokenizer;
 
 typedef struct vv_fts3_tokenizer_cursor {
-    sqlite3_tokenizer_cursor base;
-    const char *pInput;         /* input we are tokenizing */
-    int nBytes;                 /* size of the input */
-    int iToken;                 /* index of current token*/
-    int nToken;                 /* count of token */
+    sqlite3_tokenizer_cursor base;  /* base cursor */
+    const char *pInput;             /* input we are tokenizing */
+    int nBytes;                     /* size of the input */
+    int iToken;                     /* index of current token*/
+    int nToken;                     /* count of token */
     CFArrayRef tokens;
 } vv_fts3_tokenizer_cursor;
 
@@ -116,13 +116,22 @@ static int vv_fts3_create(
     memset(tok->locale, 0x0, 16);
     tok->pinyin = false;
     tok->pinyinMaxLen = 0;
-    if(argc > 0){
-        const char *arg = argv[0];
-        tok->pinyin = strcmp(arg, kPinYinArg) == 0;
-    }
-    if(tok->pinyin && argc > 1){
-        const char *arg = argv[1];
-        tok->pinyinMaxLen = atoi(arg);
+    
+    int idx = -1;
+    for (int i = 0; i < MIN(3, argc); i ++) {
+        const char *arg = argv[i];
+        if(strcmp(arg, kPinYinArg) == 0){
+            idx = i;
+            tok->pinyin = true;
+        }
+        else{
+            if(tok->pinyin && i == idx + 1){
+                tok->pinyinMaxLen = atoi(arg);
+            }
+            else if(i == 0){
+                strncpy(tok->locale, arg, 15);
+            }
+        }
     }
     if(tok->pinyin && tok->pinyinMaxLen <= 0){
         tok->pinyinMaxLen = TOKEN_PINYIN_MAX_LENGTH;
@@ -139,9 +148,9 @@ static int vv_fts3_destroy(sqlite3_tokenizer *pTokenizer)
 }
 
 static int vv_fts3_open(
-                        sqlite3_tokenizer *pTokenizer,                                                                     /* The tokenizer */
-                        const char *pInput, int nBytes,                                                                    /* String to be tokenized */
-                        sqlite3_tokenizer_cursor **ppCursor                                                                /* OUT: Tokenization cursor */
+                        sqlite3_tokenizer *pTokenizer,          /* The tokenizer */
+                        const char *pInput, int nBytes,         /* String to be tokenized */
+                        sqlite3_tokenizer_cursor **ppCursor     /* OUT: Tokenization cursor */
 )
 {
     UNUSED_PARAM(pTokenizer);
@@ -198,12 +207,12 @@ static int vv_fts3_close(sqlite3_tokenizer_cursor *pCursor)
 }
 
 static int vv_fts3_next(
-                        sqlite3_tokenizer_cursor *pCursor,                                                              /* Cursor returned by vv_fts3_open */
-                        const char               **ppToken,                                                             /* OUT: *ppToken is the token text */
-                        int                      *pnBytes,                                                              /* OUT: Number of bytes in token */
-                        int                      *piStartOffset,                                                        /* OUT: Starting offset of token */
-                        int                      *piEndOffset,                                                          /* OUT: Ending offset of token */
-                        int                      *piPosition                                                            /* OUT: Position integer of token */
+                        sqlite3_tokenizer_cursor *pCursor,          /* Cursor returned by vv_fts3_open */
+                        const char               **ppToken,         /* OUT: *ppToken is the token text */
+                        int                      *pnBytes,          /* OUT: Number of bytes in token */
+                        int                      *piStartOffset,    /* OUT: Starting offset of token */
+                        int                      *piEndOffset,      /* OUT: Ending offset of token */
+                        int                      *piPosition        /* OUT: Position integer of token */
 )
 {
     vv_fts3_tokenizer_cursor *c = (vv_fts3_tokenizer_cursor *)pCursor;
@@ -264,13 +273,22 @@ static int vv_fts5_xCreate(
     memset(tok->locale, 0x0, 16);
     tok->pinyin = false;
     tok->pinyinMaxLen = 0;
-    if(nArg > 0){
-        const char *arg = azArg[0];
-        tok->pinyin = strcmp(arg, kPinYinArg) == 0;
-    }
-    if(tok->pinyin && nArg > 1){
-        const char *arg = azArg[1];
-        tok->pinyinMaxLen = atoi(arg);
+    
+    int idx = -1;
+    for (int i = 0; i < MIN(3, nArg); i ++) {
+        const char *arg = azArg[i];
+        if(strcmp(arg, kPinYinArg) == 0){
+            idx = i;
+            tok->pinyin = true;
+        }
+        else{
+            if(tok->pinyin && i == idx + 1){
+                tok->pinyinMaxLen = atoi(arg);
+            }
+            else if(i == 0){
+                strncpy(tok->locale, arg, 15);
+            }
+        }
     }
     if(tok->pinyin && tok->pinyinMaxLen <= 0){
         tok->pinyinMaxLen = TOKEN_PINYIN_MAX_LENGTH;
