@@ -64,6 +64,7 @@ typedef struct vv_fts3_tokenizer {
     sqlite3_tokenizer base;
     char locale[16];
     bool pinyin;
+    int pinyinMaxLen;
 } vv_fts3_tokenizer;
 
 typedef struct vv_fts3_tokenizer_cursor {
@@ -114,15 +115,19 @@ static int vv_fts3_create(
     
     memset(tok->locale, 0x0, 16);
     tok->pinyin = false;
-    for (int i = 0; i < MIN(argc, 2); i++) {
-        const char *arg = argv[i];
-        if (strcmp(arg, kPinYinArg) == 0) {
-            tok->pinyin = true;
-        } else if (i == 0) {
-            strncpy(tok->locale, arg, 15);
-        }
+    tok->pinyinMaxLen = 0;
+    if(argc > 0){
+        const char *arg = argv[0];
+        tok->pinyin = strcmp(arg, kPinYinArg) == 0;
     }
-    
+    if(tok->pinyin && argc > 1){
+        const char *arg = argv[1];
+        tok->pinyinMaxLen = atoi(arg);
+    }
+    if(tok->pinyin && tok->pinyinMaxLen <= 0){
+        tok->pinyinMaxLen = TOKEN_PINYIN_MAX_LENGTH;
+    }
+
     *ppTokenizer = &tok->base;
     return SQLITE_OK;
 }
@@ -159,7 +164,7 @@ static int vv_fts3_open(
     int nInput = (pInput == 0) ? 0 : (nBytes < 0 ? (int)strlen(pInput) : nBytes);
     
     vv_fts3_tokenizer *tok = (vv_fts3_tokenizer *)pTokenizer;
-    BOOL tokenPinyin = tok->pinyin && (nInput <= TOKEN_PINYIN_MAX_LENGTH);
+    BOOL tokenPinyin = tok->pinyin && (nInput <= tok->pinyinMaxLen);
     __block NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     
     [cls enumerateTokens:pInput len:nBytes locale:tok->locale pinyin:tokenPinyin usingBlock:^(const char *token, int len, int start, int end, BOOL *stop) {
@@ -239,6 +244,7 @@ typedef struct Fts5VVTokenizer Fts5VVTokenizer;
 struct Fts5VVTokenizer {
     char locale[16];
     bool pinyin;
+    int pinyinMaxLen;
     void *cls;
 };
 
@@ -257,13 +263,17 @@ static int vv_fts5_xCreate(
     if (!tok) return SQLITE_NOMEM;
     memset(tok->locale, 0x0, 16);
     tok->pinyin = false;
-    for (int i = 0; i < MIN(nArg, 2); i++) {
-        const char *arg = azArg[i];
-        if (strcmp(arg, kPinYinArg) == 0) {
-            tok->pinyin = true;
-        } else if (i == 0) {
-            strncpy(tok->locale, arg, 15);
-        }
+    tok->pinyinMaxLen = 0;
+    if(nArg > 0){
+        const char *arg = azArg[0];
+        tok->pinyin = strcmp(arg, kPinYinArg) == 0;
+    }
+    if(tok->pinyin && nArg > 1){
+        const char *arg = azArg[1];
+        tok->pinyinMaxLen = atoi(arg);
+    }
+    if(tok->pinyin && tok->pinyinMaxLen <= 0){
+        tok->pinyinMaxLen = TOKEN_PINYIN_MAX_LENGTH;
     }
     
     NSString *name = [NSString stringWithUTF8String:(const char *)pUnused];
@@ -294,7 +304,7 @@ static int vv_fts5_xTokenize(
     __block int rc = SQLITE_OK;
     Fts5VVTokenizer *tok = (Fts5VVTokenizer *)pTokenizer;
     int nInput = (pText == 0) ? 0 : (nText < 0 ? (int)strlen(pText) : nText);
-    BOOL tokenPinyin = tok->pinyin && (nInput <= TOKEN_PINYIN_MAX_LENGTH) && (iUnused & FTS5_TOKENIZE_DOCUMENT);
+    BOOL tokenPinyin = tok->pinyin && (nInput <= tok->pinyinMaxLen) && (iUnused & FTS5_TOKENIZE_DOCUMENT);
     
     Class<VVFtsTokenizer> cls = (__bridge Class)(tok->cls);
     [cls enumerateTokens:pText len:nText locale:tok->locale pinyin:tokenPinyin usingBlock:^(const char *token, int len, int start, int end, BOOL *stop) {

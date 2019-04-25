@@ -65,7 +65,7 @@ Fts表配置
     VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVTestMobile.class];
     ftsConfig.fts = YES;
     ftsConfig.ftsModule = @"fts5";
-    ftsConfig.ftsTokenizer = @"jieba pinyin";
+    ftsConfig.ftsTokenizer = @"jieba pinyin 9";
     ftsConfig.indexes = @[@"mobile", @"industry"];
 ```
 或者
@@ -75,7 +75,8 @@ Fts表配置
 **FTS表配置特别注意**:
 * 需设置`ftsConfig.fts=YES`,否则视为普通表.
 * fts3以上版本(fts4,fts5)需设置索引字段`ftsConfig.indexes`,否则不会索引任何字段,无法搜索
-* ftsTokenizer传入参数`pinyin`,表示该表支持拼音分词,因为多音字的问题,目前只支持5个汉字以内的拼音分词
+* ftsTokenizer传入参数`pinyin`,表示该表支持拼音分词,多音字并未智能匹配, 5个汉字以内的中文,可返回多个拼音组合, 超过5个汉字则只返回一组.
+* `pinyin`后可带数字参数,比如`jieba pinyin 9`,表示Unicode长度超过9的字符串,不会进行拼音分词
 
 ### 定义ORM模型 
 可自定义表名和存放的数据库文件.

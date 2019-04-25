@@ -115,6 +115,15 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
                                      keyword:(NSString *)keyword
                                   attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
 {
+    return [self highlight:objects field:field keyword:keyword pinyinMaxLen:-1 attributes:attributes];
+}
+
+- (NSArray<NSAttributedString *> *)highlight:(NSArray *)objects
+                                       field:(NSString *)field
+                                     keyword:(NSString *)keyword
+                                pinyinMaxLen:(int)pinyinMaxLen
+                                  attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
+{
     Class<VVFtsTokenizer> cls = nil;
     if (self.config.ftsVersion >= 5) {
         cls = [self.vvdb ftsFiveTokenizerClassForName:self.config.ftsTokenizer];
@@ -125,6 +134,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     
     const char *pKw = keyword.UTF8String;
     int nKw = (int)strlen(pKw);
+    int pymlen = pinyinMaxLen >=0 ? : TOKEN_PINYIN_MAX_LENGTH;
     
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:objects.count];
     for (NSObject *obj in objects) {
@@ -133,7 +143,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         
         const char *pText = sourceString.UTF8String;
         int nText = (int)strlen(pText);
-        BOOL tokenPinyin = nText <= TOKEN_PINYIN_MAX_LENGTH;
+        BOOL tokenPinyin = nText <= pymlen;
         
         __block char *tokenized = (char *)malloc(nText + 1);
         memset(tokenized, 0x0, nText + 1);

@@ -78,6 +78,22 @@ FOUNDATION_EXPORT NSString *const VVOrmFtsCount;
                                               keyword:(NSString *)keyword
                                            attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes;
 
+/**
+ 对FTS结果进行高亮
+ 
+ @param objects 搜索结果,objects
+ @param field 要进行高亮处理的字段
+ @param keyword 搜索时使用的关键词,去除通配符等
+ @param pinyinMaxLen 进行拼音分词的最大Unicode长度, `= 0`表示不进行拼音分词高亮, `< 0`则使用默认长度15
+ @param attributes 高亮使用的文字属性
+ @return 高亮结果,属性文本数组,顺序对应objects
+ */
+- (nullable NSArray<NSAttributedString *> *)highlight:(NSArray *)objects
+                                                field:(NSString *)field
+                                              keyword:(NSString *)keyword
+                                         pinyinMaxLen:(int)pinyinMaxLen
+                                           attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes;
+
 @end
 
 NS_ASSUME_NONNULL_END
