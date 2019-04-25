@@ -23,12 +23,10 @@
 * [x] 自定义FTS分词器
 * [x] 支持拼音分词
 
-## 改动(0.3.0-beta4)
-1. 优化结构
-2. 可自定义FTS分词器
-3. 移除全局配置
-4. 多主键支持
-5. 部分API调整
+## 改动(0.3.0-beta5)
+1. 修改FTS分词器,创建表可传入参数`[locale] pinyin [len]`, local请参考NSLocale, pinyin控制是否支持拼音分词, len为支持拼音分词的最大unicode长度
+2. 调整FTS搜索结果高亮方法
+3. `NSString+Tokenizer`添加类方法,可设置支持多音字拼音的最大中文字符串长度
 
 ## 结构
 ![](VVSequelize.png)
