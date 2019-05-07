@@ -156,8 +156,10 @@
 - (void)testOrmModel{
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestPerson.class];
     config.primaries = @[@"idcard"];
-    config.uniques   = @[@"mobile",@"arr"];
-    config.notnulls  = @[@"name",@"arr"];
+    config.uniques   = @[@"mobile",@"arr",@"mobile"];
+    config.notnulls  = @[@"name",@"arr",@"name"];
+    config.whiteList = @[@"idcard",@"name",@"mobile",@"age"];
+    [config treate];
 
     VVOrm *personModel1 = [VVOrm ormWithConfig:config tableName:@"persons" dataBase:self.vvdb];
     NSUInteger maxrowid = [personModel1 maxRowid];

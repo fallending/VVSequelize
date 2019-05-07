@@ -275,44 +275,54 @@ NSString *const VVSqlTypeReal = @"REAL";
 }
 
 //MAKR: - public
-- (void)dispose
+- (void)treate
 {
-    _columns = [_columns vv_distinctUnionOfObjects];
-    _indexes = [_indexes vv_distinctUnionOfObjects];
-    _uniques = [_uniques vv_distinctUnionOfObjects];
-    _notnulls = [_notnulls vv_distinctUnionOfObjects];
-    _primaries = [_primaries vv_distinctUnionOfObjects];
-    _notnulls = [_notnulls vv_removeObjectsInArray:_primaries];
-    _indexes = [_indexes vv_removeObjectsInArray:_uniques];
-    
-    if (_whiteList.count > 0) {
-        _columns = [_whiteList vv_removeObjectsInArray:_columns];
-        _indexes = [_whiteList vv_removeObjectsInArray:_indexes];
-        _uniques = [_whiteList vv_removeObjectsInArray:_uniques];
-        _notnulls = [_whiteList vv_removeObjectsInArray:_notnulls];
-        _primaries = [_whiteList vv_removeObjectsInArray:_primaries];
-        
-        NSArray *typeTrash = [_types.allKeys vv_removeObjectsInArray:_columns];
-        _types = [_types vv_removeObjectsForKeys:typeTrash];
-        
-        NSArray *dfltTrash = [_defaultValues.allKeys vv_removeObjectsInArray:_columns];
-        _defaultValues = [_defaultValues vv_removeObjectsForKeys:dfltTrash];
-    } else if (_blackList.count > 0) {
-        _columns = [_columns vv_removeObjectsInArray:_blackList];
-        _indexes = [_indexes vv_removeObjectsInArray:_blackList];
-        _uniques = [_uniques vv_removeObjectsInArray:_blackList];
-        _notnulls = [_notnulls vv_removeObjectsInArray:_blackList];
-        _primaries = [_primaries vv_removeObjectsInArray:_blackList];
-        _types = [_types vv_removeObjectsForKeys:_blackList];
-        _defaultValues = [_defaultValues vv_removeObjectsForKeys:_blackList];
+    NSMutableSet *columnsSet = [NSMutableSet setWithArray:(_columns ? : @[])];
+    NSMutableSet *indexesSet = [NSMutableSet setWithArray:(_indexes ? : @[])];
+    NSMutableSet *uniquesSet = [NSMutableSet setWithArray:(_uniques ? : @[])];
+    NSMutableSet *notnullsSet = [NSMutableSet setWithArray:(_notnulls ? : @[])];
+    NSMutableSet *primariesSet = [NSMutableSet setWithArray:(_primaries ? : @[])];
+    NSMutableSet *whitesSet = [NSMutableSet setWithArray:(_whiteList ? : @[])];
+    NSMutableSet *blacksSet = [NSMutableSet setWithArray:(_blackList ? : @[])];
+
+    if(whitesSet.count > 0){
+        [columnsSet intersectSet:whitesSet];
     }
+    else if(blacksSet.count > 0){
+        [columnsSet minusSet:blacksSet];
+    }
+    [indexesSet intersectSet:columnsSet];
+    [uniquesSet intersectSet:columnsSet];
+    [notnullsSet intersectSet:columnsSet];
+    [primariesSet intersectSet:columnsSet];
+    
+    [indexesSet removeObject:uniquesSet];
+    [notnullsSet removeObject:primariesSet];
+    
+    NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_types.allKeys ? : @[])];
+    NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_defaultValues.allKeys ? : @[])];
+    
+    [typeTrashKeysSet minusSet:columnsSet];
+    [defValTrashKeysSet minusSet:columnsSet];
+
+    NSComparator comparator = ^NSComparisonResult(NSString *str1, NSString *str2) {
+        return str1 < str2 ? NSOrderedAscending : NSOrderedDescending;
+    };
+    
+    _columns = [columnsSet.allObjects sortedArrayUsingComparator:comparator];
+    _indexes = [indexesSet.allObjects sortedArrayUsingComparator:comparator];
+    _uniques = [uniquesSet.allObjects sortedArrayUsingComparator:comparator];
+    _notnulls = [notnullsSet.allObjects sortedArrayUsingComparator:comparator];
+    _primaries = [primariesSet.allObjects sortedArrayUsingComparator:comparator];
+    _types = [_types vv_removeObjectsForKeys:typeTrashKeysSet.allObjects];
+    _defaultValues = [_defaultValues vv_removeObjectsForKeys:defValTrashKeysSet.allObjects];
 }
 
 - (BOOL)isEqualToConfig:(VVOrmConfig *)config
 {
     NSAssert(self.fts == config.fts, @"FTS and normal config cannot be compared with each other");
-    [self dispose];
-    [config dispose];
+    [self treate];
+    [config treate];
     if (self.fts) {
         BOOL ret1 = [VVOrmConfig ormString:self.ftsModule.lowercaseString isEqual:config.ftsModule.lowercaseString];
         BOOL ret2 = [VVOrmConfig ormString:self.ftsTokenizer isEqual:config.ftsTokenizer];
@@ -357,7 +367,7 @@ NSString *const VVSqlTypeReal = @"REAL";
 
 - (NSString *)createSQLWith:(NSString *)tableName
 {
-    [self dispose];
+    [self treate];
     NSMutableString *sql = [NSMutableString stringWithCapacity:0];
     for (NSString *column in _columns) {
         [sql appendFormat:@"%@,", [self createSQLOfColumn:column]];
@@ -369,7 +379,7 @@ NSString *const VVSqlTypeReal = @"REAL";
 
 - (NSString *)createFtsSQLWith:(NSString *)tableName
 {
-    [self dispose];
+    [self treate];
     NSArray *notindexeds = [_columns vv_removeObjectsInArray:_indexes];
     NSMutableString *sql = [NSMutableString stringWithCapacity:0];
     for (NSString *column in _columns) {

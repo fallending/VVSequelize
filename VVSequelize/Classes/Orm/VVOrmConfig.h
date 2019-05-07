@@ -73,7 +73,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 /**
  处理配置.去重,处理黑白名单等.
  */
-- (void)dispose;
+- (void)treate;
 
 /**
  是否和相比较的ORM配置一致
