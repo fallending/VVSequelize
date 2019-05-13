@@ -147,7 +147,6 @@
 {
     NSString *clause = [condition vv_condition];
     if (clause.length == 0) return @"";
-    if ([clause isMatch:@"^ +WHERE "]) return clause;
     return [NSString stringWithFormat:@" WHERE %@", clause];
 }
 
@@ -155,7 +154,6 @@
 {
     NSString *clause = [condition vv_match];
     if (clause.length == 0) return @"";
-    if ([clause isMatch:@"^ +WHERE "]) return clause;
     return [NSString stringWithFormat:@" WHERE %@", clause];
 }
 
@@ -163,7 +161,6 @@
 {
     NSString *clause = [groupBy vv_join];
     if (clause.length == 0) return @"";
-    if ([clause isMatch:@"^ +GROUP +BY "]) return clause;
     return [NSString stringWithFormat:@" GROUP BY %@", clause];
 }
 
@@ -171,7 +168,6 @@
 {
     NSString *clause = [having vv_condition];
     if (clause.length == 0) return @"";
-    if ([clause isMatch:@"^ +HAVING "]) return clause;
     return [NSString stringWithFormat:@" HAVING %@", clause];
 }
 
@@ -180,7 +176,6 @@
     NSString *clause = [orderBy vv_join];
     if (clause.length == 0) return @"";
     if (![clause isMatch:@"( +ASC *$)|( +DESC *$)"]) clause = clause.asc;
-    if ([clause isMatch:@"^ +ORDER +BY "]) return clause;
     return [NSString stringWithFormat:@" ORDER BY %@", clause];
 }
 
