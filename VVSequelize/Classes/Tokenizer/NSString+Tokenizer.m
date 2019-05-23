@@ -121,7 +121,12 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
     if (self.length > _kVVMaxSupportLengthOfPolyphone) return nil;
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
     for (NSUInteger i = 0; i < self.length; i++) {
-        dic[@(i)] = [self polyphonePinyinsAtIndex:i];
+        NSArray *polys = [self polyphonePinyinsAtIndex:i];
+        NSMutableSet *set = [NSMutableSet set];
+        for (NSString *poly in polys) {
+            if(poly.length > 1) [set addObject:[poly substringToIndex:poly.length - 1]];
+        }
+        dic[@(i)] = set.allObjects;
     }
     return dic;
 }
@@ -130,26 +135,18 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 {
     if (polyphones.count == 0) return @[pinyins];
     NSUInteger chineseCount = pinyins.count;
-    __block NSMutableArray *array = [@[pinyins] mutableCopy];
+    __block NSMutableSet *results = [NSMutableSet setWithCapacity:0];
     [polyphones enumerateKeysAndObjectsUsingBlock:^(NSNumber *key, NSArray *polyPinyins, BOOL *stop) {
         NSUInteger idx = key.unsignedIntegerValue;
-        if (idx >= chineseCount) {
-            *stop = YES;
-            return;
-        }
-        NSArray *tempArray = [array copy];
-        array = [NSMutableArray array];
-        for (NSArray *sub in tempArray) {
-            for (NSString *poly in polyPinyins) {
-                if (poly.length < 1) { continue; }
-                NSMutableArray *tmp = [sub mutableCopy];
-                [tmp replaceObjectAtIndex:idx withObject:[poly substringToIndex:poly.length - 1]];
-                [array addObject:tmp];
-            }
+        if (idx >= chineseCount || polyPinyins.count == 0) { return; }
+        for (NSString *poly in polyPinyins) {
+            NSMutableArray *tempArray = [pinyins mutableCopy];
+            tempArray[idx] = poly;
+            [results addObject:tempArray];
         }
     }];
     
-    return array;
+    return results.allObjects;
 }
 
 @end
