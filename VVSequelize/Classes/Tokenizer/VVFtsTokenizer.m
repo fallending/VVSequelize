@@ -7,7 +7,7 @@
 
 #import "VVFtsTokenizer.h"
 
-@implementation VVFts3Token
+@implementation VVFtsToken
 
 - (void)dealloc{
     free((void *)_token);

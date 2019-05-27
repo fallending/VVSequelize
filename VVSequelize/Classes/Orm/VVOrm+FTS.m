@@ -31,7 +31,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
 
 /**
  全文搜索
- 
+
  @param condition match匹配表达式,比如:"name:zhan*","zhan*",具体的表达请查看sqlite官方文档
  @param field 需要进行高亮处理的字段
  @param attributes 高亮使用的属性
@@ -58,7 +58,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     NSMutableArray *columns = [[statement columnNames] mutableCopy];
     NSUInteger idx = [columns indexOfObject:field];
     NSAssert(idx < columns.count, @"Invalid field!");
-    
+
     NSString *lspan = [NSString leftSpanForAttributes:attributes];
     NSString *rspan = @"</span>";
     NSString *highlight = nil;
@@ -70,7 +70,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     [columns replaceObjectAtIndex:idx withObject:highlight];
     NSString *fields = [columns sqlJoin:NO];
     select.fields(fields);
-    
+
     return [select allObjects];
 }
 
@@ -124,75 +124,93 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
                                 pinyinMaxLen:(int)pinyinMaxLen
                                   attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
 {
-    Class<VVFtsTokenizer> cls = nil;
-    if (self.config.ftsVersion >= 5) {
-        cls = [self.vvdb ftsFiveTokenizerClassForName:self.config.ftsTokenizer];
-    } else {
-        cls = [self.vvdb ftsThreeFourTokenizerClassForName:self.config.ftsTokenizer];
-    }
-    if (!cls) return nil;
-    
-    const char *pKw = keyword.UTF8String;
-    int nKw = (int)strlen(pKw);
-    int pymlen = pinyinMaxLen >=0 ? : TOKEN_PINYIN_MAX_LENGTH;
-    
+    NSString *tokenizer = [self.config.ftsTokenizer componentsSeparatedByString:@" "].firstObject;
+    VVFtsXEnumerator enumerator = [self.vvdb enumeratorForFtsTokenizer:tokenizer];
+    NSArray *keywordTokens = [self tokenize:keyword pinyin:NO enumerator:enumerator];
+    int pymlen = pinyinMaxLen >= 0 ? : TOKEN_PINYIN_MAX_LENGTH;
+
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:objects.count];
     for (NSObject *obj in objects) {
-        NSString *sourceString = [obj valueForKey:field];
-        if (!sourceString || ![sourceString isKindOfClass:NSString.class]) continue;
-        
-        const char *pText = sourceString.UTF8String;
-        int nText = (int)strlen(pText);
-        BOOL tokenPinyin = nText <= pymlen;
-        
-        __block char *tokenized = (char *)malloc(nText + 1);
-        memset(tokenized, 0x0, nText + 1);
-        
-        __block NSMutableArray *kwTokens = [NSMutableArray arrayWithCapacity:0];
-        [cls enumerateTokens:pKw len:nKw locale:nil pinyin:NO usingBlock:^(const char *token, int len, int start, int end, BOOL *stop) {
-            char *_token = (char *)malloc(len + 1);
-            memcpy(_token, token, len);
-            _token[len] = 0;
-            VVFts3Token *kwToken = [VVFts3Token new];
-            kwToken.token = _token;
-            kwToken.len   = len;
-            kwToken.start = start;
-            kwToken.end   = end;
-            [kwTokens addObject:kwToken];
-        }];
-        
-        [cls enumerateTokens:pText len:nText locale:nil pinyin:tokenPinyin usingBlock:^(const char *token, int len, int start, int end, BOOL *stop) {
-            for (VVFts3Token *kwToken in kwTokens) {
-                if (strncmp(token, kwToken.token, kwToken.len) != 0) continue;
-                memcpy(tokenized + start, pText + start, end - start);
-            }
-        }];
-        
-        char *remained = (char *)malloc(nText + 1);
-        strncpy(remained, pText, nText);
-        remained[nText] = 0x0;
-        for (int i = 0; i < nText + 1; i++) {
-            if (tokenized[i] != 0) {
-                memset(remained + i, 0x0, 1);
-            }
-        }
-        NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] init];
-        int pos = 0;
-        while (pos < nText) {
-            if (remained[pos] != 0x0) {
-                NSString *str = [NSString stringWithUTF8String:(remained + pos)];
-                [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str]];
-                pos += strlen(remained + pos);
-            } else {
-                NSString *str = [NSString stringWithUTF8String:(tokenized + pos)];
-                [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:attributes]];
-                pos += strlen(tokenized + pos);
-            }
-        }
-        free(remained);
+        NSString *source = [obj valueForKey:field];
+        NSAttributedString *attrText = [self highlight:source pyMaxLen:pymlen enumerator:enumerator keywordTokens:keywordTokens attributes:attributes];
         [results addObject:attrText];
     }
     return results;
+}
+
+- (NSArray<VVFtsToken *> *)tokenize:(NSString *)source
+                             pinyin:(BOOL)pinyin
+                         enumerator:(VVFtsXEnumerator)enumerator
+{
+    const char *pText = source.UTF8String;
+    int nText = (int)strlen(pText);
+    
+    __block NSMutableArray<VVFtsToken *> *results = [NSMutableArray arrayWithCapacity:0];
+    
+    VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
+        char *_token = (char *)malloc(len + 1);
+        memcpy(_token, token, len);
+        _token[len] = 0;
+        VVFtsToken *vvToken = [VVFtsToken new];
+        vvToken.token = _token;
+        vvToken.len = len;
+        vvToken.start = start;
+        vvToken.end = end;
+        [results addObject:vvToken];
+    };
+    enumerator(pText, nText, nil, pinyin, handler);
+    return results;
+}
+
+- (NSAttributedString *)highlight:(NSString *)source
+                         pyMaxLen:(int)pyMaxLen
+                       enumerator:(VVFtsXEnumerator)enumerator
+                    keywordTokens:(NSArray<VVFtsToken *> *)keywordTokens
+                       attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
+{
+    const char *pText = source.UTF8String;
+    int nText = (int)strlen(pText);
+
+    if (!enumerator || nText == 0) {
+        return [[NSAttributedString alloc] initWithString:source];
+    }
+
+    __block char *tokenized = (char *)malloc(nText + 1);
+    memset(tokenized, 0x0, nText + 1);
+
+    VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
+        for (VVFtsToken *kwToken in keywordTokens) {
+            if (strncmp(token, kwToken.token, kwToken.len) != 0) continue;
+            memcpy(tokenized + start, pText + start, end - start);
+        }
+    };
+
+    enumerator(pText, nText, nil, nText < pyMaxLen, handler);
+
+    char *remained = (char *)malloc(nText + 1);
+    strncpy(remained, pText, nText);
+    remained[nText] = 0x0;
+    for (int i = 0; i < nText + 1; i++) {
+        if (tokenized[i] != 0) {
+            memset(remained + i, 0x0, 1);
+        }
+    }
+    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] init];
+    int pos = 0;
+    while (pos < nText) {
+        if (remained[pos] != 0x0) {
+            NSString *str = [NSString stringWithUTF8String:(remained + pos)];
+            [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str]];
+            pos += strlen(remained + pos);
+        } else {
+            NSString *str = [NSString stringWithUTF8String:(tokenized + pos)];
+            [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:attributes]];
+            pos += strlen(tokenized + pos);
+        }
+    }
+    free(remained);
+
+    return attrText;
 }
 
 @end

@@ -54,6 +54,11 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 
 @implementation NSString (Tokenizer)
 
++ (void)preloadingForPinyin
+{
+    [@"中文" pinyinsForTokenize];
+}
+
 + (void)setMaxSupportLengthOfPolyphone:(NSUInteger)maxSupportLength
 {
     _kVVMaxSupportLengthOfPolyphone = maxSupportLength;
@@ -78,7 +83,7 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 {
     NSArray *results = [[VVPinYin shared].cache objectForKey:self];
     if (results) return results;
-    
+
     static NSMutableCharacterSet *set = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -88,7 +93,7 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
     });
     NSString *prepared = [self stringByTrimmingCharactersInSet:set];
     NSString *string = [prepared pinyin];
-    
+
     NSArray *pinyins = [string componentsSeparatedByCharactersInSet:set];
     NSDictionary *polyphones = [prepared polyphonePinyins];
     NSArray *flattened = [NSString flatten:pinyins polyphones:polyphones];
@@ -103,7 +108,7 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
         }
         [array addObjectsFromArray:@[totalstring, firstLetters]];
     }
-    
+
     results = [NSSet setWithArray:array].allObjects;
     [[VVPinYin shared].cache setObject:results forKey:self];
     return results;
@@ -124,7 +129,7 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
         NSArray *polys = [self polyphonePinyinsAtIndex:i];
         NSMutableSet *set = [NSMutableSet set];
         for (NSString *poly in polys) {
-            if(poly.length > 1) [set addObject:[poly substringToIndex:poly.length - 1]];
+            if (poly.length > 1) [set addObject:[poly substringToIndex:poly.length - 1]];
         }
         dic[@(i)] = set.allObjects;
     }
@@ -145,7 +150,7 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
             [results addObject:tempArray];
         }
     }];
-    
+
     return results.allObjects;
 }
 

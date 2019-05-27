@@ -72,7 +72,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     // default select million
     self.selectedIndex = 0;
     
-    [VVDatabase lazyLoadTokenizers];
+    [NSString preloadingForPinyin];
     
     //db
     NSString *dir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
@@ -106,12 +106,10 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         item.ftsDbName = fts;
         item.ftsDbPath = [dir stringByAppendingPathComponent:item.ftsDbName];
         item.ftsDb = [VVDatabase databaseWithPath:item.ftsDbPath];
-        [item.ftsDb registerFtsThreeFourTokenizer:VVFtsJiebaTokenizer.class forName:@"jieba"];
-        [item.ftsDb registerFtsFiveTokenizer:VVFtsJiebaTokenizer.class forName:@"jieba"];
-        [item.ftsDb registerFtsThreeFourTokenizer:VVFtsNLTokenizer.class forName:@"nl"];
-        [item.ftsDb registerFtsFiveTokenizer:VVFtsNLTokenizer.class forName:@"nl"];
-        [item.ftsDb registerFtsThreeFourTokenizer:VVFtsAppleTokenizer.class forName:@"apple"];
-        [item.ftsDb registerFtsFiveTokenizer:VVFtsAppleTokenizer.class forName:@"apple"];
+        [item.ftsDb registerFtsTokenizer:VVFtsJiebaTokenizer.class forName:@"jieba"];
+        [item.ftsDb registerFtsTokenizer:VVFtsAppleTokenizer.class forName:@"apple"];
+        [item.ftsDb registerFtsTokenizer:VVFtsNLTokenizer.class forName:@"nl"];
+
         [item.db setTraceHook:^int(unsigned mask, void *stmt, void *sql) {
             return 0;
         }];
