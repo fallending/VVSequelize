@@ -13,9 +13,6 @@
 #import <sqlite3.h>
 #endif
 
-static NSMutableDictionary *_fts3ClassMap;
-static NSMutableDictionary *_fts5ClassMap;
-
 static const char *kPinYinArg = "pinyin";
 
 //MARK: - FTS3
