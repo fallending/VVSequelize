@@ -128,12 +128,13 @@
 
 - (void)renameToTempTable:(NSString *)tempTableName
 {
-    NSString *sql = [NSString stringWithFormat:@"ALTER TABLE \"%@\" RENAME TO \"%@\"", _tableName, tempTableName];
+    NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _tableName.quoted, tempTableName.quoted];
     BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         return [self.vvdb excute:sql];
     }];
     if (ret) {
-    }         // no warning
+        // no warning
+    }
     NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
 }
 
@@ -144,15 +145,15 @@
         return;
     }
     BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        NSString *sql = [NSString stringWithFormat:@"INSERT INTO \"%@\" (%@) SELECT %@ FROM \"%@\"", self.tableName, allFields, allFields, tempTableName];
+        NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.tableName.quoted, allFields, allFields, tempTableName.quoted];
         return [self.vvdb excute:sql];
     }];
-    
+
     if (ret) {
-        NSString *sql = [NSString stringWithFormat:@"DROP TABLE \"%@\"", tempTableName];
+        NSString *sql = [NSString stringWithFormat:@"DROP TABLE %@", tempTableName.quoted];
         [self.vvdb excute:sql];
     }
-    
+
     if (!ret) {
 #if DEBUG
         NSLog(@"Warning: copying data from old table (%@) to new table (%@) failed!", tempTableName, self.tableName);
@@ -164,21 +165,21 @@
 {
     // FTS表无需创建索引
     if (_config.fts) return;
-    NSString *indexesSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type ='index' and tbl_name = \"%@\"", _tableName];
+    NSString *indexesSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type ='index' and tbl_name = %@", _tableName.quoted];
     NSArray *array = [_vvdb query:indexesSQL];
     NSMutableString *dropIdxSQL = [NSMutableString stringWithCapacity:0];
     for (NSDictionary *dic  in array) {
         NSString *idxName = dic[@"name"];
         if ([idxName hasPrefix:@"sqlite_autoindex_"]) continue;
-        [dropIdxSQL appendFormat:@"DROP INDEX IF EXISTS \"%@\";", idxName];
+        [dropIdxSQL appendFormat:@"DROP INDEX IF EXISTS %@;", idxName.quoted];
     }
-    
+
     // 建立新索引
     NSString *indexName = [NSString stringWithFormat:@"vvdb_index_%@", _tableName];
     NSString *indexSQL = [_config.indexes sqlJoin];
     NSString *createIdxSQL = nil;
     if (indexSQL.length > 0) {
-        createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX \"%@\" on \"%@\" (%@);", indexName, _tableName, indexSQL];
+        createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX %@ on %@ (%@);", indexName.quoted, _tableName.quoted, indexSQL];
     }
     BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         BOOL r = YES;
@@ -186,7 +187,7 @@
         if (r && createIdxSQL.length > 0) { r = [self.vvdb excute:createIdxSQL]; }
         return r;
     }];
-    
+
     if (!ret) {
 #if DEBUG
         NSLog(@"Warning: Failed create index for table (%@)!", self.tableName);

@@ -178,8 +178,8 @@
     NSString *orderBy = [NSString sqlOrderBy:_orderBy];
     NSString *limit = [self limitClause];
     NSString *offset = [self offsetClause];
-    NSString *sql = [NSMutableString stringWithFormat:@"SELECT %@ %@ FROM \"%@\" %@ %@ %@ %@ %@ %@",
-                     _distinct ? @"DISTINCT" : @"", self.fieldsString, _table,
+    NSString *sql = [NSMutableString stringWithFormat:@"SELECT %@ %@ FROM %@ %@ %@ %@ %@ %@ %@",
+                     _distinct ? @"DISTINCT" : @"", self.fieldsString, _table.quoted,
                      where, groupBy, having, orderBy, limit, offset].strip;
     return sql;
 }

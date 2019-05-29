@@ -9,7 +9,8 @@
 
 @implementation VVFtsToken
 
-- (void)dealloc{
+- (void)dealloc
+{
     free((void *)_token);
 }
 

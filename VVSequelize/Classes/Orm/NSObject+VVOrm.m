@@ -25,6 +25,11 @@
     return @"";
 }
 
+- (NSString *)quotedStringValue
+{
+    return [[NSString stringWithFormat:@"%@",self] quote:@"\""];
+}
+
 - (BOOL)isVVExpr
 {
     return [NSString sqlWhere:self].length > 0;
@@ -50,26 +55,20 @@
 @implementation NSDictionary (VVOrm)
 - (NSString *)vv_condition
 {
-    NSMutableString *where = [NSMutableString stringWithCapacity:0];
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (NSString *key in self) {
-        [where appendFormat:@"%@ AND ", key.eq(self[key])];
+        [array addObject:key.eq(self[key])];
     }
-    if (where.length >= 5) {
-        [where deleteCharactersInRange:NSMakeRange(where.length - 5, 5)];
-    }
-    return where;
+    return [array componentsJoinedByString:@" AND "];
 }
 
 - (NSString *)vv_match
 {
-    NSMutableString *where = [NSMutableString stringWithCapacity:0];
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (NSString *key in self) {
-        [where appendFormat:@"%@ AND ", key.match(self[key])];
+        [array addObject:key.match(self[key])];
     }
-    if (where.length >= 5) {
-        [where deleteCharactersInRange:NSMakeRange(where.length - 5, 5)];
-    }
-    return where;
+    return [array componentsJoinedByString:@" AND "];
 }
 
 - (NSDictionary *)vv_removeObjectsForKeys:(NSArray *)keys
@@ -84,14 +83,14 @@
 @implementation NSArray (VVOrm)
 - (NSString *)vv_condition
 {
-    NSMutableString *where = [NSMutableString stringWithCapacity:0];
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (id val in self) {
-        [where appendFormat:@"(%@) OR ", [val vv_condition]];
+        NSString *str = [val vv_condition];
+        if (str.length > 0) {
+            [array addObject:str];
+        }
     }
-    if (where.length >= 4) {
-        [where deleteCharactersInRange:NSMakeRange(where.length - 4, 4)];
-    }
-    return where;
+    return [array componentsJoinedByString:@" OR "];
 }
 
 - (NSString *)asc
@@ -109,20 +108,19 @@
     return [self sqlJoin:YES];
 }
 
-- (NSString *)sqlJoin:(BOOL)quota
+- (NSString *)sqlJoin:(BOOL)quote
 {
-    NSMutableString *joined = [NSMutableString stringWithCapacity:0];
-    NSString *mark = quota ? @"\"" : @"";
+    NSString *mark = quote ? @"\"" : @"";
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (id val in self) {
-        [joined appendFormat:@"%@%@%@,", mark, val, mark];
+        NSString *tmp = [NSString stringWithFormat:@"%@", val];
+        [array addObject:[tmp quote:mark]];
     }
-    if (joined.length >= 1) {
-        [joined deleteCharactersInRange:NSMakeRange(joined.length - 1, 1)];
-    }
-    return joined;
+    return [array componentsJoinedByString:@","];
 }
 
-- (NSString *)vv_join{
+- (NSString *)vv_join
+{
     return [self sqlJoin];
 }
 
@@ -146,13 +144,6 @@
 + (NSString *)sqlWhere:(id)condition
 {
     NSString *clause = [condition vv_condition];
-    if (clause.length == 0) return @"";
-    return [NSString stringWithFormat:@" WHERE %@", clause];
-}
-
-+ (NSString *)sqlMatch:(id)condition
-{
-    NSString *clause = [condition vv_match];
     if (clause.length == 0) return @"";
     return [NSString stringWithFormat:@" WHERE %@", clause];
 }
@@ -197,63 +188,63 @@
 - (NSString *(^)(id))eq
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ = \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ = %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))ne
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ != \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ != %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))gt
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ > \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ > %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))gte
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ >= \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ >= %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))lt
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ < \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ < %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))lte
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ <= \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ <= %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))not
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ IS NOT \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ IS NOT %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id, id))between
 {
     return ^(id value1, id value2) {
-        return [NSString stringWithFormat:@"%@ BETWEEN \"%@\",\"%@\"", self, value1, value2];
+        return [NSString stringWithFormat:@"%@ BETWEEN %@,%@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id, id))notBetween
 {
     return ^(id value1, id value2) {
-        return [NSString stringWithFormat:@"%@ NOT BETWEEN \"%@\",\"%@\"", self, value1, value2];
+        return [NSString stringWithFormat:@"%@ NOT BETWEEN %@,%@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
     };
 }
 
@@ -274,35 +265,35 @@
 - (NSString *(^)(id))like
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ LIKE \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ LIKE %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))notLike
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ NOT LIKE \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ NOT LIKE %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))glob
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ GLOB \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ GLOB %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))notGlob
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ NOT GLOB \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ NOT GLOB %@", self, [value quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id))match
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ MATCH \"%@\"", self, value];
+        return [NSString stringWithFormat:@"%@ MATCH %@", self, [value quotedStringValue]];
     };
 }
 
@@ -332,11 +323,22 @@
 }
 
 // MARK: - other
-- (NSString *)quota:(NSString *)quota
+- (NSString *)quote:(NSString *)quote
 {
-    NSString *lquota = [self hasPrefix:quota] ? @"" : quota;
-    NSString *rquota = [self hasSuffix:quota] ? @"" : quota;
-    return [NSString stringWithFormat:@"%@%@%@", lquota, self, rquota];
+    if (quote.length == 0) return self;
+    NSString *lquote = [self hasPrefix:quote] ? @"" : quote;
+    NSString *rquote = [self hasSuffix:quote] ? @"" : quote;
+    return [NSString stringWithFormat:@"%@%@%@", lquote, self, rquote];
+}
+
+- (NSString *)quoted
+{
+    return [self quote:@"\""];
+}
+
+- (NSString *)singleQuoted
+{
+    return [self quote:@"'"];
 }
 
 - (NSString *)trim
@@ -366,7 +368,7 @@
 + (NSString *)leftSpanForAttributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
 {
     NSString *css = [NSString cssForAttributes:attributes];
-    return [NSString stringWithFormat:@"<span style=\"%@\">", css];
+    return [NSString stringWithFormat:@"<span style=%@>", css.quoted];
 }
 
 + (NSString *)cssForAttributes:(NSDictionary<NSAttributedStringKey, id> *)attributes

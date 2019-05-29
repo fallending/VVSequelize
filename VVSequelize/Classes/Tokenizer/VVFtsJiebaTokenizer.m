@@ -35,7 +35,8 @@ static void jiebaEnumerator(const char *pText, int nText, const char *locale, BO
 
 @implementation VVFtsJiebaTokenizer
 
-+ (nonnull VVFtsXEnumerator)enumerator {
++ (nonnull VVFtsXEnumerator)enumerator
+{
     return jiebaEnumerator;
 }
 

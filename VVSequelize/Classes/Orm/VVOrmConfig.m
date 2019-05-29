@@ -66,7 +66,7 @@ NSString *const VVSqlTypeReal = @"REAL";
 
 + (BOOL)isFtsTable:(NSString *)tableName database:(VVDatabase *)vvdb
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"", tableName];
+    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = %@ AND type = \"table\"", tableName.quoted];
     NSArray *cols = [vvdb query:sql];
     if (cols.count != 1) return NO;
     NSDictionary *dic = cols.firstObject;
@@ -103,7 +103,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSMutableArray *uniques = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *indexes = [NSMutableArray arrayWithCapacity:0];
     
-    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");", tableName];
+    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(%@);", tableName.quoted];
     NSArray *infos = [vvdb query:tableInfoSql];
     
     for (NSDictionary *dic in infos) {
@@ -125,13 +125,13 @@ NSString *const VVSqlTypeReal = @"REAL";
     }
     
     // 获取表的索引字段
-    NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(\"%@\");", tableName];
+    NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(%@);", tableName.quoted];
     NSArray *indexList =  [vvdb query:indexListSql];
     for (NSDictionary *indexDic in indexList) {
         NSString *indexName =  indexDic[@"name"];
         BOOL unique = [indexDic[@"unique"] boolValue];
         
-        NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(\"%@\");", indexName];
+        NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(%@);", indexName.quoted];
         NSArray *indexInfos = [vvdb query:indexInfoSql];
         for (NSDictionary *indexInfo in indexInfos) {
             NSString *name = indexInfo[@"name"];
@@ -144,7 +144,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     }
     BOOL pkAutoIncrement = NO;
     if (primaries.count == 1) {
-        NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"", tableName];
+        NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = %@ AND type = \"table\"", tableName.quoted];
         NSArray *cols = [vvdb query:sql];
         NSDictionary *tableInfo = cols.firstObject;
         NSString *tableSql = tableInfo[@"sql"];
@@ -169,7 +169,7 @@ NSString *const VVSqlTypeReal = @"REAL";
 //TODO: 可优化
 + (instancetype)configWithFtsTable:(NSString *)tableName database:(VVDatabase *)vvdb
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = \"%@\" AND type = \"table\"", tableName];
+    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = %@ AND type = \"table\"", tableName.quoted];
     NSArray *cols = [vvdb query:sql];
     if (cols.count != 1) return nil;
     
@@ -210,12 +210,12 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSMutableArray *colmuns = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *indexes = [NSMutableArray arrayWithCapacity:0];
     
-    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(\"%@\");", tableName];
+    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(%@);", tableName.quoted];
     NSArray *infos = [vvdb query:tableInfoSql];
     
     for (NSDictionary *info in infos) {
         NSString *name = info[@"name"];
-        NSString *regex = ftsVersion == 5 ? [NSString stringWithFormat:@"\"%@\" +UNINDEXED", name] : [NSString stringWithFormat:@"notindexed *= *\"%@\"", name];
+        NSString *regex = ftsVersion == 5 ? [NSString stringWithFormat:@"%@ +UNINDEXED", name.quoted] : [NSString stringWithFormat:@"notindexed *= *%@", name.quoted];
         if (![tableSQL isMatch:regex]) {
             [indexes addObject:name];
         }
@@ -284,11 +284,10 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSMutableSet *primariesSet = [NSMutableSet setWithArray:(_primaries ? : @[])];
     NSMutableSet *whitesSet = [NSMutableSet setWithArray:(_whiteList ? : @[])];
     NSMutableSet *blacksSet = [NSMutableSet setWithArray:(_blackList ? : @[])];
-
-    if(whitesSet.count > 0){
+    
+    if (whitesSet.count > 0) {
         [columnsSet intersectSet:whitesSet];
-    }
-    else if(blacksSet.count > 0){
+    } else if (blacksSet.count > 0) {
         [columnsSet minusSet:blacksSet];
     }
     [indexesSet intersectSet:columnsSet];
@@ -296,16 +295,16 @@ NSString *const VVSqlTypeReal = @"REAL";
     [notnullsSet intersectSet:columnsSet];
     [primariesSet intersectSet:columnsSet];
     
-    [indexesSet removeObject:uniquesSet];
-    [notnullsSet removeObject:primariesSet];
+    [indexesSet minusSet:uniquesSet];
+    [notnullsSet minusSet:primariesSet];
     
     NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_types.allKeys ? : @[])];
     NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_defaultValues.allKeys ? : @[])];
     
     [typeTrashKeysSet minusSet:columnsSet];
     [defValTrashKeysSet minusSet:columnsSet];
-
-    NSComparator comparator = ^NSComparisonResult(NSString *str1, NSString *str2) {
+    
+    NSComparator comparator = ^NSComparisonResult (NSString *str1, NSString *str2) {
         return str1 < str2 ? NSOrderedAscending : NSOrderedDescending;
     };
     
@@ -362,43 +361,50 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSString *uniqueString = [_uniques containsObject:column] ? @" UNIQUE" : @"";
     id defaultValue = _defaultValues[column];
     NSString *dfltString = defaultValue ? [NSString stringWithFormat:@" DEFAULT(%@)", defaultValue] : @"";
-    return [NSString stringWithFormat:@"\"%@\" %@%@%@%@%@", column, typeString, pkString, nullString, uniqueString, dfltString];
+    return [NSString stringWithFormat:@"%@ %@%@%@%@%@", column.quoted, typeString, pkString, nullString, uniqueString, dfltString];
 }
 
 - (NSString *)createSQLWith:(NSString *)tableName
 {
     [self treate];
-    NSMutableString *sql = [NSMutableString stringWithCapacity:0];
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:_columns.count];
     for (NSString *column in _columns) {
-        [sql appendFormat:@"%@,", [self createSQLOfColumn:column]];
+        [array addObject:[self createSQLOfColumn:column]];
     }
-    if (sql.length == 0) return sql;
-    [sql deleteCharactersInRange:NSMakeRange(sql.length - 1, 1)];
-    return [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS \"%@\" (%@)", tableName, sql].strip;
+    NSString *sql = [array componentsJoinedByString:@","];
+    if (sql.length == 0) return @"";
+    return [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (%@)", tableName.quoted, sql].strip;
 }
 
 - (NSString *)createFtsSQLWith:(NSString *)tableName
 {
     [self treate];
     NSArray *notindexeds = [_columns vv_removeObjectsInArray:_indexes];
-    NSMutableString *sql = [NSMutableString stringWithCapacity:0];
+    
+    BOOL fts5 = self.ftsVersion == 5;
+    BOOL fts4 = self.ftsVersion == 4;
+    
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:_columns.count];
     for (NSString *column in _columns) {
-        [sql appendFormat:@", \"%@\"", column];
-        if ([notindexeds containsObject:column] && self.ftsVersion == 5) {
-            [sql appendString:@" UNINDEXED"];
-        }
+        BOOL flag = [notindexeds containsObject:column] && fts5;
+        NSString *unindexed = flag ? @" UNINDEXED" : @"";
+        [array addObject:[column.quoted stringByAppendingString:unindexed]];
     }
-    if (self.ftsVersion == 4 && notindexeds.count > 0) {
+    
+    if (fts4 && notindexeds.count > 0) {
         for (NSString *column in notindexeds) {
-            [sql appendFormat:@", notindexed=\"%@\"", column];
+            NSString *unindexed = [NSString stringWithFormat:@"notindexed=%@", column.quoted];
+            [array addObject:unindexed];
         }
     }
-    if (sql.length < 2) return @"";
-    [sql deleteCharactersInRange:NSMakeRange(0, 2)];
+    
+    NSString *sql = [array componentsJoinedByString:@","];
+    if (sql.length == 0) return @"";
+    
     NSString *format = self.ftsVersion < 5 ? @", tokenize=%@" : @", tokenize='%@'";
     NSString *tokenize = _ftsTokenizer.length > 0 ? [NSString stringWithFormat:format, _ftsTokenizer] : @"";
-    return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS \"%@\" USING %@(%@ %@)",
-            tableName, self.ftsModule, sql, tokenize].strip;
+    return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS %@ USING %@(%@ %@)",
+            tableName.quoted, self.ftsModule, sql, tokenize].strip;
 }
 
 // MARK: - Utils

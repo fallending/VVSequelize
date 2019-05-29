@@ -7,39 +7,45 @@
 
 #import "VVOrm+Create.h"
 #import "NSObject+VVKeyValue.h"
+#import "NSObject+VVOrm.h"
 
 @implementation VVOrm (Create)
 
 - (BOOL)_insertOne:(nonnull id)object upsert:(BOOL)upsert
 {
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
-    NSMutableString *keyString = [NSMutableString stringWithCapacity:0];
-    NSMutableString *valString = [NSMutableString stringWithCapacity:0];
+    
+    NSMutableArray *keys = [NSMutableArray arrayWithCapacity:0];
+    NSMutableArray *placeholders = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *values = [NSMutableArray arrayWithCapacity:0];
-    [dic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+    
+    [dic enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
         if (key && obj && [self.config.columns containsObject:key]) {
-            [keyString appendFormat:@"\"%@\",", key];
-            [valString appendString:@"?,"];
+            [keys addObject:key.quoted];
+            [placeholders addObject:@"?"];
             [values addObject:[obj vv_dbStoreValue]];
         }
     }];
-    if (keyString.length > 1 && valString.length > 1) {
-        if (self.config.logAt) {
-            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-            [keyString appendFormat:@"\"%@\",", kVVCreateAt];
-            [valString appendString:@"?,"];
-            [values addObject:@(now)];
-            [keyString appendFormat:@"\"%@\",", kVVUpdateAt];
-            [valString appendString:@"?,"];
-            [values addObject:@(now)];
-        }
-        [keyString deleteCharactersInRange:NSMakeRange(keyString.length - 1, 1)];
-        [valString deleteCharactersInRange:NSMakeRange(valString.length - 1, 1)];
-        NSString *sql = [NSString stringWithFormat:@"%@ INTO \"%@\" (%@) VALUES (%@)",
-                         (upsert ? @"INSERT OR REPLACE" : @"INSERT"), self.tableName, keyString, valString];
-        return [self.vvdb run:sql bind:values];
+    
+    if (keys.count == 0) return NO;
+
+    if (self.config.logAt) {
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+        [keys addObject:kVVCreateAt.quoted];
+        [placeholders addObject:@"?"];
+        [values addObject:@(now)];
+        
+        [keys addObject:kVVUpdateAt.quoted];
+        [placeholders addObject:@"?"];
+        [values addObject:@(now)];
     }
-    return NO;
+    
+    NSString *keyString = [keys componentsJoinedByString:@","];
+    NSString *placeholderString = [placeholders componentsJoinedByString:@","];
+    NSString *sql = [NSString stringWithFormat:@"%@ INTO %@ (%@) VALUES (%@)",
+                     (upsert ? @"INSERT OR REPLACE" : @"INSERT"),
+                     self.tableName.quoted, keyString, placeholderString];
+    return [self.vvdb run:sql bind:values];
 }
 
 - (BOOL)insertOne:(nonnull id)object

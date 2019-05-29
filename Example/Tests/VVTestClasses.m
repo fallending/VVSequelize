@@ -19,14 +19,15 @@
 
 @implementation VVTestOne
 
-+ (NSDictionary *)mj_objectClassInArray{
-    return @{@"mobiles":VVTestMobile.class,@"friends":@"VVTestPerson"};
++ (NSDictionary *)mj_objectClassInArray
+{
+    return @{ @"mobiles": VVTestMobile.class, @"friends": @"VVTestPerson" };
 }
 
-+ (nullable NSArray<NSString *> *)vv_ignoreProperties{
++ (nullable NSArray<NSString *> *)vv_ignoreProperties
+{
     return @[@"dic"];
 }
-
 
 @end
 

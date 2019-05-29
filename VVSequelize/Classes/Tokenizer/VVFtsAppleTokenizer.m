@@ -68,7 +68,8 @@ static void appleEnumerator(const char *pText, int nText, const char *locale, BO
 // MARK: -
 @implementation VVFtsAppleTokenizer
 
-+ (nonnull VVFtsXEnumerator)enumerator {
++ (nonnull VVFtsXEnumerator)enumerator
+{
     return appleEnumerator;
 }
 

@@ -11,7 +11,7 @@
 @implementation VVOrm (Delete)
 - (BOOL)drop
 {
-    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS \"%@\"", self.tableName];
+    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", self.tableName.quoted];
     return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         return [self.vvdb excute:sql];
     }];
@@ -22,7 +22,7 @@
     NSDictionary *condition = [self uniqueConditionForObject:object];
     if (condition.count == 0) return NO;
     NSString *where = [NSString sqlWhere:condition];
-    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@", self.tableName, where];
+    NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
     return [self.vvdb excute:sql];
 }
 
@@ -42,7 +42,7 @@
 - (BOOL)deleteWhere:(nullable VVExpr *)condition
 {
     NSString *where = [NSString sqlWhere:condition];
-    NSString *sql = [NSString stringWithFormat:@"DELETE FROM \"%@\" %@", self.tableName, where];
+    NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
     return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         return [self.vvdb excute:sql];
     }];

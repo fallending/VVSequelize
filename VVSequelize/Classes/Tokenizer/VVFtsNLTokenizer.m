@@ -52,7 +52,8 @@ static void nlEnumerator(const char *pText, int nText, const char *locale, BOOL 
 // MARK: -
 @implementation VVFtsNLTokenizer
 
-+ (nonnull VVFtsXEnumerator)enumerator {
++ (nonnull VVFtsXEnumerator)enumerator
+{
     return nlEnumerator;
 }
 

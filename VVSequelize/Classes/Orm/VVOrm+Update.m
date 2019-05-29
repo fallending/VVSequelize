@@ -14,25 +14,30 @@
 - (BOOL)_update:(nullable VVExpr *)condition keyValues:(NSDictionary<NSString *, id> *)keyValues
 {
     NSString *where = [NSString sqlWhere:condition];
-    NSMutableString *setString = [NSMutableString stringWithCapacity:0];
-    NSMutableArray *objs = [NSMutableArray arrayWithCapacity:0];
-    [keyValues enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+    
+    NSMutableArray *sets = [NSMutableArray arrayWithCapacity:0];
+    NSMutableArray *vals = [NSMutableArray arrayWithCapacity:0];
+    
+    [keyValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
         if (key && obj && [self.config.columns containsObject:key]) {
-            [setString appendFormat:@"\"%@\" = ?,", key];
-            [objs addObject:[obj vv_dbStoreValue]];
+            NSString *tmp = [NSString stringWithFormat:@"%@ = ?", key.quoted];
+            [sets addObject:tmp];
+            [vals addObject:[obj vv_dbStoreValue]];
         }
     }];
-    if (setString.length > 1) {
-        if (self.config.logAt) {
-            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-            [setString appendFormat:@"\"%@\" = ?,", kVVUpdateAt];
-            [objs addObject:@(now)];
-        }
-        [setString deleteCharactersInRange:NSMakeRange(setString.length - 1, 1)];
-        NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@", self.tableName, setString, where];
-        return [self.vvdb run:sql bind:objs];
+    
+    if (sets.count == 0) return NO;
+    
+    if (self.config.logAt) {
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+        NSString *tmp = [NSString stringWithFormat:@"%@ = ?", kVVUpdateAt.quoted];
+        [sets addObject:tmp];
+        [vals addObject:@(now)];
     }
-    return NO;
+    
+    NSString *setString = [sets componentsJoinedByString:@","];
+    NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
+    return [self.vvdb run:sql bind:vals];
 }
 
 - (BOOL)_updateOne:(id)object fields:(nullable NSArray<NSString *> *)fields
@@ -94,14 +99,14 @@
     if (value == 0) {
         return YES;
     }
-    NSMutableString *setString = [NSMutableString stringWithFormat:@"\"%@\" = \"%@\"%@",
-                                  field, field, @(value)];
+    NSMutableString *setString = [NSMutableString stringWithFormat:@"%@ = %@%@%@",
+                                  field.quoted, field.quoted, value > 0 ? @"+" : @"-", @(ABS(value))];
     if (self.config.logAt) {
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-        [setString appendFormat:@",\"%@\" = \"%@\"", kVVUpdateAt, @(now)];
+        [setString appendFormat:@",%@ = %@", kVVUpdateAt.quoted, @(now).stringValue.quoted];
     }
     NSString *where = [NSString sqlWhere:condition];
-    NSString *sql = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ %@", self.tableName, setString, where];
+    NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
     return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         return [self.vvdb excute:sql];
     }];

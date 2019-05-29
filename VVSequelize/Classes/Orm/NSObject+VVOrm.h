@@ -89,10 +89,10 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  将array中的元素用逗号`,`连接生成字符串
  
- @param quota 每个元素是否用双引号`"`括起来
+ @param quote 每个元素是否用双引号`"`括起来
  @return 连接好的字符串
  */
-- (NSString *)sqlJoin:(BOOL)quota;
+- (NSString *)sqlJoin:(BOOL)quote;
 
 /**
  数组去重
@@ -124,14 +124,6 @@ NS_ASSUME_NONNULL_BEGIN
  @return where子句,包含`where`关键字
  */
 + (NSString *)sqlWhere:(id)condition;
-
-/**
- 根据传入的数据生成FTS搜索的where子句
- 
- @param condition 条件对象,NSString,NSArray,NSDictionary
- @return FTS搜索的where子句,包含`where`关键字
- */
-+ (NSString *)sqlMatch:(id)condition;
 
 /**
  根据传入的数据生成groupBy子句
@@ -322,10 +314,24 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  为字符串前后添加引号
  
- @param quota 引号字符串
- @return 新字符串
+ @param quote 引号字符串
+ @return 括起来的字符串
  */
-- (NSString *)quota:(NSString *)quota;
+- (NSString *)quote:(NSString *)quote;
+
+/**
+ 使用双引号括起来
+
+ @return 括起来的字符串
+ */
+- (NSString *)quoted;
+
+/**
+ 使用单引号括起来
+
+ @return 括起来的字符串
+ */
+- (NSString *)singleQuoted;
 
 /**
  去除string首尾的空格和回车

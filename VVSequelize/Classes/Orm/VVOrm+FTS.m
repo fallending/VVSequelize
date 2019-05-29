@@ -22,9 +22,8 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
              limit:(NSUInteger)limit
             offset:(NSUInteger)offset
 {
-    NSString *match = [NSString sqlMatch:condition];
     VVSelect *select = [VVSelect makeSelect:^(VVSelect *make) {
-        make.orm(self).where(match).orderBy(orderBy).offset(offset).limit(limit);
+        make.orm(self).where(condition).orderBy(orderBy).offset(offset).limit(limit);
     }];
     return [select allObjects];
 }
@@ -50,9 +49,8 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
              limit:(NSUInteger)limit
             offset:(NSUInteger)offset
 {
-    NSString *match = [NSString sqlMatch:condition];
     VVSelect *select = [VVSelect makeSelect:^(VVSelect *make) {
-        make.orm(self).where(match).orderBy(orderBy).offset(offset).limit(limit);
+        make.orm(self).where(condition).orderBy(orderBy).offset(offset).limit(limit);
     }];
     VVDBStatement *statement = [VVDBStatement statementWithDatabase:self.vvdb sql:select.sql];
     NSMutableArray *columns = [[statement columnNames] mutableCopy];
@@ -79,21 +77,19 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
              limit:(NSUInteger)limit
             offset:(NSUInteger)offset
 {
-    NSString *match = [NSString sqlMatch:condition];
     NSString *fields = [NSString stringWithFormat:@"*,count(*) as %@", VVOrmFtsCount];
     NSString *orderBy = @"rowid".desc;
     VVSelect *select = [VVSelect makeSelect:^(VVSelect *make) {
-        make.orm(self).where(match).fields(fields).groupBy(groupBy).orderBy(orderBy).offset(offset).limit(limit);
+        make.orm(self).where(condition).fields(fields).groupBy(groupBy).orderBy(orderBy).offset(offset).limit(limit);
     }];
     return [select allKeyValues];
 }
 
 - (NSUInteger)matchCount:(nullable VVExpr *)condition
 {
-    NSString *match = [NSString sqlMatch:condition];
     NSString *fields = @"count(*) as count";
     VVSelect *select = [VVSelect makeSelect:^(VVSelect *make) {
-        make.orm(self).where(match).fields(fields);
+        make.orm(self).where(condition).fields(fields);
     }];
     NSDictionary *dic = [select allKeyValues].firstObject;
     return [dic[@"count"] integerValue];

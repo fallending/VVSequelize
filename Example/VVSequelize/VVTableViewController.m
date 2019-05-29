@@ -71,30 +71,30 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
 {
     // default select million
     self.selectedIndex = 0;
-    
+
     [NSString preloadingForPinyin];
-    
+
     //db
     NSString *dir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
     NSMutableArray *items = [NSMutableArray arrayWithCapacity:4];
-    
+
     NSString *tableName = @"message";
     NSArray *configs = @[@[@"hundredThousand.db", @"hundredThousandFTS.db", self.hundredThousandLabel, @(100000)],
                          @[@"million.db",         @"millionFTS.db",         self.millionLabel,         @(1000000)],
                          @[@"tenMillion.db",      @"tenMillionFTS.db",      self.tenMillionLabel,      @(10000000)],
                          @[@"hundredMillion.db",  @"hundredMillionFTS.db",  self.hundredMillionLabel,  @(100000000)]];
-    
+
     for (NSArray *sub in configs) {
         NSString *normal = sub[0];
         NSString *fts = sub[1];
         UILabel *label = sub[2];
         unsigned long long maxCount = [sub[3] unsignedLongLongValue];
-        
+
         VVItem *item = [VVItem new];
         item.tableName = tableName;
         item.label = label;
         item.maxCount = maxCount;
-        
+
         item.dbName = normal;
         item.dbPath = [dir stringByAppendingPathComponent:item.dbName];
         item.db = [VVDatabase databaseWithPath:item.dbPath];
@@ -102,7 +102,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         config.primaries = @[@"message_id"];
         config.pkAutoIncrement = YES;
         item.orm = [VVOrm ormWithConfig:config tableName:item.tableName dataBase:item.db];
-        
+
         item.ftsDbName = fts;
         item.ftsDbPath = [dir stringByAppendingPathComponent:item.ftsDbName];
         item.ftsDb = [VVDatabase databaseWithPath:item.ftsDbPath];
@@ -110,17 +110,17 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         [item.ftsDb registerFtsTokenizer:VVFtsAppleTokenizer.class forName:@"apple"];
         [item.ftsDb registerFtsTokenizer:VVFtsNLTokenizer.class forName:@"nl"];
 
-        [item.db setTraceHook:^int(unsigned mask, void *stmt, void *sql) {
+        [item.db setTraceHook:^int (unsigned mask, void *stmt, void *sql) {
             return 0;
         }];
-        
+
         VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
         ftsConfig.fts = YES;
         ftsConfig.ftsModule = @"fts5";
         ftsConfig.ftsTokenizer = @"jieba zh_CN pinyin 9";
         ftsConfig.indexes = @[@"info"];
         item.ftsOrm = [VVOrm ormWithConfig:ftsConfig tableName:item.tableName dataBase:item.ftsDb];
-        
+
         [items addObject:item];
     }
     self.items = items;
@@ -179,7 +179,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
             fileSize += size;
             ftsFileSize += ftsSize;
         }
-        
+
         item.fileSize = fileSize;
         item.ftsFileSize = ftsFileSize;
         item.count = [item.orm count:nil];
@@ -224,17 +224,17 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
 {
     if (self.selectedIndex >= self.items.count) return;
     VVItem *item = self.items[self.selectedIndex];
-    
+
     [self updateUIWithAction:NO isSearch:NO logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime mockTime = 0;
         CFAbsoluteTime normalTime = 0;
         CFAbsoluteTime ftsTime = 0;
-        
+
         CGFloat thousands = pow(10, self.selectedIndex) * 100;
         unsigned long long startId = item.count;
         thousands -= startId / 1000;
-        
+
         for (long long i = 0; i < thousands; i++) {
             @autoreleasepool {
                 CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
@@ -244,16 +244,16 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
                 CFAbsoluteTime step2 = CFAbsoluteTimeGetCurrent();
                 [item.ftsOrm insertMulti:messages];
                 CFAbsoluteTime end = CFAbsoluteTimeGetCurrent();
-                
+
                 CFAbsoluteTime mock = step1 - begin;
                 CFAbsoluteTime normal = step2 - step1;
                 CFAbsoluteTime fts = end - step2;
-                
+
                 mockTime += mock;
                 normalTime += normal;
                 ftsTime += fts;
                 startId += 1000;
-                
+
                 CGFloat progress = MIN(1.0, (startId * 1.0) / item.maxCount);
                 DDLogVerbose(@"id: %@ - %@, progress: %.2f%%, mock: %@, normal: %@, fts: %@",
                              @(startId), @(startId + 1000), progress * 100.0, @(mock), @(normal), @(fts));
@@ -305,13 +305,13 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
         NSArray *messages = [item.ftsOrm findAll:@"info".match(keyword)];
-        //        NSArray *messages = [item.ftsOrm match:[@"info" match:keyword] highlight:@"info" attributes:@{NSForegroundColorAttributeName:UIColor.redColor} orderBy:nil limit:0 offset:0];
         CFAbsoluteTime end = CFAbsoluteTimeGetCurrent();
         NSString *string = [NSString stringWithFormat:@"[query] fts: \"%@\", hit: %@, consumed: %@",
                             text, @(messages.count), @(end - begin)];
         DDLogInfo(@"%@", string);
         NSArray *highlights = [item.ftsOrm highlight:messages field:@"info" keyword:keyword attributes:@{ NSForegroundColorAttributeName: UIColor.redColor }];
         if (highlights) {
+            // no warning
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             [self updateUIWithAction:YES isSearch:YES logString:string];
@@ -362,7 +362,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     if (indexPath.section != 0) return;
     [self loadDetailsForRow:indexPath.row];
-    
+
     self.selectedIndex = indexPath.row;
     NSUInteger rows = [tableView numberOfRowsInSection:indexPath.section];
     for (NSUInteger row = 0; row < rows; row++) {

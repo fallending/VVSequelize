@@ -246,7 +246,7 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)isExist:(NSString *)table
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = \"%@\"", table];
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = %@", table.quoted];
     return [[self scalar:sql bind:nil] boolValue];
 }
 
@@ -308,7 +308,7 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)savepoint:(NSString *)name block:(BOOL (^)(void))block
 {
-    NSString *savepoint = [NSString stringWithFormat:@"SAVEPOINT %@", [name quota:@"\""]];
+    NSString *savepoint = [NSString stringWithFormat:@"SAVEPOINT %@", name.quoted];
     NSString *commit = [NSString stringWithFormat:@"RELEASE %@", savepoint];
     NSString *rollback = [NSString stringWithFormat:@"ROLLBACK TO %@", savepoint];
     return [self transaction:savepoint commit:commit rollback:rollback block:block];

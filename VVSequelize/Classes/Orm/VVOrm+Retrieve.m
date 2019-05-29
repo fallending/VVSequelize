@@ -6,6 +6,7 @@
 //
 
 #import "VVOrm+Retrieve.h"
+#import "NSObject+VVOrm.h"
 #import "VVSelect.h"
 
 @implementation VVOrm (Retrieve)
@@ -128,7 +129,7 @@
           || [method isEqualToString:@"min"]
           || [method isEqualToString:@"sum"]
           || [method isEqualToString:@"count"])) return nil;
-    NSString *fields = [NSString stringWithFormat:@"%@(\"%@\") AS %@", method, field, method];
+    NSString *fields = [NSString stringWithFormat:@"%@(%@) AS %@", method, field.quoted, method];
     VVSelect *select = [VVSelect makeSelect:^(VVSelect *make) {
         make.orm(self).where(condition).fields(fields);
     }];
