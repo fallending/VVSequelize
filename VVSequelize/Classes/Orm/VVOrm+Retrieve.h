@@ -45,6 +45,17 @@ NS_ASSUME_NONNULL_BEGIN
  
  @param condition 查询条件
  @param orderBy 排序条件
+ @return 查询结果,对象数组
+ @see findAll:distinct:fields:groupBy:having:orderBy:limit:offset:
+ */
+- (NSArray *)findAll:(nullable VVExpr *)condition
+             orderBy:(nullable VVOrderBy *)orderBy;
+
+/**
+ 根据条件查询数据
+ 
+ @param condition 查询条件
+ @param orderBy 排序条件
  @param limit 数据条数,为0时不做限制
  @param offset 数据起始位置
  @return 查询结果,对象数组
@@ -54,6 +65,16 @@ NS_ASSUME_NONNULL_BEGIN
              orderBy:(nullable VVOrderBy *)orderBy
                limit:(NSUInteger)limit
               offset:(NSUInteger)offset;
+
+/**
+ 根据条件查询数据
+ 
+ @param condition 查询条件
+ @param groupBy 分组条件
+ @see findAll:distinct:fields:groupBy:having:orderBy:limit:offset:
+ */
+- (NSArray *)findAll:(nullable VVExpr *)condition
+             groupBy:(nullable VVGroupBy *)groupBy;
 
 /**
  根据条件查询数据

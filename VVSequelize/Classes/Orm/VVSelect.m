@@ -137,22 +137,6 @@
     };
 }
 
-- (NSString *)offsetClause
-{
-    if (_offset > 0) {
-        return [NSString stringWithFormat:@" OFFSET %@", @(_offset)];
-    }
-    return @"";
-}
-
-- (NSString *)limitClause
-{
-    if (_limit > 0) {
-        return [NSString stringWithFormat:@" LIMIT %@", @(_limit)];
-    }
-    return @"";
-}
-
 - (NSString *)fieldsString
 {
     if (!_fieldsString) {
@@ -172,12 +156,26 @@
 {
     NSAssert(_table.length > 0, @"set table or orm first!");
     _fieldsString = nil;     // 重置fieldsString
-    NSString *where = [NSString sqlWhere:_where];
-    NSString *groupBy = [NSString sqlGroupBy:_groupBy];
-    NSString *having = groupBy.length == 0 ? @"" : [NSString sqlHaving:_having];
-    NSString *orderBy = [NSString sqlOrderBy:_orderBy];
-    NSString *limit = [self limitClause];
-    NSString *offset = [self offsetClause];
+
+    NSString *where = [_where sqlWhere];
+    if (where.length > 0) where =  [NSString stringWithFormat:@" WHERE %@", where];
+
+    NSString *groupBy = [_groupBy sqlJoin];
+    if (groupBy.length > 0) groupBy = [NSString stringWithFormat:@" GROUP BY %@", groupBy];
+
+    NSString *having = groupBy.length > 0 ? [_having sqlWhere] : @"";
+    if (having.length > 0) having = [NSString stringWithFormat:@" HAVING %@", having];
+
+    NSString *orderBy = [_orderBy sqlJoin];
+    if (orderBy.length > 0) {
+        if (![orderBy isMatch:@"( +ASC *$)|( +DESC *$)"]) orderBy = orderBy.asc;
+        orderBy = [NSString stringWithFormat:@" ORDER BY %@", orderBy];
+    }
+
+    NSString *limit = _limit > 0 ? [NSString stringWithFormat:@" LIMIT %@", @(_limit)] : @"";
+
+    NSString *offset = _offset > 0 ? [NSString stringWithFormat:@" OFFSET %@", @(_offset)] : @"";
+
     NSString *sql = [NSMutableString stringWithFormat:@"SELECT %@ %@ FROM %@ %@ %@ %@ %@ %@ %@",
                      _distinct ? @"DISTINCT" : @"", self.fieldsString, _table.quoted,
                      where, groupBy, having, orderBy, limit, offset].strip;

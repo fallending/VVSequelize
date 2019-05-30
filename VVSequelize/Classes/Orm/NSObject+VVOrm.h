@@ -13,32 +13,19 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NSObject (VVOrm)
 
 /**
- 是否是where语句相关对象
- 
- @return YES-是,NO-不是
+ 生成where子句
+
+ @return where子句,不含where关键字
  */
-- (BOOL)isVVExpr;
+- (NSString *)sqlWhere;
 
 /**
- 是否字段相关对象
- 
- @return YES-是,NO-不是
- */
-- (BOOL)isVVFields;
+ array: 将所有元素以逗号用双引号`"`括起来,并用`,`连接生成字符串;
+ string: 返回原值
 
-/**
- 是否是排序相关对象
- 
- @return YES-是,NO-不是
+ @return 连接好的字符串
  */
-- (BOOL)isVVOrderBy;
-
-/**
- 是否是分组查询相关对象
- 
- @return YES-是,NO-不是
- */
-- (BOOL)isVVGroupBy;
+- (NSString *)sqlJoin;
 
 @end
 
@@ -80,13 +67,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)desc;
 
 /**
- 将array中的元素以逗号用双引号`"`括起来,并用`,`连接生成字符串
- 
- @return 连接好的字符串
- */
-- (NSString *)sqlJoin;
-
-/**
  将array中的元素用逗号`,`连接生成字符串
  
  @param quote 每个元素是否用双引号`"`括起来
@@ -116,40 +96,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface NSString (VVOrm)
 
-// MARK: - clause
-/**
- 根据传入的数据生成where子句
- 
- @param condition 条件对象,NSString,NSArray,NSDictionary
- @return where子句,包含`where`关键字
- */
-+ (NSString *)sqlWhere:(id)condition;
-
-/**
- 根据传入的数据生成groupBy子句
- 
- @param groupBy 条件对象,NSString,NSArray
- @return groupBy子句,包含`group by`关键字
- */
-+ (NSString *)sqlGroupBy:(id)groupBy;
-
-/**
- 根据传入的数据生成having子句
- 
- @param having 条件对象,NSString,NSArray,NSDictionary
- @return having子句,包含`having`关键字
- */
-+ (NSString *)sqlHaving:(id)having;
-
-/**
- 根据传入的数据生成orderBy子句
- 
- @param orderBy 条件对象,NSString,NSArray
- @return orderBy子句,包含`order by`关键字
- */
-+ (NSString *)sqlOrderBy:(id)orderBy;
-
-// MARK: - sql
+// MARK: - where
 /**
  使用`and`连接
  

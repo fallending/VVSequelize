@@ -21,7 +21,10 @@
 {
     NSDictionary *condition = [self uniqueConditionForObject:object];
     if (condition.count == 0) return NO;
-    NSString *where = [NSString sqlWhere:condition];
+    
+    NSString *where = [condition sqlWhere];
+    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
+    
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
     return [self.vvdb excute:sql];
 }
@@ -41,7 +44,9 @@
 
 - (BOOL)deleteWhere:(nullable VVExpr *)condition
 {
-    NSString *where = [NSString sqlWhere:condition];
+    NSString *where = [condition sqlWhere];
+    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
+    
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
     return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         return [self.vvdb excute:sql];

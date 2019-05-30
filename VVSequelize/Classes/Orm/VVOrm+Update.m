@@ -13,11 +13,12 @@
 
 - (BOOL)_update:(nullable VVExpr *)condition keyValues:(NSDictionary<NSString *, id> *)keyValues
 {
-    NSString *where = [NSString sqlWhere:condition];
-    
+    NSString *where = [condition sqlWhere];
+    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
+
     NSMutableArray *sets = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *vals = [NSMutableArray arrayWithCapacity:0];
-    
+
     [keyValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
         if (key && obj && [self.config.columns containsObject:key]) {
             NSString *tmp = [NSString stringWithFormat:@"%@ = ?", key.quoted];
@@ -105,7 +106,10 @@
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
         [setString appendFormat:@",%@ = %@", kVVUpdateAt.quoted, @(now).stringValue.quoted];
     }
-    NSString *where = [NSString sqlWhere:condition];
+
+    NSString *where = [condition sqlWhere];
+    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
+
     NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
     return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         return [self.vvdb excute:sql];

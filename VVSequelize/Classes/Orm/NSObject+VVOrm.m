@@ -10,63 +10,29 @@
 
 @implementation NSObject (VVOrm)
 
-- (NSString *)vv_condition
+- (NSString *)sqlWhere
 {
     return @"";
 }
 
-- (NSString *)vv_join
-{
-    return @"";
-}
-
-- (NSString *)vv_match
+- (NSString *)sqlJoin
 {
     return @"";
 }
 
 - (NSString *)quotedStringValue
 {
-    return [[NSString stringWithFormat:@"%@",self] quote:@"\""];
-}
-
-- (BOOL)isVVExpr
-{
-    return [NSString sqlWhere:self].length > 0;
-}
-
-- (BOOL)isVVFields
-{
-    return [self isKindOfClass:NSString.class] || ([self isKindOfClass:NSArray.class] && [(NSArray *)self count] > 0);
-}
-
-- (BOOL)isVVOrderBy
-{
-    return [NSString sqlOrderBy:self].length > 0;
-}
-
-- (BOOL)isVVGroupBy
-{
-    return [NSString sqlGroupBy:self].length > 0;
+    return [[NSString stringWithFormat:@"%@", self] quote:@"\""];
 }
 
 @end
 
 @implementation NSDictionary (VVOrm)
-- (NSString *)vv_condition
+- (NSString *)sqlWhere
 {
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (NSString *key in self) {
         [array addObject:key.eq(self[key])];
-    }
-    return [array componentsJoinedByString:@" AND "];
-}
-
-- (NSString *)vv_match
-{
-    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-    for (NSString *key in self) {
-        [array addObject:key.match(self[key])];
     }
     return [array componentsJoinedByString:@" AND "];
 }
@@ -81,11 +47,11 @@
 @end
 
 @implementation NSArray (VVOrm)
-- (NSString *)vv_condition
+- (NSString *)sqlWhere
 {
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (id val in self) {
-        NSString *str = [val vv_condition];
+        NSString *str = [val sqlWhere];
         if (str.length > 0) {
             [array addObject:str];
         }
@@ -119,11 +85,6 @@
     return [array componentsJoinedByString:@","];
 }
 
-- (NSString *)vv_join
-{
-    return [self sqlJoin];
-}
-
 - (NSArray *)vv_distinctUnionOfObjects
 {
     return [self valueForKeyPath:@"@distinctUnionOfObjects.self"];
@@ -140,48 +101,18 @@
 
 @implementation NSString (VVOrm)
 
-// MARK: - clause
-+ (NSString *)sqlWhere:(id)condition
-{
-    NSString *clause = [condition vv_condition];
-    if (clause.length == 0) return @"";
-    return [NSString stringWithFormat:@" WHERE %@", clause];
-}
-
-+ (NSString *)sqlGroupBy:(id)groupBy
-{
-    NSString *clause = [groupBy vv_join];
-    if (clause.length == 0) return @"";
-    return [NSString stringWithFormat:@" GROUP BY %@", clause];
-}
-
-+ (NSString *)sqlHaving:(id)having
-{
-    NSString *clause = [having vv_condition];
-    if (clause.length == 0) return @"";
-    return [NSString stringWithFormat:@" HAVING %@", clause];
-}
-
-+ (NSString *)sqlOrderBy:(id)orderBy
-{
-    NSString *clause = [orderBy vv_join];
-    if (clause.length == 0) return @"";
-    if (![clause isMatch:@"( +ASC *$)|( +DESC *$)"]) clause = clause.asc;
-    return [NSString stringWithFormat:@" ORDER BY %@", clause];
-}
-
 // MARK: - where
 - (NSString *(^)(id))and
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ AND %@", self, value];
+               return [NSString stringWithFormat:@"%@ AND %@", self, [value sqlWhere]];
     };
 }
 
 - (NSString *(^)(id))or
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"(%@) OR (%@)", self, value];
+               return [NSString stringWithFormat:@"(%@) OR (%@)", self, [value sqlWhere]];
     };
 }
 
@@ -307,17 +238,12 @@
     return [self stringByAppendingString:@" DESC"];
 }
 
-- (NSString *)vv_condition
+- (NSString *)sqlWhere
 {
     return self;
 }
 
-- (NSString *)vv_match
-{
-    return self;
-}
-
-- (NSString *)vv_join
+- (NSString *)sqlJoin
 {
     return self;
 }
