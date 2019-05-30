@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  生成where子句
-
+ 
  @return where子句,不含where关键字
  */
 - (NSString *)sqlWhere;
@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  array: 将所有元素以逗号用双引号`"`括起来,并用`,`连接生成字符串;
  string: 返回原值
-
+ 
  @return 连接好的字符串
  */
 - (NSString *)sqlJoin;
@@ -244,6 +244,38 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *(^)(id value))match;
 
 /**
+ 联表查询,内连接,self为表名;
+ 
+ @note right 要连接的表
+ @return 连接后的表语句,如: `table1 JOIN table2`
+ */
+- (NSString *(^)(NSString *right))innerJoin;
+
+/**
+ 联表查询,外连接,self为表名;sqlite仅支持`LEFT OUTER JOIN`
+ 
+ @note right 要连接的表
+ @return 连接后的表语句,如: `table1 LEFT OUTER JOIN table2`
+ */
+- (NSString *(^)(NSString *right))outerJoin;
+
+/**
+ 联表查询,交叉连接,self为表名;
+ 
+ @note right 要连接的表
+ @return 连接后的表语句,如: `table1 CROSS JOIN table2`
+ */
+- (NSString *(^)(NSString *right))crossJoin;
+
+/**
+ 联表查询,联表后制定表的字段,self为表名
+ 
+ @note column 字段名
+ @return 连接后的表语句,如: `table1.column1`
+ */
+- (NSString *(^)(NSString *column))column;
+
+/**
  生成order by子句, 不含`order by`关键字
  
  @return order by 子句,如: `field1 ASC`
@@ -268,14 +300,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  使用双引号括起来
-
+ 
  @return 括起来的字符串
  */
 - (NSString *)quoted;
 
 /**
  使用单引号括起来
-
+ 
  @return 括起来的字符串
  */
 - (NSString *)singleQuoted;

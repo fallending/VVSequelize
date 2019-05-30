@@ -105,14 +105,14 @@
 - (NSString *(^)(id))and
 {
     return ^(id value) {
-               return [NSString stringWithFormat:@"%@ AND %@", self, [value sqlWhere]];
+        return [NSString stringWithFormat:@"%@ AND %@", self, [value sqlWhere]];
     };
 }
 
 - (NSString *(^)(id))or
 {
     return ^(id value) {
-               return [NSString stringWithFormat:@"(%@) OR (%@)", self, [value sqlWhere]];
+        return [NSString stringWithFormat:@"(%@) OR (%@)", self, [value sqlWhere]];
     };
 }
 
@@ -225,6 +225,34 @@
 {
     return ^(id value) {
         return [NSString stringWithFormat:@"%@ MATCH %@", self, [value quotedStringValue]];
+    };
+}
+
+- (NSString *(^)(NSString *))innerJoin
+{
+    return ^(NSString *right) {
+        return [NSString stringWithFormat:@"%@ JOIN %@", self, right];
+    };
+}
+
+- (NSString *(^)(NSString *))outerJoin
+{
+    return ^(NSString *right) {
+        return [NSString stringWithFormat:@"%@ LEFT OUTER JOIN %@", self, right];
+    };
+}
+
+- (NSString *(^)(NSString *))crossJoin
+{
+    return ^(NSString *right) {
+        return [NSString stringWithFormat:@"%@ CROSS JOIN %@", self, right];
+    };
+}
+
+- (NSString *(^)(NSString *))column
+{
+    return ^(NSString *column) {
+        return [NSString stringWithFormat:@"%@.%@", self, column];
     };
 }
 
