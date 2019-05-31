@@ -12,9 +12,7 @@
 - (BOOL)drop
 {
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", self.tableName.quoted];
-    return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        return [self.vvdb excute:sql];
-    }];
+    return [self.vvdb excute:sql];
 }
 
 - (BOOL)deleteOne:(nonnull id)object
@@ -48,9 +46,7 @@
     if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
     
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
-    return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        return [self.vvdb excute:sql];
-    }];
+    return [self.vvdb excute:sql];
 }
 
 @end

@@ -8,6 +8,8 @@
 #import "VVOrm.h"
 #import "NSObject+VVOrm.h"
 
+#define VV_NO_WARNING(exp) if (exp) {}
+
 @implementation VVOrm
 
 //MARK: - Public
@@ -100,7 +102,7 @@
         [self migrationDataFormTempTable:tempTableName];
     }
     // 若索引发生变化,则重建索引
-    if (!_config.fts && indexChanged) {
+    if (indexChanged || !exist) {
         [self rebuildIndex];
     }
 }
@@ -118,23 +120,18 @@
         sql = [_config createSQLWith:_tableName];
     }
     // 执行建表SQL
-    BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        return [self.vvdb excute:sql];
-    }];
-    if (ret) {
-    }         // no warning
+    BOOL ret = [self.vvdb excute:sql];
+    VV_NO_WARNING(ret);
+    
     NSAssert1(ret, @"Failure to create a table: %@", _tableName);
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName
 {
     NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _tableName.quoted, tempTableName.quoted];
-    BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        return [self.vvdb excute:sql];
-    }];
-    if (ret) {
-        // no warning
-    }
+    BOOL ret = [self.vvdb excute:sql];
+    VV_NO_WARNING(ret);
+    
     NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
 }
 
@@ -144,16 +141,14 @@
     if (allFields.length == 0) {
         return;
     }
-    BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.tableName.quoted, allFields, allFields, tempTableName.quoted];
-        return [self.vvdb excute:sql];
-    }];
-
+    NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.tableName.quoted, allFields, allFields, tempTableName.quoted];
+    BOOL ret = [self.emdb excute:sql];
+    
     if (ret) {
-        NSString *sql = [NSString stringWithFormat:@"DROP TABLE %@", tempTableName.quoted];
-        [self.vvdb excute:sql];
+        sql = [NSString stringWithFormat:@"DROP TABLE %@", tempTableName.quoted];
+        ret = [self.emdb excute:sql];
     }
-
+    
     if (!ret) {
 #if DEBUG
         NSLog(@"Warning: copying data from old table (%@) to new table (%@) failed!", tempTableName, self.tableName);
@@ -173,7 +168,7 @@
         if ([idxName hasPrefix:@"sqlite_autoindex_"]) continue;
         [dropIdxSQL appendFormat:@"DROP INDEX IF EXISTS %@;", idxName.quoted];
     }
-
+    
     // 建立新索引
     NSString *indexName = [NSString stringWithFormat:@"vvdb_index_%@", _tableName];
     NSString *indexSQL = [_config.indexes sqlJoin];
@@ -181,12 +176,9 @@
     if (indexSQL.length > 0) {
         createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX %@ on %@ (%@);", indexName.quoted, _tableName.quoted, indexSQL];
     }
-    BOOL ret = [_vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        BOOL r = YES;
-        if (dropIdxSQL.length > 0) { r = [self.vvdb excute:dropIdxSQL]; }
-        if (r && createIdxSQL.length > 0) { r = [self.vvdb excute:createIdxSQL]; }
-        return r;
-    }];
+    BOOL ret = YES;
+    if (dropIdxSQL.length > 0) { ret = [self.vvdb excute:dropIdxSQL]; }
+    if (ret && createIdxSQL.length > 0) { ret = [self.vvdb excute:createIdxSQL]; }
 
     if (!ret) {
 #if DEBUG

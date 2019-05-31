@@ -172,6 +172,8 @@
         orderBy = [NSString stringWithFormat:@" ORDER BY %@", orderBy];
     }
     
+    if(_offset > 0 && _limit <= 0) _limit = NSUIntegerMax;
+
     NSString *limit = _limit > 0 ? [NSString stringWithFormat:@" LIMIT %@", @(_limit)] : @"";
     
     NSString *offset = _offset > 0 ? [NSString stringWithFormat:@" OFFSET %@", @(_offset)] : @"";

@@ -61,9 +61,7 @@
 
 - (BOOL)update:(nullable VVExpr *)condition keyValues:(NSDictionary<NSString *, id> *)keyValues
 {
-    return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        return [self _update:condition keyValues:keyValues];
-    }];
+    return [self _update:condition keyValues:keyValues];
 }
 
 - (BOOL)updateOne:(id)object
@@ -111,9 +109,7 @@
     if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
 
     NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
-    return [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
-        return [self.vvdb excute:sql];
-    }];
+    return [self.vvdb excute:sql];
 }
 
 @end

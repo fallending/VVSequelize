@@ -297,6 +297,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     
     [indexesSet minusSet:uniquesSet];
     [notnullsSet minusSet:primariesSet];
+    [uniquesSet minusSet:primariesSet];
     
     NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_types.allKeys ? : @[])];
     NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_defaultValues.allKeys ? : @[])];
@@ -370,6 +371,10 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:_columns.count];
     for (NSString *column in _columns) {
         [array addObject:[self createSQLOfColumn:column]];
+    }
+    if (_primaries.count > 1) {
+        NSArray *pri = [NSString stringWithFormat:@"PRIMARY KEY (%@)", [_primaries componentsJoinedByString:@","]];
+        [array addObject:pri];
     }
     NSString *sql = [array componentsJoinedByString:@","];
     if (sql.length == 0) return @"";
