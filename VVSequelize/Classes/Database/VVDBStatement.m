@@ -273,14 +273,7 @@
         }
     } else if ([obj isKindOfClass:[NSString class]]) {
         const char *string = [(NSString *)obj UTF8String];
-        unsigned long len = strlen(string);
-        if (len < INT8_MAX) {
-            sqlite3_bind_text(_stmt, index, string, (int)len, SQLITE_TRANSIENT);
-        } else if (len < INT16_MAX) {
-            sqlite3_bind_text16(_stmt, index, string, (int)len, SQLITE_TRANSIENT);
-        } else {
-            sqlite3_bind_text64(_stmt, index, string, len, SQLITE_TRANSIENT, SQLITE_UTF8);
-        }
+        sqlite3_bind_text(_stmt, index, string, -1, SQLITE_TRANSIENT);
     } else {
         NSAssert(NO, @"tried to bind unexpected value %@", obj);
     }
