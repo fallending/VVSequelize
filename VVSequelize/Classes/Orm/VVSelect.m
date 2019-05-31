@@ -156,28 +156,28 @@
 {
     NSAssert(_table.length > 0, @"set table or orm first!");
     _fieldsString = nil;     // 重置fieldsString
-
-    NSString *where = [_where sqlWhere];
+    
+    NSString *where = [_where sqlWhere] ? : @"";
     if (where.length > 0) where =  [NSString stringWithFormat:@" WHERE %@", where];
-
-    NSString *groupBy = [_groupBy sqlJoin];
+    
+    NSString *groupBy = [_groupBy sqlJoin] ? : @"";
     if (groupBy.length > 0) groupBy = [NSString stringWithFormat:@" GROUP BY %@", groupBy];
-
-    NSString *having = groupBy.length > 0 ? [_having sqlWhere] : @"";
+    
+    NSString *having = groupBy.length > 0 ? ([_having sqlWhere] ? : @"") : @"";
     if (having.length > 0) having = [NSString stringWithFormat:@" HAVING %@", having];
-
-    NSString *orderBy = [_orderBy sqlJoin];
+    
+    NSString *orderBy = [_orderBy sqlJoin] ? : @"";
     if (orderBy.length > 0) {
         if (![orderBy isMatch:@"( +ASC *$)|( +DESC *$)"]) orderBy = orderBy.asc;
         orderBy = [NSString stringWithFormat:@" ORDER BY %@", orderBy];
     }
-
+    
     NSString *limit = _limit > 0 ? [NSString stringWithFormat:@" LIMIT %@", @(_limit)] : @"";
-
+    
     NSString *offset = _offset > 0 ? [NSString stringWithFormat:@" OFFSET %@", @(_offset)] : @"";
-
+    
     NSString *sql = [NSMutableString stringWithFormat:@"SELECT %@ %@ FROM %@ %@ %@ %@ %@ %@ %@",
-                     _distinct ? @"DISTINCT" : @"", self.fieldsString, _table.quoted,
+                     _distinct ? @"DISTINCT" : @"", self.fieldsString, _table,
                      where, groupBy, having, orderBy, limit, offset].strip;
     return sql;
 }
