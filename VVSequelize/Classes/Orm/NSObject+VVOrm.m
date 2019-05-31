@@ -168,14 +168,14 @@
 - (NSString *(^)(id, id))between
 {
     return ^(id value1, id value2) {
-        return [NSString stringWithFormat:@"%@ BETWEEN %@,%@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ BETWEEN %@ AND %@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
     };
 }
 
 - (NSString *(^)(id, id))notBetween
 {
     return ^(id value1, id value2) {
-        return [NSString stringWithFormat:@"%@ NOT BETWEEN %@,%@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ NOT BETWEEN %@ AND %@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
     };
 }
 
