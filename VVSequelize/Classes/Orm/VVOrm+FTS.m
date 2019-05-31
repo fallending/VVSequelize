@@ -128,6 +128,10 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:objects.count];
     for (NSObject *obj in objects) {
         NSString *source = [obj valueForKey:field];
+        if (source.length == 0) {
+            [results addObject:[NSAttributedString new]];
+            continue;
+        }
         NSAttributedString *attrText = [self highlight:source pyMaxLen:pymlen enumerator:enumerator keywordTokens:keywordTokens attributes:attributes];
         [results addObject:attrText];
     }
@@ -140,9 +144,9 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
 {
     const char *pText = source.UTF8String;
     int nText = (int)strlen(pText);
-    
+
     __block NSMutableArray<VVFtsToken *> *results = [NSMutableArray arrayWithCapacity:0];
-    
+
     VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
         char *_token = (char *)malloc(len + 1);
         memcpy(_token, token, len);
