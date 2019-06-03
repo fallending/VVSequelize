@@ -116,6 +116,13 @@
     };
 }
 
+- (NSString *(^)(id))on
+{
+    return ^(id value) {
+        return [NSString stringWithFormat:@"%@ ON %@", self, [value sqlWhere]];
+    };
+}
+
 - (NSString *(^)(id))eq
 {
     return ^(id value) {
@@ -253,6 +260,13 @@
 {
     return ^(NSString *column) {
         return [NSString stringWithFormat:@"%@.%@", self, column];
+    };
+}
+
+- (NSString *(^)(NSString *, id))concat
+{
+    return ^(NSString *concat, id value) {
+        return [NSString stringWithFormat:@"%@ %@ %@", self, concat, value];
     };
 }
 

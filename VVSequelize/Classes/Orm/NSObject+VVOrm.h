@@ -114,6 +114,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *(^)(id value))or;
 
 /**
+ 使用`on`连接, 用于JOIN条件
+ 
+ @note value 连接条件,如`table1.field == table2.field`
+ @return 连接后的语句,如: `table1 INNER JOIN table2 ON table1.field == table2.field`
+ */
+- (NSString *(^)(id value))on;
+
+/**
  使用`=`连接
  
  @note value 等于的值
@@ -274,6 +282,14 @@ NS_ASSUME_NONNULL_BEGIN
  @return 连接后的表语句,如: `table1.column1`
  */
 - (NSString *(^)(NSString *column))column;
+
+/**
+ 连接字符串,用空格分隔,用于某些特殊场合
+ 
+ @note concat 连接字符串, value 要连接的的值
+ @return 连接后的表语句,如: A.concat(@"=", B) -> `A = B`
+ */
+- (NSString *(^)(NSString *concat, id value))concat;
 
 /**
  生成order by子句, 不含`order by`关键字
