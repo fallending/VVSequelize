@@ -205,7 +205,7 @@
         }
         case SQLITE_TEXT: {
             const unsigned char *bytes = sqlite3_column_text(_stmt, index);
-            NSString *text = [NSString stringWithUTF8String:(const char *)bytes];
+            NSString *text = [NSString stringWithUTF8String:(const char *)bytes ? : ""];
             return text;
         }
         case SQLITE_BLOB: {

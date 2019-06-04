@@ -15,7 +15,7 @@
 {
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     if (!upsert && self.config.primaries.count == 1 && self.config.pkAutoIncrement) {
-        dic = [dic em_removeObjectsForKeys:self.config.primaries];
+        dic = [dic vv_removeObjectsForKeys:self.config.primaries];
     }
 
     NSMutableArray *keys = [NSMutableArray arrayWithCapacity:0];

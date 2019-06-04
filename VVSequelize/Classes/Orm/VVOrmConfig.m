@@ -373,7 +373,7 @@ NSString *const VVSqlTypeReal = @"REAL";
         [array addObject:[self createSQLOfColumn:column]];
     }
     if (_primaries.count > 1) {
-        NSArray *pri = [NSString stringWithFormat:@"PRIMARY KEY (%@)", [_primaries componentsJoinedByString:@","]];
+        NSString *pri = [NSString stringWithFormat:@"PRIMARY KEY (%@)", [_primaries componentsJoinedByString:@","]];
         [array addObject:pri];
     }
     NSString *sql = [array componentsJoinedByString:@","];

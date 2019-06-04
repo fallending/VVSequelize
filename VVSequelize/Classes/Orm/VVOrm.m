@@ -142,11 +142,11 @@
         return;
     }
     NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.tableName.quoted, allFields, allFields, tempTableName.quoted];
-    BOOL ret = [self.emdb excute:sql];
+    BOOL ret = [self.vvdb excute:sql];
     
     if (ret) {
         sql = [NSString stringWithFormat:@"DROP TABLE %@", tempTableName.quoted];
-        ret = [self.emdb excute:sql];
+        ret = [self.vvdb excute:sql];
     }
     
     if (!ret) {

@@ -120,6 +120,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
                                 pinyinMaxLen:(int)pinyinMaxLen
                                   attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
 {
+    NSAssert(self.config.fts && self.config.ftsTokenizer.length > 0, @"Invalid fts orm!");
     NSString *tokenizer = [self.config.ftsTokenizer componentsSeparatedByString:@" "].firstObject;
     VVFtsXEnumerator enumerator = [self.vvdb enumeratorForFtsTokenizer:tokenizer];
     NSArray *keywordTokens = [self tokenize:keyword pinyin:NO enumerator:enumerator];
