@@ -321,6 +321,15 @@ static int vv_fts5_xTokenize(
 
 @implementation VVDatabase (FTS)
 
++ (NSMutableDictionary *)enumerators{
+    static NSMutableDictionary *_enumerators;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _enumerators = [NSMutableDictionary dictionaryWithCapacity:0];
+    });
+    return _enumerators;
+}
+
 - (BOOL)registerFtsTokenizer:(Class<VVFtsTokenizer>)cls forName:(NSString *)name
 {
     NSAssert([cls conformsToProtocol:@protocol(VVFtsTokenizer)], @"cls must conform `VVFtsTokenizer` protocol");
@@ -356,6 +365,10 @@ static int vv_fts5_xTokenize(
                                 tokenizer,
                                 0);
     ret = [self check:rc];
+    if(ret) {
+        NSString *addr = [NSString stringWithFormat:@"%p",enumerator];
+        [VVDatabase enumerators][name] = addr;
+    }
     return ret;
 }
 
@@ -369,6 +382,10 @@ static int vv_fts5_xTokenize(
     tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
     int rc = pApi->xFindTokenizer(pApi, name.UTF8String, &pUserdata, tokenizer);
     if (rc != SQLITE_OK) return nil;
+    
+    NSString *addr = [NSString stringWithFormat:@"%p",pUserdata];
+    NSString *mapped = [VVDatabase enumerators][name];
+    if(![addr isEqualToString:mapped]) return nil;
     return (VVFtsXEnumerator)pUserdata;
 }
 

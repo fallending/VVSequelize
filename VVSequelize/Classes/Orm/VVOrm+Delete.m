@@ -12,19 +12,14 @@
 - (BOOL)drop
 {
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", self.tableName.quoted];
-    return [self.vvdb excute:sql];
+    return [self.vvdb run:sql];
 }
 
 - (BOOL)deleteOne:(nonnull id)object
 {
     NSDictionary *condition = [self uniqueConditionForObject:object];
     if (condition.count == 0) return NO;
-    
-    NSString *where = [condition sqlWhere];
-    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
-    
-    NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
-    return [self.vvdb excute:sql];
+    return [self deleteWhere:condition];
 }
 
 - (NSUInteger)deleteMulti:(nullable NSArray *)objects
@@ -43,10 +38,10 @@
 - (BOOL)deleteWhere:(nullable VVExpr *)condition
 {
     NSString *where = [condition sqlWhere];
-    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
+    where = where.length == 0 ? @"" : [NSString stringWithFormat:@" WHERE %@", where];
     
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
-    return [self.vvdb excute:sql];
+    return [self.vvdb run:sql];
 }
 
 @end

@@ -8,6 +8,10 @@
 #import "NSObject+VVOrm.h"
 #import <objc/runtime.h>
 
+@interface NSNumber (EMOrm)
+
+@end
+
 @implementation NSObject (VVOrm)
 
 - (NSString *)sqlWhere
@@ -20,7 +24,7 @@
     return @"";
 }
 
-- (NSString *)quotedStringValue
+- (NSString *)sqlExpressionValue
 {
     return [[NSString stringWithFormat:@"%@", self] quote:@"\""];
 }
@@ -32,7 +36,7 @@
 {
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     for (NSString *key in self) {
-        [array addObject:key.eq(self[key])];
+        [array addObject:key.quoted.eq(self[key])];
     }
     return [array componentsJoinedByString:@" AND "];
 }
@@ -99,7 +103,21 @@
 
 @end
 
+@implementation NSNumber (EMOrm)
+
+- (NSString *)sqlExpressionValue
+{
+    return self.stringValue;
+}
+
+@end
+
 @implementation NSString (VVOrm)
+
+- (NSString *)sqlExpressionValue
+{
+    return self.quoted;
+}
 
 // MARK: - where
 - (NSString *(^)(id))and
@@ -126,63 +144,63 @@
 - (NSString *(^)(id))eq
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ = %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ = %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))ne
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ != %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ != %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))gt
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ > %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ > %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))gte
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ >= %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ >= %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))lt
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ < %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ < %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))lte
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ <= %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ <= %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))not
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ IS NOT %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ IS NOT %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id, id))between
 {
     return ^(id value1, id value2) {
-        return [NSString stringWithFormat:@"%@ BETWEEN %@ AND %@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ BETWEEN %@ AND %@", self, [value1 sqlExpressionValue], [value2 sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id, id))notBetween
 {
     return ^(id value1, id value2) {
-        return [NSString stringWithFormat:@"%@ NOT BETWEEN %@ AND %@", self, [value1 quotedStringValue], [value2 quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ NOT BETWEEN %@ AND %@", self, [value1 sqlExpressionValue], [value2 sqlExpressionValue]];
     };
 }
 
@@ -203,35 +221,35 @@
 - (NSString *(^)(id))like
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ LIKE %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ LIKE %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))notLike
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ NOT LIKE %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ NOT LIKE %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))glob
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ GLOB %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ GLOB %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))notGlob
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ NOT GLOB %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ NOT GLOB %@", self, [value sqlExpressionValue]];
     };
 }
 
 - (NSString *(^)(id))match
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ MATCH %@", self, [value quotedStringValue]];
+        return [NSString stringWithFormat:@"%@ MATCH %@", self, [value sqlExpressionValue]];
     };
 }
 

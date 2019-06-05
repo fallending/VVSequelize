@@ -123,17 +123,22 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     NSAssert(self.config.fts && self.config.ftsTokenizer.length > 0, @"Invalid fts orm!");
     NSString *tokenizer = [self.config.ftsTokenizer componentsSeparatedByString:@" "].firstObject;
     VVFtsXEnumerator enumerator = [self.vvdb enumeratorForFtsTokenizer:tokenizer];
-    NSArray *keywordTokens = [self tokenize:keyword pinyin:NO enumerator:enumerator];
+    NSArray *keywordTokens = !enumerator ? @[keyword] : [self tokenize:keyword pinyin:NO enumerator:enumerator];
     int pymlen = pinyinMaxLen >= 0 ? : TOKEN_PINYIN_MAX_LENGTH;
 
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:objects.count];
     for (NSObject *obj in objects) {
         NSString *source = [obj valueForKey:field];
+        NSAttributedString *attrText;
         if (source.length == 0) {
-            [results addObject:[NSAttributedString new]];
-            continue;
+            attrText = [NSAttributedString new];
         }
-        NSAttributedString *attrText = [self highlight:source pyMaxLen:pymlen enumerator:enumerator keywordTokens:keywordTokens attributes:attributes];
+        else if(!enumerator){
+            attrText = [[NSAttributedString alloc] initWithString:source];
+        }
+        else{
+            attrText = [self highlight:source pyMaxLen:pymlen enumerator:enumerator keywordTokens:keywordTokens attributes:attributes];
+        }
         [results addObject:attrText];
     }
     return results;
@@ -159,7 +164,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         vvToken.end = end;
         [results addObject:vvToken];
     };
-    enumerator(pText, nText, nil, pinyin, handler);
+    !enumerator ? : enumerator(pText, nText, nil, pinyin, handler);
     return results;
 }
 
@@ -186,7 +191,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         }
     };
 
-    enumerator(pText, nText, nil, nText < pyMaxLen, handler);
+    !enumerator ? : enumerator(pText, nText, nil, nText < pyMaxLen, handler);
 
     char *remained = (char *)malloc(nText + 1);
     strncpy(remained, pText, nText);
