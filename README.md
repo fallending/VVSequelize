@@ -23,10 +23,10 @@
 * [x] 自定义FTS分词器
 * [x] 支持拼音分词
 
-## 改动(0.3.0-beta5)
-1. 修改FTS分词器,创建表可传入参数`[locale] pinyin [len]`, local请参考NSLocale, pinyin控制是否支持拼音分词, len为支持拼音分词的最大unicode长度
-2. 调整FTS搜索结果高亮方法
-3. `NSString+Tokenizer`添加类方法,可设置支持多音字拼音的最大中文字符串长度
+## 改动(0.3.0-beta7)
+1. 修复一些bug
+2. 修改搜索结果高亮匹配
+3. VVSelect改为链式语法赋值.
 
 ## 结构
 ![](VVSequelize.png)
@@ -56,7 +56,7 @@
 ```objc
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
-``` 
+```
 
 Fts表配置
 ```objc
@@ -114,30 +114,33 @@ Fts表配置
 ```
 示例: 
 ```objc
-- (void)testClause{
+- (void)testClause
+  {
     VVSelect *select =  [VVSelect new];
     select.table(@"mobiles");
-    select.where([[[@"relative" lt:@(0.3)] and:[@"mobile" gte:@(16000000000)]] and: [@"times" gte:@(0)]]);
+    select.where(@"relative".lt(@(0.3))
+                 .and(@"mobile".gte(@(1600000000)))
+                 .and(@"times".gte(@(0))));
     NSLog(@"%@", select.sql);
-    select.where(@{@"city":@"西安", @"relative":@(0.3)});
+    select.where(@{ @"city": @"西安", @"relative": @(0.3) });
     NSLog(@"%@", select.sql);
-    select.where(@[@{@"city":@"西安", @"relative":@(0.3)},@{@"relative":@(0.7)}]);
+    select.where(@[@{ @"city": @"西安", @"relative": @(0.3) }, @{ @"relative": @(0.7) }]);
     NSLog(@"%@", select.sql);
-    select.where([@"relative" lt:@(0.3)]);
+    select.where(@"relative".lt(@(0.3)));
     NSLog(@"%@", select.sql);
     select.where(@"     where relative < 0.3");
     NSLog(@"%@", select.sql);
     select.groupBy(@"city");
     NSLog(@"%@", select.sql);
-    select.groupBy(@[@"city",@"carrier"]);
+    select.groupBy(@[@"city", @"carrier"]);
     NSLog(@"%@", select.sql);
     select.groupBy(@" group by city carrier");
     NSLog(@"%@", select.sql);
-    select.having([@"relative" lt:@(0.2)]);
+    select.having(@"relative".lt(@(0.2)));
     NSLog(@"%@", select.sql);
     select.groupBy(nil);
     NSLog(@"%@", select.sql);
-    select.orderBy(@[@"city",@"carrier"]);
+    select.orderBy(@[@"city", @"carrier"]);
     NSLog(@"%@", select.sql);
     select.orderBy(@" order by relative");
     NSLog(@"%@", select.sql);
