@@ -69,10 +69,10 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  将array中的元素用逗号`,`连接生成字符串
  
- @param quote 每个元素是否用双引号`"`括起来
+ @note 字符串或其他非数字元素,转换为string后将会用双引号"括起来
  @return 连接好的字符串
  */
-- (NSString *)sqlJoin:(BOOL)quote;
+- (NSString *)sqlJoin;
 
 /**
  数组去重

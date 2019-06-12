@@ -75,16 +75,9 @@
 
 - (NSString *)sqlJoin
 {
-    return [self sqlJoin:YES];
-}
-
-- (NSString *)sqlJoin:(BOOL)quote
-{
-    NSString *mark = quote ? @"\"" : @"";
-    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-    for (id val in self) {
-        NSString *tmp = [NSString stringWithFormat:@"%@", val];
-        [array addObject:[tmp quote:mark]];
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:self.count];
+    for (NSObject *obj in self) {
+        [array addObject:obj.sqlExpressionValue];
     }
     return [array componentsJoinedByString:@","];
 }

@@ -66,7 +66,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         highlight = [NSString stringWithFormat:@"snippet(%@,'%@','%@','...',%@) AS %@", self.tableName, lspan, rspan, @(idx), field];
     }
     [columns replaceObjectAtIndex:idx withObject:highlight];
-    NSString *fields = [columns sqlJoin:NO];
+    NSString *fields = [columns componentsJoinedByString:@","];
     select.fields(fields);
 
     return [select allObjects];
