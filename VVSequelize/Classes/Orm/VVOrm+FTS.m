@@ -129,16 +129,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:objects.count];
     for (NSObject *obj in objects) {
         NSString *source = [obj valueForKey:field];
-        NSAttributedString *attrText;
-        if (source.length == 0) {
-            attrText = [NSAttributedString new];
-        }
-        else if(!enumerator){
-            attrText = [[NSAttributedString alloc] initWithString:source];
-        }
-        else{
-            attrText = [self highlight:source pyMaxLen:pymlen enumerator:enumerator keywordTokens:keywordTokens attributes:attributes];
-        }
+        NSAttributedString *attrText = [self highlight:source pyMaxLen:pymlen enumerator:enumerator keywordTokens:keywordTokens attributes:attributes];
         [results addObject:attrText];
     }
     return results;
@@ -150,6 +141,19 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
 {
     const char *pText = source.UTF8String;
     int nText = (int)strlen(pText);
+    
+    if (nText == 0) {
+        return @[];
+    }
+    
+    if (!enumerator) {
+        VVFtsToken *vvToken = [VVFtsToken new];
+        vvToken.token = pText;
+        vvToken.len = nText;
+        vvToken.start = 0;
+        vvToken.end = nText;
+        return @[vvToken];
+    }
 
     __block NSMutableArray<VVFtsToken *> *results = [NSMutableArray arrayWithCapacity:0];
 
@@ -177,7 +181,11 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     const char *pText = source.UTF8String;
     int nText = (int)strlen(pText);
 
-    if (!enumerator || nText == 0) {
+    if (nText == 0) {
+        return [[NSAttributedString alloc] init];
+    }
+    
+    if (!enumerator) {
         return [[NSAttributedString alloc] initWithString:source];
     }
 
@@ -191,7 +199,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         }
     };
 
-    !enumerator ? : enumerator(pText, nText, nil, nText < pyMaxLen, handler);
+    enumerator(pText, nText, nil, nText < pyMaxLen, handler);
 
     char *remained = (char *)malloc(nText + 1);
     strncpy(remained, pText, nText);
