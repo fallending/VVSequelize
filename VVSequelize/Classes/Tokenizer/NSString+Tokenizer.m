@@ -141,6 +141,7 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
     if (polyphones.count == 0) return @[pinyins];
     NSUInteger chineseCount = pinyins.count;
     __block NSMutableSet *results = [NSMutableSet setWithCapacity:0];
+    [results addObject:pinyins];
     [polyphones enumerateKeysAndObjectsUsingBlock:^(NSNumber *key, NSArray *polyPinyins, BOOL *stop) {
         NSUInteger idx = key.unsignedIntegerValue;
         if (idx >= chineseCount || polyPinyins.count == 0) { return; }
