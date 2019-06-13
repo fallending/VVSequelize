@@ -140,12 +140,12 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
                          enumerator:(VVFtsXEnumerator)enumerator
 {
     const char *pText = source.UTF8String;
-    int nText = (int)strlen(pText);
     
-    if (nText == 0) {
+    if (!pText) {
         return @[];
     }
     
+    int nText = (int)strlen(pText);
     if (!enumerator) {
         VVFtsToken *vvToken = [VVFtsToken new];
         vvToken.token = pText;
@@ -179,16 +179,16 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
                        attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
 {
     const char *pText = source.UTF8String;
-    int nText = (int)strlen(pText);
 
-    if (nText == 0) {
+    if (!pText) {
         return [[NSAttributedString alloc] init];
     }
     
     if (!enumerator) {
         return [[NSAttributedString alloc] initWithString:source];
     }
-
+    
+    int nText = (int)strlen(pText);
     __block char *tokenized = (char *)malloc(nText + 1);
     memset(tokenized, 0x0, nText + 1);
 
