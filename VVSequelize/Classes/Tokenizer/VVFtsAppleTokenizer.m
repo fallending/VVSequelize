@@ -50,8 +50,8 @@ static void appleEnumerator(const char *pText, int nText, const char *locale, BO
         NSString *tk = [NSString stringWithUTF8String:token];
         NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
         for (NSString *py in pinyins) {
-            if (py.length == 0) continue;
             const char *pyToken = py.UTF8String;
+            if (!pyToken) continue;
             int pyLen = (int)strlen(pyToken);
             handler(pyToken, pyLen, start, end, &stop);
             if (stop) return;

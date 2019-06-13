@@ -24,8 +24,8 @@ static void jiebaEnumerator(const char *pText, int nText, const char *locale, BO
         NSString *tk = [NSString stringWithUTF8String:token];
         NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
         for (NSString *py in pinyins) {
-            if (py.length == 0) continue;
             const char *pyToken = py.UTF8String;
+            if (!pyToken) continue;
             long pyLen = strlen(pyToken);
             handler(pyToken, (int)pyLen, (int)offset, (int)end, stop);
             if (*stop) return;
