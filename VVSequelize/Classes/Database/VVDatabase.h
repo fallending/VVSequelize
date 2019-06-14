@@ -306,9 +306,10 @@ typedef void (^VVDBRollbackHook)(void);
  检查sqlite3返回值
  
  @param resultCode sqlite3返回值
+ @param sql 当前执行的sql语句
  @return 该返回值对应的操作是否成功
  */
-- (BOOL)check:(int)resultCode;
+- (BOOL)check:(int)resultCode sql:(NSString *)sql;
 
 /**
  最后一次错误的z错误码

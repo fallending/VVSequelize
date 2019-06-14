@@ -348,7 +348,8 @@ static int vv_fts5_xTokenize(
     module->xEnumerator = enumerator;
     int rc = fts3_register_tokenizer(self.db, (char *)name.UTF8String, module);
 
-    BOOL ret =  [self check:rc];
+    NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];
+    BOOL ret =  [self check:rc sql:errorsql];
     if (!ret) return ret;
 
     fts5_api *pApi = fts5_api_from_db(self.db);
@@ -364,7 +365,7 @@ static int vv_fts5_xTokenize(
                                 (void *)enumerator,
                                 tokenizer,
                                 0);
-    ret = [self check:rc];
+    ret =  [self check:rc sql:errorsql];
     if(ret) {
         NSString *addr = [NSString stringWithFormat:@"%p",enumerator];
         [VVDatabase enumerators][name] = addr;

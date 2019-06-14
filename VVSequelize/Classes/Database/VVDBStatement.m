@@ -42,7 +42,7 @@
         _vvdb = vvdb;
         _sql = sql;
         int rc = sqlite3_prepare_v2(vvdb.db, sql.UTF8String, -1, &_stmt, nil);
-        BOOL ret = [self.vvdb check:rc];
+        BOOL ret = [self.vvdb check:rc sql:sql];
         NSAssert(ret, @"prepare sqlite3_stmt failure: %@, vvdb : %@", sql, vvdb);
         if (ret) {
             [vvdb.stmtCache setObject:self forKey:sql];
@@ -125,7 +125,7 @@
     do {
         rc = sqlite3_step(_stmt);
     } while (rc == SQLITE_ROW);
-    return [self.vvdb check:rc];
+    return [self.vvdb check:rc sql:_sql];
 }
 
 - (NSArray<NSDictionary *> *)query

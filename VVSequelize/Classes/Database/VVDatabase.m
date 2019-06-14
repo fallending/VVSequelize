@@ -101,7 +101,7 @@ static void vvdb_rollback_hook(void *pCtx)
 - (BOOL)open
 {
     int rc = sqlite3_open_v2(self.path.UTF8String, &_db, self.flags, NULL);
-    BOOL ret = [self check:rc];
+    BOOL ret = [self check:rc sql:@"sqlite3_open_v2()"];
     NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
 #ifdef SQLITE_HAS_CODEC
     if (self.encryptKey.length > 0) {
@@ -119,7 +119,7 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)close
 {
-    BOOL ret = [self check:sqlite3_close_v2(_db)];
+    BOOL ret = [self check:sqlite3_close_v2(_db) sql:@"sqlite3_close_v2()"];
     if (ret) {
         _db = NULL;
     }
@@ -217,7 +217,7 @@ static void vvdb_rollback_hook(void *pCtx)
 - (BOOL)excute:(NSString *)sql
 {
     int rc = sqlite3_exec(self.db, sql.UTF8String, nil, nil, nil);
-    return [self check:rc];
+    return [self check:rc sql:sql];
 }
 
 // MARK: - Prepare
@@ -343,7 +343,7 @@ static void vvdb_rollback_hook(void *pCtx)
     }
     BOOL ret = [self excute:begin];
     if (!ret) {
-        return NO;
+        return block();
     }
     ret = block();
     if (ret) {
@@ -421,16 +421,21 @@ static void vvdb_rollback_hook(void *pCtx)
 }
 
 // MARK: - Error Handling
-- (BOOL)check:(int)resultCode
+- (BOOL)check:(int)resultCode sql:(NSString *)sql
 {
     switch (resultCode) {
         case SQLITE_OK:
         case SQLITE_ROW:
         case SQLITE_DONE:
             return YES;
-            
-        default:
+
+        default: {
+#if DEBUG
+            const char *errmsg = sqlite3_errmsg(self.db);
+            printf("[VVDB] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
+#endif
             return NO;
+        }
     }
 }
 
@@ -464,7 +469,7 @@ static void vvdb_rollback_hook(void *pCtx)
     const char *dbname = db ? db.UTF8String : "main";
     NSData *data = [key dataUsingEncoding:NSUTF8StringEncoding];
     int rc = sqlite3_key_v2(self.db, dbname, data.bytes, (int)data.length);
-    return [self check:rc];
+    return [self check:rc sql:@"sqlite3_key_v2()"];
 }
 
 - (BOOL)rekey:(NSString *)key db:(NSString *)db
@@ -472,7 +477,7 @@ static void vvdb_rollback_hook(void *pCtx)
     const char *dbname = db ? db.UTF8String : "main";
     NSData *data = [key dataUsingEncoding:NSUTF8StringEncoding];
     int rc = sqlite3_rekey_v2(self.db, dbname, data.bytes, (int)data.length);
-    return [self check:rc];
+    return [self check:rc sql:@"sqlite3_rekey_v2()"];
 }
 
 - (BOOL)cipherKeyCheck
