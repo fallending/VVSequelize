@@ -7,9 +7,8 @@
 
 #import "VVDatabase+Additions.h"
 
-static const char *const VVDBReadQueueLabel = "com.valo.sequelize.read";
-static const char *const VVDBWriteQueueLabel = "com.valo.sequelize.write";
-static const void *const VVDBSpecificKey = (const void *)&VVDBSpecificKey;
+static const char *const VVDBSerialKey = "com.valo.database.serial";
+static const char *const VVDBConcurrentKey = "com.valo.database.concurrent";
 
 @implementation VVDatabase (Additions)
 // MARK: - pool
@@ -51,66 +50,45 @@ static const void *const VVDBSpecificKey = (const void *)&VVDBSpecificKey;
 }
 
 // MARK: - queue
-+ (dispatch_queue_t)readQueue
++ (dispatch_queue_t)serialQueue
 {
-    static dispatch_queue_t _readQueue;
+    static dispatch_queue_t _serialQueue;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _readQueue = dispatch_queue_create(VVDBReadQueueLabel, DISPATCH_QUEUE_CONCURRENT);
-        dispatch_queue_set_specific(_readQueue, VVDBSpecificKey, (__bridge void *)_readQueue, NULL);
+        _serialQueue = dispatch_queue_create(VVDBSerialKey, DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_serialQueue, VVDBSerialKey, (void *)VVDBSerialKey, NULL);
     });
-    return _readQueue;
+    return _serialQueue;
 }
 
-+ (dispatch_queue_t)writeQueue
++ (dispatch_queue_t)concurrentQueue
 {
-    static dispatch_queue_t _writeQueue;
+    static dispatch_queue_t _concurrentQueue;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _writeQueue = dispatch_queue_create(VVDBWriteQueueLabel, DISPATCH_QUEUE_SERIAL);
-        dispatch_queue_set_specific(_writeQueue, VVDBSpecificKey, (__bridge void *)_writeQueue, NULL);
+        _concurrentQueue = dispatch_queue_create(VVDBConcurrentKey, DISPATCH_QUEUE_CONCURRENT);
+        dispatch_queue_set_specific(_concurrentQueue, VVDBConcurrentKey, (void *)VVDBConcurrentKey, NULL);
     });
-    return _writeQueue;
+    return _concurrentQueue;
 }
 
-+ (void)syncRead:(void (^)(void))block
++ (void)sync:(void (^)(void))block
 {
-    [self queue:[self readQueue] sync:block];
-}
-
-+ (void)asyncRead:(void (^)(void))block
-{
-    [self queue:[self readQueue] async:block];
-}
-
-+ (void)syncWrite:(void (^)(void))block
-{
-    [self queue:[self writeQueue] sync:block];
-}
-
-+ (void)asyncWrite:(void (^)(void))block
-{
-    [self queue:[self writeQueue] async:block];
-}
-
-+ (void)queue:(dispatch_queue_t)queue sync:(void (^)(void))block
-{
-    if (!block) return;
-    if (dispatch_get_specific(VVDBSpecificKey) == (__bridge void *)queue) {
+    if (dispatch_get_specific(VVDBSerialKey)) {
         block();
     } else {
-        dispatch_sync(queue, block);
+        dispatch_sync([self serialQueue], block);
     }
 }
 
-+ (void)queue:(dispatch_queue_t)queue async:(void (^)(void))block
++ (void)serialAsync:(void (^)(void))block
 {
-    if (!block) return;
-    if (dispatch_get_specific(VVDBSpecificKey) == (__bridge void *)queue) {
-        block();
-    } else {
-        dispatch_async(queue, block);
-    }
+    dispatch_async([self serialQueue], block);
+}
+
++ (void)concurrentAsync:(void (^)(void))block
+{
+    dispatch_async([self concurrentQueue], block);
 }
 
 @end

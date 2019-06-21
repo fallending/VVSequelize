@@ -161,16 +161,6 @@ static void vvdb_rollback_hook(void *pCtx)
     }
 }
 
-- (NSCache *)stmtCache
-{
-    if (!_stmtCache) {
-        _stmtCache = [[NSCache alloc] init];
-        _stmtCache.countLimit = 1000;
-        _stmtCache.totalCostLimit = 1024 * 1024;
-    }
-    return _stmtCache;
-}
-
 - (int)flags
 {
     if ((_flags & VVDBEssentialFlags) != VVDBEssentialFlags) {
@@ -293,17 +283,17 @@ static void vvdb_rollback_hook(void *pCtx)
             sql = @"BEGIN DEFERRED TRANSACTION";
             break;
     }
-    return [self excute:sql];
+    return [self run:sql];
 }
 
 - (BOOL)commit
 {
-    return [self excute:@"COMMIT TRANSACTION"];
+    return [self run:@"COMMIT TRANSACTION"];
 }
 
 - (BOOL)rollback
 {
-    return [self excute:@"ROLLBACK TRANSACTION"];
+    return [self run:@"ROLLBACK TRANSACTION"];
 }
 
 - (BOOL)savepoint:(NSString *)name block:(BOOL (^)(void))block
@@ -341,15 +331,15 @@ static void vvdb_rollback_hook(void *pCtx)
     if (!block) {
         return YES;
     }
-    BOOL ret = [self excute:begin];
+    BOOL ret = [self run:begin];
     if (!ret) {
         return block();
     }
     ret = block();
     if (ret) {
-        [self excute:commit];
+        [self run:commit];
     } else {
-        [self excute:rollback];
+        [self run:rollback];
     }
     return ret;
 }

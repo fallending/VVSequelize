@@ -364,10 +364,6 @@ typedef void (^VVDBRollbackHook)(void);
  */
 @property (nonatomic, strong, readonly) NSCache *cache;
 /**
- VVDBStatement缓存
- */
-@property (nonatomic, strong, readonly) NSCache *stmtCache;
-/**
  sqlite3数据库结构体指针
  */
 @property (nonatomic, assign, readonly) sqlite3 *db;

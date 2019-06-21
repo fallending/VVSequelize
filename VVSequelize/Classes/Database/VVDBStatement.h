@@ -44,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  生成VVDBStatement对象,有缓存机制
- 
+
  @param vvdb 数据库
  @param sql 原生sql语句
  @return VVDBStatement对象
@@ -53,7 +53,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  初始化VVDBStatement对象
- 
+
  @param vvdb 数据库
  @param sql 原生sql语句
  @return VVDBStatement对象
@@ -62,7 +62,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  绑定数据
- 
+
  @param values 数据数组,和`columnNames`一一对应
  @return 当前VVDBStatement对象
  */
@@ -70,7 +70,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  绑定数据
- 
+
  @param keyValues 键值对数据
  @return 当前VVDBStatement对象
  */
@@ -82,36 +82,34 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  执行sqlite3_stmt
- 
+
  @return 是否执行成功
  */
 - (BOOL)run;
 
 /**
  执行sqlite3_stmt查询操作
- 
+
  @return 查询结果
  */
 - (nullable NSArray<NSDictionary *> *)query;
 
 /**
  执行sqlite3_step()
- 
+
  @return 是否执行成功
  */
 - (BOOL)step;
 
 /**
- 重置sqlite3_stmt,并重置绑定数据
+ 重置sqlite3_stmt,不清除绑定数据
  */
 - (void)reset;
 
 /**
- 重置sqlite3_stmt
- 
- @param shouldClear 是否重置绑定数据
+ 重置sqlite3_stmt,并清除绑定数据
  */
-- (void)reset:(BOOL)shouldClear;
+- (void)resetAndClear;
 
 @end
 

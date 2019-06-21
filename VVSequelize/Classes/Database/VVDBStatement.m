@@ -27,11 +27,6 @@
 
 + (instancetype)statementWithDatabase:(VVDatabase *)vvdb sql:(NSString *)sql
 {
-    VVDBStatement *statement = [vvdb.stmtCache objectForKey:sql];
-    if (statement) {
-        [statement reset];
-        return statement;
-    }
     return [[VVDBStatement alloc] initWithDatabase:vvdb sql:sql];
 }
 
@@ -42,11 +37,7 @@
         _vvdb = vvdb;
         _sql = sql;
         int rc = sqlite3_prepare_v2(vvdb.db, sql.UTF8String, -1, &_stmt, nil);
-        BOOL ret = [self.vvdb check:rc sql:sql];
-        NSAssert(ret, @"prepare sqlite3_stmt failure: %@, vvdb : %@", sql, vvdb);
-        if (ret) {
-            [vvdb.stmtCache setObject:self forKey:sql];
-        }
+        NSAssert([self.vvdb check:rc sql:sql], @"prepare sqlite3_stmt failure: %@, vvdb : %@", sql, vvdb);
     }
     return self;
 }
@@ -90,7 +81,8 @@
 {
     int count = (int)values.count;
     if (count == 0) return self;
-    
+    sqlite3_reset(_stmt);
+    sqlite3_clear_bindings(_stmt);
     int paramsCount = sqlite3_bind_parameter_count(_stmt);
     NSAssert(count == paramsCount, @"%d values expected, %d passed", paramsCount, count);
     for (int i = 0; i < paramsCount; i++) {
@@ -101,6 +93,9 @@
 
 - (VVDBStatement *)bindKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues
 {
+    if (keyValues.count == 0) return self;
+    sqlite3_reset(_stmt);
+    sqlite3_clear_bindings(_stmt);
     [keyValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
         self.cursor[key] = value;
     }];
@@ -121,6 +116,7 @@
 
 - (BOOL)run
 {
+    sqlite3_reset(_stmt);
     int rc;
     do {
         rc = sqlite3_step(_stmt);
@@ -161,15 +157,13 @@
 
 - (void)reset
 {
-    [self reset:YES];
+    sqlite3_reset(_stmt);
 }
 
-- (void)reset:(BOOL)shouldClear
+- (void)resetAndClear
 {
     sqlite3_reset(_stmt);
-    if (shouldClear) {
-        sqlite3_clear_bindings(_stmt);
-    }
+    sqlite3_clear_bindings(_stmt);
 }
 
 @end
