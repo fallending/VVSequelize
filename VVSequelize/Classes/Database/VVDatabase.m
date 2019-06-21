@@ -236,8 +236,8 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)isExist:(NSString *)table
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = %@", table.quoted];
-    return [[self scalar:sql bind:nil] boolValue];
+    NSString *sql = [NSString stringWithFormat:@"SELECT 1 FROM %@", table.quoted];
+    return [self query:sql].count > 0;
 }
 
 - (BOOL)run:(NSString *)sql
