@@ -56,17 +56,12 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)sync:(void (^)(void))block;
 
 /**
- 串行异步, 在<一个子线程>中<串行>执行
-
+ 异步操作
+ 
+ @param serial 是否串行. YES-在<一个子线程>中<串行>执行, NO-在<多个子线程>中<并行>执行
  @param block 读取操作
  */
-+ (void)serialAsync:(void (^)(void))block;
-
-/**
- 并行异步, 在<多个子线程>中<并行>执行
-
- @param block 读取操作
- */
++ (void)async:(BOOL)serial block:(void (^)(void))block;
 
 @end
 

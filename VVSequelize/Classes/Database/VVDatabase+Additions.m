@@ -81,14 +81,10 @@ static const char *const VVDBConcurrentKey = "com.valo.database.concurrent";
     }
 }
 
-+ (void)serialAsync:(void (^)(void))block
++ (void)async:(BOOL)serial block:(void (^)(void))block
 {
-    dispatch_async([self serialQueue], block);
-}
-
-+ (void)concurrentAsync:(void (^)(void))block
-{
-    dispatch_async([self concurrentQueue], block);
+    dispatch_queue_t queue = serial ? [self serialQueue] : [self concurrentQueue];
+    dispatch_async(queue, block);
 }
 
 @end
