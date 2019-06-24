@@ -17,7 +17,7 @@ FOUNDATION_EXPORT int VVDBEssentialFlags; ///< SQLITE_OPEN_CREATE | SQLITE_OPEN_
 
 /**
  sqlite3事务类型
- 
+
  - VVDBTransactionDeferred: `BEGIN DEFERRED TRANSACTION`
  - VVDBTransactionImmediate: `BEGIN IMMEDIATE TRANSACTION`
  - VVDBTransactionExclusive: `BEGIN EXCLUSIVE TRANSACTION`
@@ -30,7 +30,7 @@ typedef NS_ENUM (NSUInteger, VVDBTransaction) {
 
 /**
  重试处理
- 
+
  @param times 重试次数
  @return 返回0表示不重试,>0则继续重试.
  */
@@ -38,7 +38,7 @@ typedef int (^VVDBBusyHandler)(int times);
 
 /**
  跟踪sql语句执行
- 
+
  @param mask [SQLITE_TRACE]:`SQLITE_TRACE_STMT, SQLITE_TRACE_PROFILE, SQLITE_TRACE_ROW, SQLITE_TRACE_CLOSE`
  @param stmt 依赖上下文,通常为sqlite3_stmt结构体指针
  @param sql 依赖上下文,通常为sql语句
@@ -48,7 +48,7 @@ typedef int (^VVDBTraceHook)(unsigned mask, void *stmt, void *sql);
 
 /**
  更新操作钩子函数
- 
+
  @param op 更新类型`SQLITE_INSERT,SQLITE_DELETE,SQLITE_UPDATE`
  @param db sqlite3_db结构体
  @param table 表名
@@ -58,7 +58,7 @@ typedef void (^VVDBUpdateHook)(int op, char const *db, char const *table, int64_
 
 /**
  事务提交操作钩子函数
- 
+
  @return 0-将commit成功, 非0-将执行rollback
  */
 typedef int (^VVDBCommitHook)(void);
@@ -105,8 +105,15 @@ typedef void (^VVDBRollbackHook)(void);
 @property (nonatomic, assign, readonly) int64_t lastInsertRowid;
 
 /**
+ 更新间隔,默认为0
+
+ @note 若间隔时间内有多次更新操作, 将合并成一次事务操作. 默认间隔为0,将不会合并操作.
+ */
+@property (nonatomic, assign) CFAbsoluteTime updateInterval;
+
+/**
  初始化数据库
- 
+
  @param path 数据库文件完整路径
  @return 数据库对象
  */
@@ -114,7 +121,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  打开/创建数据库, 使用默认`VVDBEssentialFlags`
- 
+
  @param path 数据库文件完整路径
  @return 数据库对象
  */
@@ -122,7 +129,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  打开/创建数据库,不进行加密
- 
+
  @param path 数据库文件完整路径
  @param flags sqlite3_open_v2第三个参数为 (flags | VVDBEssentialFlags)
  @return 数据库对象
@@ -131,7 +138,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  打开/创建数据库
- 
+
  @param path 数据库文件完整路径
  @param flags sqlite3_open_v2第三个参数为 (flags | VVDBEssentialFlags)
  @param key 加密key
@@ -142,7 +149,7 @@ typedef void (^VVDBRollbackHook)(void);
 //MARK: - open and close
 /**
  打开数据库
- 
+
  @return 是否成功打开
  @note 已加入懒加载机制,可不手动调用
  */
@@ -150,20 +157,20 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  关闭数据库
- 
+
  @return 是否成功关闭
  */
 - (BOOL)close;
 
 /**
  设置一些数据库配置
- 
+
  @param options 数据库配置,比如
  ```
  @[@"PRAGMA synchronous='NORMAL'",
  @"PRAGMA journal_mode=wal"]
  ```
- 
+
  @note 未封装`pragma`,请执行原生语句
  */
 - (void)setOptions:(NSArray<NSString *> *)options;
@@ -172,7 +179,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  使用sqlite3_exec()执行原生sql语句
- 
+
  @param sql 原生sql语句
  @return 是否执行成功
  */
@@ -183,13 +190,11 @@ typedef void (^VVDBRollbackHook)(void);
 
 - (VVDBStatement *)prepare:(NSString *)sql bind:(nullable NSArray *)values;
 
-- (VVDBStatement *)prepare:(NSString *)sql bindKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues;
-
 // MARK: - Run
 
 /**
  执行原生sql查询语句
- 
+
  @param sql 原生sql语句
  @return 查询结果
  @attention 会根据sql语句缓存查询结果. 当update/insert/delete/commit时,会清除缓存.
@@ -198,7 +203,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  数据表是否存在
- 
+
  @param table 表名
  @return 是否存在
  */
@@ -206,7 +211,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  使用sqlite3_step的方式执行原生sql语句
- 
+
  @param sql 原生sql语句
  @return 是否执行成功
  */
@@ -214,18 +219,14 @@ typedef void (^VVDBRollbackHook)(void);
 
 - (BOOL)run:(NSString *)sql bind:(nullable NSArray *)values;
 
-- (BOOL)run:(NSString *)sql bindKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues;
-
 // MARK: - Scalar
 - (id)scalar:(NSString *)sql bind:(nullable NSArray *)values;
-
-- (id)scalar:(NSString *)sql bindKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues;
 
 // MARK: - Transactions
 
 /**
  开始事务
- 
+
  @param mode 事务类型
  @return 事务是否开始成功
  */
@@ -233,27 +234,27 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  提交事务
- 
+
  @return 是否提交成功
  */
 - (BOOL)commit;
 
 /**
  回滚事务
- 
+
  @return 是否回滚成功
  */
 - (BOOL)rollback;
 
 /**
  保存点机制, 用于回滚部分事务.比如:
- 
+
  1.设置保存点 savepoint a
  2.取消保存点a之后事务 rollback to a
  3.取消全部事务 rollback
- 
+
  commit将会删除所有保存点
- 
+
  @param name 保存点名称
  @param block 使用保存点机制进行的操作
  @return 是否操作成功
@@ -262,7 +263,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  事务操作
- 
+
  @param mode 事务模式
  @param block 具体操作
  @return 事务是否执行成功
@@ -304,7 +305,7 @@ typedef void (^VVDBRollbackHook)(void);
 // MARK: - Error Handling
 /**
  检查sqlite3返回值
- 
+
  @param resultCode sqlite3返回值
  @param sql 当前执行的sql语句
  @return 该返回值对应的操作是否成功
@@ -313,14 +314,14 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  最后一次错误的z错误码
- 
+
  @return 错误码
  */
 - (int)lastErrorCode;
 
 /**
  最后一次错误的信息
- 
+
  @return 错误信息
  */
 - (NSError *)lastError;
@@ -334,7 +335,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  设置数据库加密Key
- 
+
  @param key 加密Key
  @param db 数据库名称,默认为`main`,可指定attach的数据库名
  @return 是否设置成功
@@ -343,7 +344,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  修改数据库加密Key
- 
+
  @param key 加密key
  @param db 数据库名称,默认为`main`,可指定attach的数据库名
  @return 是否修改成功
@@ -352,7 +353,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /**
  检查数据库是否加密成功, 通常在打开数据库但未设置加密key时调用
- 
+
  @return 是否加密成功
  */
 - (BOOL)cipherKeyCheck;

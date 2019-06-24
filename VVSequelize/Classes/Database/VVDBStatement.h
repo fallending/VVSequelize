@@ -68,17 +68,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (VVDBStatement *)bind:(nullable NSArray *)values;
 
-/**
- 绑定数据
-
- @param keyValues 键值对数据
- @return 当前VVDBStatement对象
- */
-- (VVDBStatement *)bindKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues;
-
 - (id)scalar:(nullable NSArray *)values;
-
-- (id)scalarKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues;
 
 /**
  执行sqlite3_stmt

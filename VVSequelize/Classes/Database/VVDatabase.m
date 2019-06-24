@@ -8,6 +8,7 @@
 #import "VVDatabase.h"
 #import "VVDBStatement.h"
 #import "NSObject+VVOrm.h"
+#import "VVDatabase+Additions.h"
 
 #ifdef SQLITE_HAS_CODEC
 #import "sqlite3.h"
@@ -57,8 +58,9 @@ static void vvdb_rollback_hook(void *pCtx)
 // MARK: -
 @interface VVDatabase ()
 @property (nonatomic, strong) NSCache *cache;
-@property (nonatomic, strong) NSCache *stmtCache;
 @property (nonatomic, assign) sqlite3 *db;
+@property (nonatomic, strong) NSMutableArray<NSArray *> *updates;
+@property (nonatomic, assign) CFAbsoluteTime currentMergeTime;
 @end
 
 @implementation VVDatabase
@@ -67,6 +69,7 @@ static void vvdb_rollback_hook(void *pCtx)
 {
     self = [super init];
     if (self) {
+        self.updates = [NSMutableArray array];
         self.path = path;
     }
     return self;
@@ -222,10 +225,73 @@ static void vvdb_rollback_hook(void *pCtx)
     return [statement bind:values];
 }
 
-- (VVDBStatement *)prepare:(NSString *)sql bindKeyValues:(NSDictionary<NSString *, id> *)keyValues
+// MARK: - Merge
+/**
+ 合并操作
+
+ @param sql 更新操作的sql语句
+ @param values 更新操作的绑定数据
+ @return `NO`-不进行合并操作,`YES`-已合并数据
+ */
+- (BOOL)merge:(NSString *)sql values:(NSArray *)values
 {
-    VVDBStatement *statement = [VVDBStatement statementWithDatabase:self sql:sql];
-    return [statement bindKeyValues:keyValues];
+    if (_updateInterval <= 0) {
+        return NO;
+    }
+    if (_updates.count == 0) {
+        CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+        _currentMergeTime = now;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_updateInterval * NSEC_PER_SEC)), [VVDatabase serialQueue], ^{
+            [self runMergeUpdates];
+        });
+    }
+    [_updates addObject:@[sql, values ? : @[]]];
+    return YES;
+}
+
+- (BOOL)runMergeUpdates
+{
+    printf("\n[EMDB] `-merge:values:` begin: %f, now: %f, count: %lu, db: %s\n", _currentMergeTime, CFAbsoluteTimeGetCurrent(), _updates.count, _path.lastPathComponent.UTF8String);
+    NSArray *array = _updates.copy;
+    if (array.count == 0) {
+        return YES;
+    }
+    [_updates removeAllObjects];
+
+    BOOL result = [self transaction:VVDBTransactionImmediate block:^BOOL {
+        NSUInteger count = 0;
+        for (NSArray *sub in array) {
+            NSString *sql = sub[0];
+            NSArray *values = sub[1];
+            BOOL ret = YES;
+            if (values.count > 0) {
+                ret = [[self prepare:sql bind:values] run];
+            } else {
+                ret = [[self prepare:sql] run];
+            }
+            if (ret) count++;
+        }
+        return count > 0;
+    }];
+    if (!result) {
+        @synchronized (_updates) {
+            NSArray *temp = _updates.copy;
+            [_updates removeAllObjects];
+            [_updates addObjectsFromArray:array];
+            [_updates addObject:temp];
+        };
+    }
+    return result;
+}
+
+- (void)setUpdateInterval:(CFAbsoluteTime)updateInterval
+{
+    _updateInterval = updateInterval;
+    if (updateInterval > 0) {
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(runMergeUpdates) name:UIApplicationWillTerminateNotification object:nil];
+    } else {
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
+    }
 }
 
 // MARK: - Run
@@ -242,17 +308,20 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)run:(NSString *)sql
 {
+    BOOL ret = [self merge:sql values:@[]];
+    if (ret) {
+        return ret;
+    }
     return [[self prepare:sql] run];
 }
 
 - (BOOL)run:(NSString *)sql bind:(NSArray *)values
 {
+    NSInteger ret = [self merge:sql values:values];
+    if (ret) {
+        return ret;
+    }
     return [[self prepare:sql bind:values] run];
-}
-
-- (BOOL)run:(NSString *)sql bindKeyValues:(NSDictionary<NSString *, id> *)keyValues
-{
-    return [[self prepare:sql bindKeyValues:keyValues] run];
 }
 
 // MARK: - Scalar
@@ -260,12 +329,6 @@ static void vvdb_rollback_hook(void *pCtx)
 {
     VVDBStatement *statement = [VVDBStatement statementWithDatabase:self sql:sql];
     return [statement scalar:values];
-}
-
-- (id)scalar:(NSString *)sql bindKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues
-{
-    VVDBStatement *statement = [VVDBStatement statementWithDatabase:self sql:sql];
-    return [statement scalarKeyValues:keyValues];
 }
 
 // MARK: - Transactions
@@ -283,17 +346,17 @@ static void vvdb_rollback_hook(void *pCtx)
             sql = @"BEGIN DEFERRED TRANSACTION";
             break;
     }
-    return [self run:sql];
+    return [[self prepare:sql] run];
 }
 
 - (BOOL)commit
 {
-    return [self run:@"COMMIT TRANSACTION"];
+    return [[self prepare:@"COMMIT TRANSACTION"] run];
 }
 
 - (BOOL)rollback
 {
-    return [self run:@"ROLLBACK TRANSACTION"];
+    return [[self prepare:@"ROLLBACK TRANSACTION"] run];
 }
 
 - (BOOL)savepoint:(NSString *)name block:(BOOL (^)(void))block
@@ -331,15 +394,15 @@ static void vvdb_rollback_hook(void *pCtx)
     if (!block) {
         return YES;
     }
-    BOOL ret = [self run:begin];
+    BOOL ret = [[self prepare:begin] run];
     if (!ret) {
         return block();
     }
     ret = block();
     if (ret) {
-        [self run:commit];
+        [[self prepare:commit] run];
     } else {
-        [self run:rollback];
+        [[self prepare:rollback] run];
     }
     return ret;
 }

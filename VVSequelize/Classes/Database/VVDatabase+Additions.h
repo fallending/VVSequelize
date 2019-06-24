@@ -49,6 +49,21 @@ NS_ASSUME_NONNULL_BEGIN
 
 // MARK: - queue
 /**
+ 串行队列
+ 
+ @return 队列
+ */
++ (dispatch_queue_t)serialQueue;
+
+
+/**
+ 并行队列
+ 
+ @return 队列
+ */
++ (dispatch_queue_t)concurrentQueue;
+
+/**
  同步, 在<当前线程><串行>执行
 
  @param block 读取操作

@@ -91,26 +91,9 @@
     return self;
 }
 
-- (VVDBStatement *)bindKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues
-{
-    if (keyValues.count == 0) return self;
-    sqlite3_reset(_stmt);
-    sqlite3_clear_bindings(_stmt);
-    [keyValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
-        self.cursor[key] = value;
-    }];
-    return self;
-}
-
 - (id)scalar:(nullable NSArray *)values
 {
     [[self bind:values] step];
-    return self.cursor[0];
-}
-
-- (id)scalarKeyValues:(nullable NSDictionary<NSString *, id> *)keyValues
-{
-    [[self bindKeyValues:keyValues] step];
     return self.cursor[0];
 }
 
