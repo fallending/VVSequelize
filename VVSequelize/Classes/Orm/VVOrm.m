@@ -122,7 +122,7 @@
     // 执行建表SQL
     BOOL ret = [self.vvdb excute:sql];
     VV_NO_WARNING(ret);
-    
+
     NSAssert1(ret, @"Failure to create a table: %@", _tableName);
 }
 
@@ -131,7 +131,7 @@
     NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _tableName.quoted, tempTableName.quoted];
     BOOL ret = [self.vvdb excute:sql];
     VV_NO_WARNING(ret);
-    
+
     NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
 }
 
@@ -143,12 +143,12 @@
     }
     NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.tableName.quoted, allFields, allFields, tempTableName.quoted];
     BOOL ret = [self.vvdb excute:sql];
-    
+
     if (ret) {
         sql = [NSString stringWithFormat:@"DROP TABLE %@", tempTableName.quoted];
         ret = [self.vvdb excute:sql];
     }
-    
+
     if (!ret) {
 #if DEBUG
         NSLog(@"Warning: copying data from old table (%@) to new table (%@) failed!", tempTableName, self.tableName);
@@ -168,7 +168,9 @@
         if ([idxName hasPrefix:@"sqlite_autoindex_"]) continue;
         [dropIdxSQL appendFormat:@"DROP INDEX IF EXISTS %@;", idxName.quoted];
     }
-    
+
+    if (self.config.indexes.count == 0) return;
+
     // 建立新索引
     NSString *indexName = [NSString stringWithFormat:@"vvdb_index_%@", _tableName];
     NSString *indexSQL = [_config.indexes sqlJoin];
@@ -177,8 +179,12 @@
         createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX %@ on %@ (%@);", indexName.quoted, _tableName.quoted, indexSQL];
     }
     BOOL ret = YES;
-    if (dropIdxSQL.length > 0) { ret = [self.vvdb excute:dropIdxSQL]; }
-    if (ret && createIdxSQL.length > 0) { ret = [self.vvdb excute:createIdxSQL]; }
+    if (dropIdxSQL.length > 0) {
+        ret = [self.vvdb excute:dropIdxSQL];
+    }
+    if (ret && createIdxSQL.length > 0) {
+        ret = [self.vvdb excute:createIdxSQL];
+    }
 
     if (!ret) {
 #if DEBUG
