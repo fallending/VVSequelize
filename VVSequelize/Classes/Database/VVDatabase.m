@@ -60,7 +60,6 @@ static void vvdb_rollback_hook(void *pCtx)
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, assign) sqlite3 *db;
 @property (nonatomic, strong) NSMutableArray<NSArray *> *updates;
-@property (nonatomic, assign) CFAbsoluteTime currentMergeTime;
 @end
 
 @implementation VVDatabase
@@ -239,8 +238,6 @@ static void vvdb_rollback_hook(void *pCtx)
         return NO;
     }
     if (_updates.count == 0) {
-        CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
-        _currentMergeTime = now;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_updateInterval * NSEC_PER_SEC)), [VVDatabase serialQueue], ^{
             [self runMergeUpdates];
         });
@@ -251,7 +248,10 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)runMergeUpdates
 {
-    printf("\n[EMDB] `-merge:values:` begin: %f, now: %f, count: %lu, db: %s\n", _currentMergeTime, CFAbsoluteTimeGetCurrent(), _updates.count, _path.lastPathComponent.UTF8String);
+#if DEBUG
+    printf("\n[VVDB][Merge] now: %f, count: %lu, db: %s\n", CFAbsoluteTimeGetCurrent(), _updates.count, _path.lastPathComponent.UTF8String);
+#endif
+
     NSArray *array = _updates.copy;
     if (array.count == 0) {
         return YES;
@@ -485,7 +485,7 @@ static void vvdb_rollback_hook(void *pCtx)
         default: {
 #if DEBUG
             const char *errmsg = sqlite3_errmsg(self.db);
-            printf("[VVDB] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
+            printf("[VVDB][Error] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
 #endif
             return NO;
         }
