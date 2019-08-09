@@ -163,12 +163,13 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         _token[len] = 0;
         VVFtsToken *vvToken = [VVFtsToken new];
         vvToken.token = _token;
+        vvToken.dup = _token;
         vvToken.len = len;
         vvToken.start = start;
         vvToken.end = end;
         [results addObject:vvToken];
     };
-    !enumerator ? : enumerator(pText, nText, nil, pinyin, handler);
+    !enumerator ? : enumerator(pText, nText, nil, handler);
     return results;
 }
 
@@ -199,7 +200,7 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
         }
     };
 
-    enumerator(pText, nText, nil, nText < pyMaxLen, handler);
+    !enumerator ? : enumerator(pText, nText, nil, handler);
 
     char *remained = (char *)malloc(nText + 1);
     strncpy(remained, pText, nText);
@@ -213,11 +214,11 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     int pos = 0;
     while (pos < nText) {
         if (remained[pos] != 0x0) {
-            NSString *str = [NSString stringWithUTF8String:(remained + pos)];
+            NSString *str = [NSString stringWithUTF8String:(remained + pos)] ? : @"";
             [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str]];
             pos += strlen(remained + pos);
         } else {
-            NSString *str = [NSString stringWithUTF8String:(tokenized + pos)];
+            NSString *str = [NSString stringWithUTF8String:(tokenized + pos)] ? : @"";
             [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:attributes]];
             pos += strlen(tokenized + pos);
         }

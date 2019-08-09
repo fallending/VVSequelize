@@ -24,6 +24,20 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)setMaxSupportLengthOfPolyphone:(NSUInteger)maxSupportLength;
 
 /**
+ 将字符串中的繁体中文转换成简体中文
+
+ @return 简体中文字符串
+ */
+- (NSString *)simplifiedChineseString;
+
+/**
+ 将字符串中的简体中文转换成繁体中文
+
+ @return 繁体中文字符串
+ */
+- (NSString *)traditionalChineseString;
+
+/**
  判断字符串是否含有中文
 
  @note 不建议在分词步骤中判断是否含中文,正则表达式效率较低.
@@ -44,6 +58,13 @@ NS_ASSUME_NONNULL_BEGIN
  @return 中文拼音字符串数组
  */
 - (NSArray<NSString *> *)pinyinsForTokenize;
+
+/**
+ 获取字符串的数字分词数据
+ 
+ @return 数字分词数组
+ */
+- (NSArray<NSString *> *)numberStringsForTokenize;
 
 @end
 

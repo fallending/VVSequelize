@@ -9,7 +9,7 @@
 #import "VVJieba.h"
 #import "NSString+Tokenizer.h"
 
-static void jiebaEnumerator(const char *pText, int nText, const char *locale, BOOL pinyin, VVFtsXTokenHandler handler)
+static void jiebaEnumerator(const char *pText, int nText, const char *locale, VVFtsXTokenHandler handler)
 {
     if (!handler) return;
 
@@ -19,17 +19,6 @@ static void jiebaEnumerator(const char *pText, int nText, const char *locale, BO
         handler(token, (int)len, (int)offset, (int)end, stop);
 
         if (*stop) return;
-        if (!pinyin) return;
-
-        NSString *tk = [NSString stringWithUTF8String:token];
-        NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
-        for (NSString *py in pinyins) {
-            const char *pyToken = py.UTF8String;
-            if (!pyToken) continue;
-            long pyLen = strlen(pyToken);
-            handler(pyToken, (int)pyLen, (int)offset, (int)end, stop);
-            if (*stop) return;
-        }
     }];
 }
 

@@ -6,6 +6,7 @@
 //
 
 #import "NSString+Tokenizer.h"
+#import "VVTransformConst.h"
 
 static NSString *const kVVPinYinResourceBundle = @"VVPinYin.bundle";
 static NSString *const kVVPinYinResourceFile = @"polyphone.plist";
@@ -14,6 +15,8 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 @interface VVPinYin : NSObject
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, strong) NSDictionary *polyphones;
+@property (nonatomic, strong) NSDictionary *gb2big5Map;
+@property (nonatomic, strong) NSDictionary *big52gbMap;
 @end
 
 @implementation VVPinYin
@@ -50,6 +53,32 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
     return _polyphones;
 }
 
+- (NSDictionary *)gb2big5Map {
+    if (!_gb2big5Map) {
+        NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+        for (NSUInteger i = 0; i < VVSimplifiedCodes.length; i++) {
+            NSString *gb = [VVSimplifiedCodes substringWithRange:NSMakeRange(i, 1)];
+            NSString *big5 = [VVTraditionalCodes substringWithRange:NSMakeRange(i, 1)];
+            dic[gb] = big5;
+        }
+        _gb2big5Map = dic;
+    }
+    return _gb2big5Map;
+}
+
+- (NSDictionary *)big52gbMap {
+    if (!_gb2big5Map) {
+        NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+        for (NSUInteger i = 0; i < VVSimplifiedCodes.length; i++) {
+            NSString *gb = [VVSimplifiedCodes substringWithRange:NSMakeRange(i, 1)];
+            NSString *big5 = [VVTraditionalCodes substringWithRange:NSMakeRange(i, 1)];
+            dic[big5] = gb;
+        }
+        _gb2big5Map = dic;
+    }
+    return _gb2big5Map;
+}
+
 @end
 
 @implementation NSString (Tokenizer)
@@ -62,6 +91,26 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 + (void)setMaxSupportLengthOfPolyphone:(NSUInteger)maxSupportLength
 {
     _kVVMaxSupportLengthOfPolyphone = maxSupportLength;
+}
+
+- (NSString *)simplifiedChineseString {
+    NSMutableString *string = [NSMutableString string];
+    for (NSUInteger i = 0; i < self.length; i++) {
+        NSString *ch = [self substringWithRange:NSMakeRange(i, 1)];
+        NSString *trans = [VVPinYin shared].big52gbMap[ch] ? : ch;
+        [string appendString:trans];
+    }
+    return string;
+}
+
+- (NSString *)traditionalChineseString {
+    NSMutableString *string = [NSMutableString string];
+    for (NSUInteger i = 0; i < self.length; i++) {
+        NSString *ch = [self substringWithRange:NSMakeRange(i, 1)];
+        NSString *trans = [VVPinYin shared].gb2big5Map[ch] ? : ch;
+        [string appendString:trans];
+    }
+    return string;
 }
 
 - (BOOL)hasChinese
@@ -153,6 +202,22 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
     }];
 
     return results.allObjects;
+}
+
+- (NSArray<NSString *> *)numberStringsForTokenize {
+    static NSNumberFormatter *_formatter;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _formatter = [[NSNumberFormatter alloc] init];
+        _formatter.numberStyle = NSNumberFormatterDecimalStyle;
+    });
+    NSNumber *number = [_formatter numberFromString:self];
+    if (number) {
+        NSString *unformatted = number.stringValue;
+        NSString *formatted = [_formatter stringFromNumber:number];
+        return @[unformatted, formatted];
+    }
+    return @[self];
 }
 
 @end

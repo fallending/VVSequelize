@@ -8,7 +8,7 @@
 #import "VVFtsAppleTokenizer.h"
 #import "NSString+Tokenizer.h"
 
-static void appleEnumerator(const char *pText, int nText, const char *locale, BOOL pinyin, VVFtsXTokenHandler handler)
+static void appleEnumerator(const char *pText, int nText, const char *locale, VVFtsXTokenHandler handler)
 {
     if (!handler) return;
 
@@ -45,17 +45,6 @@ static void appleEnumerator(const char *pText, int nText, const char *locale, BO
         handler(token, len, start, end, &stop);
 
         if (stop) return;
-        if (!pinyin) return;
-
-        NSString *tk = [NSString stringWithUTF8String:token];
-        NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
-        for (NSString *py in pinyins) {
-            const char *pyToken = py.UTF8String;
-            if (!pyToken) continue;
-            int pyLen = (int)strlen(pyToken);
-            handler(pyToken, pyLen, start, end, &stop);
-            if (stop) return;
-        }
         //获取当前进程
         tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer);
     }

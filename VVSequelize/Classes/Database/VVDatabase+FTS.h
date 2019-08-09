@@ -10,6 +10,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+//MARK: - 分词器参数
+#define VVFtsTokenParamNumber    (1 << 16)
+#define VVFtsTokenParamTransform (1 << 17)
+#define VVFtsTokenParamPinyin    0xFFFF
+
 @interface VVDatabase (FTS)
 
 /**

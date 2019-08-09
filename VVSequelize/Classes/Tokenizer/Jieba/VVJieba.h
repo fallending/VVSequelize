@@ -10,6 +10,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface VVJieba : NSObject
+
 /**
  预加载结巴分词资源
  */

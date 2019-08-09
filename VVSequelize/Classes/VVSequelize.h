@@ -29,13 +29,14 @@
 #import "VVJieba.h"
 #import "NSString+Tokenizer.h"
 #import "VVFtsAppleTokenizer.h"
+#import "VVFtsEnumerator.h"
 #import "VVFtsJiebaTokenizer.h"
 #import "VVFtsNLTokenizer.h"
 #import "VVFtsTokenizer.h"
+#import "VVTransformConst.h"
 #import "VVDBCipher.h"
 #import "VVDBUpgrader.h"
 #import "VVOrmRoute.h"
-#import "VVSequelize.h"
 
 FOUNDATION_EXPORT double VVSequelizeVersionNumber;
 FOUNDATION_EXPORT const unsigned char VVSequelizeVersionString[];

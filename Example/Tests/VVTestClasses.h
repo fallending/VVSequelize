@@ -2,7 +2,7 @@
 //  VVTestClasses.h
 //  VVSequelize_Tests
 //
-//  Created by Jinbo Li on 2018/6/12.
+//  Created by Valo on 2018/6/12.
 //  Copyright © 2018年 Valo Lee. All rights reserved.
 //
 

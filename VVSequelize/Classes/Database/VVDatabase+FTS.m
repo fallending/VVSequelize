@@ -6,14 +6,14 @@
 //
 
 #import "VVDatabase+FTS.h"
+#import "NSString+Tokenizer.h"
+#import "VVFtsEnumerator.h"
 
 #ifdef SQLITE_HAS_CODEC
 #import "sqlite3.h"
 #else
 #import <sqlite3.h>
 #endif
-
-static const char *kPinYinArg = "pinyin";
 
 //MARK: - FTS3
 typedef struct sqlite3_tokenizer_module   sqlite3_tokenizer_module;
@@ -57,8 +57,9 @@ struct sqlite3_tokenizer_cursor {
 typedef struct vv_fts3_tokenizer {
     sqlite3_tokenizer base;
     char locale[16];
-    bool pinyin;
     int pinyinMaxLen;
+    bool tokenNum;
+    bool transfrom;
 } vv_fts3_tokenizer;
 
 typedef struct vv_fts3_tokenizer_cursor {
@@ -108,25 +109,20 @@ static int vv_fts3_create(
     memset(tok, 0, sizeof(*tok));
 
     memset(tok->locale, 0x0, 16);
-    tok->pinyin = false;
     tok->pinyinMaxLen = 0;
+    tok->tokenNum = false;
+    tok->transfrom = false;
 
-    int idx = -1;
-    for (int i = 0; i < MIN(3, argc); i++) {
+    for (int i = 0; i < MIN(2, argc); i++) {
         const char *arg = argv[i];
-        if (strcmp(arg, kPinYinArg) == 0) {
-            idx = i;
-            tok->pinyin = true;
+        uint32_t flag = (uint32_t)atol(arg);
+        if (flag > 0) {
+            tok->pinyinMaxLen = flag & VVFtsTokenParamPinyin;
+            tok->tokenNum = (flag & VVFtsTokenParamNumber) > 0;
+            tok->transfrom = (flag & VVFtsTokenParamTransform) > 0;
         } else {
-            if (tok->pinyin && i == idx + 1) {
-                tok->pinyinMaxLen = atoi(arg);
-            } else if (i == 0) {
-                strncpy(tok->locale, arg, 15);
-            }
+            strncpy(tok->locale, arg, 15);
         }
-    }
-    if (tok->pinyin && tok->pinyinMaxLen <= 0) {
-        tok->pinyinMaxLen = TOKEN_PINYIN_MAX_LENGTH;
     }
 
     *ppTokenizer = &tok->base;
@@ -161,7 +157,13 @@ static int vv_fts3_open(
     int nInput = (pInput == 0) ? 0 : (nBytes < 0 ? (int)strlen(pInput) : nBytes);
 
     vv_fts3_tokenizer *tok = (vv_fts3_tokenizer *)pTokenizer;
-    BOOL tokenPinyin = tok->pinyin && (nInput <= tok->pinyinMaxLen);
+
+    NSString *ocString = [NSString stringWithUTF8String:pInput].lowercaseString;
+    if (tok->transfrom) {
+        ocString = ocString.simplifiedChineseString;
+    }
+    const char *source = ocString.UTF8String;
+
     __block NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
 
     VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
@@ -170,13 +172,28 @@ static int vv_fts3_open(
         _token[len] = 0;
         VVFtsToken *t = [VVFtsToken new];
         t.token = _token;
+        t.dup = _token;
         t.len = len;
         t.start = start;
         t.end = end;
         [array addObject:t];
     };
 
-    enumerator(pInput, nBytes, tok->locale, tokenPinyin, handler);
+    if (tok->tokenNum) {
+        [VVFtsEnumerator enumerateNumbers:ocString handler:handler];
+    }
+    if (tok->pinyinMaxLen > 0) {
+        for (VVFtsToken *token in array) {
+            if (token.len > tok->pinyinMaxLen) continue;
+            NSString *fragment = [NSString stringWithUTF8String:token.token];
+            [VVFtsEnumerator enumeratePinyins:fragment start:token.start end:token.end handler:handler];
+        }
+        if (nInput < tok->pinyinMaxLen) {
+            [VVFtsEnumerator enumeratePinyins:ocString start:0 end:nInput handler:handler];
+        }
+    }
+
+    enumerator(source, nBytes, tok->locale, handler);
 
     c->pInput = pInput;
     c->nBytes = nInput;
@@ -242,8 +259,9 @@ static fts5_api * fts5_api_from_db(sqlite3 *db)
 typedef struct Fts5VVTokenizer Fts5VVTokenizer;
 struct Fts5VVTokenizer {
     char locale[16];
-    bool pinyin;
     int pinyinMaxLen;
+    bool tokenNum;
+    bool transfrom;
     VVFtsXEnumerator enumerator;
 };
 
@@ -260,26 +278,22 @@ static int vv_fts5_xCreate(
 {
     Fts5VVTokenizer *tok = sqlite3_malloc(sizeof(Fts5VVTokenizer));
     if (!tok) return SQLITE_NOMEM;
-    memset(tok->locale, 0x0, 16);
-    tok->pinyin = false;
-    tok->pinyinMaxLen = 0;
 
-    int idx = -1;
-    for (int i = 0; i < MIN(3, nArg); i++) {
+    memset(tok->locale, 0x0, 16);
+    tok->pinyinMaxLen = 0;
+    tok->tokenNum = false;
+    tok->transfrom = false;
+
+    for (int i = 0; i < MIN(2, nArg); i++) {
         const char *arg = azArg[i];
-        if (strcmp(arg, kPinYinArg) == 0) {
-            idx = i;
-            tok->pinyin = true;
+        uint32_t flag = (uint32_t)atol(arg);
+        if (flag > 0) {
+            tok->pinyinMaxLen = flag & VVFtsTokenParamPinyin;
+            tok->tokenNum = (flag & VVFtsTokenParamNumber) > 0;
+            tok->transfrom = (flag & VVFtsTokenParamTransform) > 0;
         } else {
-            if (tok->pinyin && i == idx + 1) {
-                tok->pinyinMaxLen = atoi(arg);
-            } else if (i == 0) {
-                strncpy(tok->locale, arg, 15);
-            }
+            strncpy(tok->locale, arg, 15);
         }
-    }
-    if (tok->pinyin && tok->pinyinMaxLen <= 0) {
-        tok->pinyinMaxLen = TOKEN_PINYIN_MAX_LENGTH;
     }
 
     VVFtsXEnumerator enumerator = (VVFtsXEnumerator)pUnused;
@@ -305,15 +319,38 @@ static int vv_fts5_xTokenize(
     __block int rc = SQLITE_OK;
     Fts5VVTokenizer *tok = (Fts5VVTokenizer *)pTokenizer;
     int nInput = (pText == 0) ? 0 : (nText < 0 ? (int)strlen(pText) : nText);
-    BOOL tokenPinyin = tok->pinyin && (nInput <= tok->pinyinMaxLen) && (iUnused & FTS5_TOKENIZE_DOCUMENT);
+
+    NSString *ocString = [NSString stringWithUTF8String:pText].lowercaseString;
+    if (tok->transfrom) {
+        ocString = ocString.simplifiedChineseString;
+    }
+    const char *source = ocString.UTF8String;
 
     VVFtsXEnumerator enumerator = tok->enumerator;
-    VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
+    VVFtsXTokenHandler handler = nil;
+    handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
+        if (tok->pinyinMaxLen > 0 && len <= tok->pinyinMaxLen && (iUnused & FTS5_TOKENIZE_DOCUMENT)) {
+            NSString *fragment = [NSString stringWithUTF8String:token];
+            NSArray *tks = [VVFtsEnumerator enumeratePinyins:fragment start:start end:end];
+            for (VVFtsToken *tk in tks) {
+                rc = xToken(pCtx, iUnused, tk.token, tk.len, tk.start, tk.end);
+                if (rc != SQLITE_OK) {
+                    *stop = YES;
+                    return;
+                }
+            }
+        }
         rc = xToken(pCtx, iUnused, token, len, start, end);
         *stop = (rc != SQLITE_OK);
     };
 
-    enumerator(pText, nText, tok->locale, tokenPinyin, handler);
+    enumerator(source, nInput, tok->locale, handler);
+    if (tok->tokenNum) {
+        [VVFtsEnumerator enumerateNumbers:ocString handler:handler];
+    }
+    if (tok->pinyinMaxLen > 0 && nInput <= tok->pinyinMaxLen && (iUnused & FTS5_TOKENIZE_DOCUMENT)) {
+        [VVFtsEnumerator enumeratePinyins:ocString start:0 end:nInput handler:handler];
+    }
 
     if (rc == SQLITE_DONE) rc = SQLITE_OK;
     return rc;
@@ -321,7 +358,8 @@ static int vv_fts5_xTokenize(
 
 @implementation VVDatabase (FTS)
 
-+ (NSMutableDictionary *)enumerators{
++ (NSMutableDictionary *)enumerators
+{
     static NSMutableDictionary *_enumerators;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -366,8 +404,8 @@ static int vv_fts5_xTokenize(
                                 tokenizer,
                                 0);
     ret =  [self check:rc sql:errorsql];
-    if(ret) {
-        NSString *addr = [NSString stringWithFormat:@"%p",enumerator];
+    if (ret) {
+        NSString *addr = [NSString stringWithFormat:@"%p", enumerator];
         [VVDatabase enumerators][name] = addr;
     }
     return ret;
@@ -383,10 +421,10 @@ static int vv_fts5_xTokenize(
     tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
     int rc = pApi->xFindTokenizer(pApi, name.UTF8String, &pUserdata, tokenizer);
     if (rc != SQLITE_OK) return nil;
-    
-    NSString *addr = [NSString stringWithFormat:@"%p",pUserdata];
+
+    NSString *addr = [NSString stringWithFormat:@"%p", pUserdata];
     NSString *mapped = [VVDatabase enumerators][name];
-    if(![addr isEqualToString:mapped]) return nil;
+    if (![addr isEqualToString:mapped]) return nil;
     return (VVFtsXEnumerator)pUserdata;
 }
 

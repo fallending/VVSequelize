@@ -9,7 +9,7 @@
 #import "NSString+Tokenizer.h"
 #import <NaturalLanguage/NaturalLanguage.h>
 
-static void nlEnumerator(const char *pText, int nText, const char *locale, BOOL pinyin, VVFtsXTokenHandler handler)
+static void nlEnumerator(const char *pText, int nText, const char *locale, VVFtsXTokenHandler handler)
 {
     if (!handler) return;
 
@@ -30,18 +30,7 @@ static void nlEnumerator(const char *pText, int nText, const char *locale, BOOL 
                 int len   = (int)strlen(token);
                 int end   = (int)(start + len);
                 handler(token, len, start, end, stop);
-
                 if (*stop) return;
-                if (!pinyin) return;
-
-                NSArray<NSString *> *pinyins = [tk pinyinsForTokenize];
-                for (NSString *py in pinyins) {
-                    const char *pyToken = py.UTF8String;
-                    if (!pyToken) continue;
-                    int pyLen = (int)strlen(pyToken);
-                    handler(pyToken, pyLen, start, end, stop);
-                    if (*stop) return;
-                }
             }
         }];
     } else {

@@ -114,10 +114,13 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
             return 0;
         }];
 
+        NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
+        NSString *tokenizer = [NSString stringWithFormat:@"jieba zh_CN %@", @(ftsTokenParm)];
+        
         VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
         ftsConfig.fts = YES;
         ftsConfig.ftsModule = @"fts5";
-        ftsConfig.ftsTokenizer = @"jieba zh_CN pinyin 9";
+        ftsConfig.ftsTokenizer = tokenizer;
         ftsConfig.indexes = @[@"info"];
         item.ftsOrm = [VVOrm ormWithConfig:ftsConfig tableName:item.tableName dataBase:item.ftsDb];
 

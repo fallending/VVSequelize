@@ -249,9 +249,8 @@ static void vvdb_rollback_hook(void *pCtx)
 - (BOOL)runMergeUpdates
 {
 #if DEBUG
-    printf("\n[VVDB][Merge] now: %f, count: %lu, db: %s\n", CFAbsoluteTimeGetCurrent(), _updates.count, _path.lastPathComponent.UTF8String);
+    printf("\n[VVDB][Merge] now: %f, count: %lu, db: %s\n", CFAbsoluteTimeGetCurrent(), (unsigned long)_updates.count, _path.lastPathComponent.UTF8String);
 #endif
-
     NSArray *array = _updates.copy;
     if (array.count == 0) {
         return YES;
@@ -302,8 +301,8 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)isExist:(NSString *)table
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT 1 FROM %@", table.quoted];
-    return [self query:sql].count > 0;
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = %@", table.quoted];
+    return [[self scalar:sql bind:nil] boolValue];
 }
 
 - (BOOL)run:(NSString *)sql

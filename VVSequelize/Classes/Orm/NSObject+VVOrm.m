@@ -8,7 +8,7 @@
 #import "NSObject+VVOrm.h"
 #import <objc/runtime.h>
 
-@interface NSNumber (EMOrm)
+@interface NSNumber (VVOrm)
 
 @end
 
@@ -96,7 +96,7 @@
 
 @end
 
-@implementation NSNumber (EMOrm)
+@implementation NSNumber (VVOrm)
 
 - (NSString *)sqlExpressionValue
 {

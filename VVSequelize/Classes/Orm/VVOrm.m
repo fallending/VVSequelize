@@ -120,18 +120,16 @@
         sql = [_config createSQLWith:_tableName];
     }
     // 执行建表SQL
-    BOOL ret = [self.vvdb excute:sql];
+    BOOL ret = [self.vvdb run:sql];
     VV_NO_WARNING(ret);
-
     NSAssert1(ret, @"Failure to create a table: %@", _tableName);
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName
 {
     NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _tableName.quoted, tempTableName.quoted];
-    BOOL ret = [self.vvdb excute:sql];
+    BOOL ret = [self.vvdb run:sql];
     VV_NO_WARNING(ret);
-
     NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
 }
 
@@ -142,11 +140,15 @@
         return;
     }
     NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.tableName.quoted, allFields, allFields, tempTableName.quoted];
-    BOOL ret = [self.vvdb excute:sql];
+    __block BOOL ret = YES;
+    [self.vvdb transaction:VVDBTransactionDeferred block:^BOOL {
+        ret = [self.vvdb run:sql];
+        return ret;
+    }];
 
     if (ret) {
-        sql = [NSString stringWithFormat:@"DROP TABLE %@", tempTableName.quoted];
-        ret = [self.vvdb excute:sql];
+        sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", tempTableName.quoted];
+        ret = [self.vvdb run:sql];
     }
 
     if (!ret) {
@@ -176,14 +178,14 @@
     NSString *indexSQL = [_config.indexes sqlJoin];
     NSString *createIdxSQL = nil;
     if (indexSQL.length > 0) {
-        createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX %@ on %@ (%@);", indexName.quoted, _tableName.quoted, indexSQL];
+        createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS %@ on %@ (%@);", indexName.quoted, _tableName.quoted, indexSQL];
     }
     BOOL ret = YES;
     if (dropIdxSQL.length > 0) {
-        ret = [self.vvdb excute:dropIdxSQL];
+        ret = [self.vvdb run:dropIdxSQL];
     }
     if (ret && createIdxSQL.length > 0) {
-        ret = [self.vvdb excute:createIdxSQL];
+        ret = [self.vvdb run:createIdxSQL];
     }
 
     if (!ret) {

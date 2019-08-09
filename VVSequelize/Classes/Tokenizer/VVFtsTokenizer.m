@@ -11,7 +11,9 @@
 
 - (void)dealloc
 {
-    free((void *)_token);
+    if (_dup) {
+        free((void *)_dup);
+    }
 }
 
 @end

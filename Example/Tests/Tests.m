@@ -50,7 +50,9 @@
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
     self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
-    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:@"jieba pinyin" indexes:@[@"mobile", @"industry"]];
+    NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
+    NSString *tokenizer = [NSString stringWithFormat:@"jieba %@", @(ftsTokenParm)];
+    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"mobile", @"industry"]];
 
     self.ftsModel = [VVOrm ormWithConfig:ftsConfig tableName:@"fts_mobiles" dataBase:self.vvdb];
     //复制数据到fts表
@@ -334,46 +336,47 @@
 - (void)testUpdateDatabase
 {
     VVDBUpgrader *upgrader = [[VVDBUpgrader alloc] init];
-    upgrader.versions = @[@"0.1.0", @"0.1.1", @"0.1.3", @"0.1.5"];
-    upgrader.upgrades[@"0.1.1"] = ^(NSProgress *progress) {
-        NSLog(@"update-> 0.1.1");
-        for (NSInteger i = 0; i < 100; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+    [[NSUserDefaults standardUserDefaults] setObject:@"0.1.0" forKey:upgrader.versionKey];
+//    [[NSUserDefaults standardUserDefaults] removeObjectForKey:upgrader.versionKey];
+    [upgrader addHandlerForStage:2 version:@"0.1.1" handler:^(NSProgress *progress) {
+        NSLog(@"update->stage2 0.1.1");
+        for (NSInteger i = 0; i < 10; i++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
         }
-    };
-    upgrader.upgrades[@"0.1.2"] = ^(NSProgress *progress) {
-        NSLog(@"update-> 0.1.2");
-        for (NSInteger i = 0; i < 100; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+    }];
+    [upgrader addHandlerForStage:0 version:@"0.1.2" handler:^(NSProgress *progress) {
+        NSLog(@"update->stage0 0.1.2");
+        for (NSInteger i = 0; i < 10; i++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
         }
-    };
-    upgrader.upgrades[@"0.1.3"] = ^(NSProgress *progress) {
-        NSLog(@"update-> 0.1.3");
-//        for (NSInteger i = 0; i < 100; i ++) {
-//            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
-//        }
-    };
-    upgrader.upgrades[@"0.1.4"] = ^(NSProgress *progress) {
-        NSLog(@"update-> 0.1.4");
-        for (NSInteger i = 0; i < 100; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
+    }];
+    [upgrader addHandlerForStage:1 version:@"0.1.3" handler:^(NSProgress *progress) {
+        NSLog(@"update->stage1 0.1.3");
+        for (NSInteger i = 0; i < 10; i++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
         }
-    };
-    upgrader.upgrades[@"0.1.5"] = ^(NSProgress *progress) {
-        NSLog(@"update-> 0.1.5");
-//        for (NSInteger i = 0; i < 100; i ++) {
-//            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 100;
-//        }
-    };
-    NSProgress *progress = [NSProgress progressWithTotalUnitCount:100];
-    [progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
-    [upgrader upgradeFrom:@"0.1.2" progress:progress];
+    }];
+    [upgrader addHandlerForStage:4 version:@"0.1.4" handler:^(NSProgress *progress) {
+        NSLog(@"update->stage4 0.1.4");
+        for (NSInteger i = 0; i < 10; i++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
+        }
+    }];
+    [upgrader addHandlerForStage:0 version:@"0.1.5" handler:^(NSProgress *progress) {
+        NSLog(@"update->stage0 0.1.5");
+        for (NSInteger i = 0; i < 10; i++) {
+            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
+        }
+    }];
+
+    [upgrader.progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
+    [upgrader upgradeAll];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
 {
     NSProgress *progress = object;
-    NSLog(@"progress: %@", @(progress.fractionCompleted));
+    NSLog(@"progress: %.2f%%", progress.fractionCompleted * 100.0);
 }
 
 //MARK: - FTS表

@@ -109,7 +109,7 @@
     if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
 
     NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
-    return [self.vvdb excute:sql];
+    return [self.vvdb run:sql];
 }
 
 @end

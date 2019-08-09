@@ -23,10 +23,10 @@
 * [x] 自定义FTS分词器
 * [x] 支持拼音分词
 
-## 改动(0.3.0-beta7)
+## 改动(0.3.0-beta8)
 1. 修复一些bug
-2. 修改搜索结果高亮匹配
-3. VVSelect改为链式语法赋值.
+2. 修改创建FTS表时的分词器参数，可定义拼音分词最大长度，是否数字分词，是否处理简体繁体转换
+3. 添加拼音分词和数字分词的枚举器.
 
 ## 结构
 ![](VVSequelize.png)
@@ -60,15 +60,18 @@
 
 Fts表配置
 ```objc
+    NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
+    NSString *tokenizer = [NSString stringWithFormat:@"jieba %@", @(ftsTokenParm)];
+
     VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVTestMobile.class];
     ftsConfig.fts = YES;
     ftsConfig.ftsModule = @"fts5";
-    ftsConfig.ftsTokenizer = @"jieba pinyin 9";
+    ftsConfig.ftsTokenizer = tokenizer;
     ftsConfig.indexes = @[@"mobile", @"industry"];
 ```
 或者
 ```objc
-    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVMessage.class module:@"fts5" tokenizer:@"jieba pinyin" indexes:@[@"info"]];
+    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVMessage.class module:@"fts5" tokenizer:tokenizer indexes:@[@"info"]];
 ```
 **FTS表配置特别注意**:
 * 需设置`ftsConfig.fts=YES`,否则视为普通表.
