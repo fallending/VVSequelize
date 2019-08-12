@@ -277,7 +277,7 @@ static void vvdb_rollback_hook(void *pCtx)
             NSArray *temp = _updates.copy;
             [_updates removeAllObjects];
             [_updates addObjectsFromArray:array];
-            [_updates addObject:temp];
+            [_updates addObjectsFromArray:temp];
         };
     }
     return result;
