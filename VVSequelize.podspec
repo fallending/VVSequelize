@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.3.0-beta9'
+  s.version          = '0.3.0'
   s.summary          = '基于sqlite3的ORM模型封装.'
   s.description      = <<-DESC
                        基于sqlite3的ORM模型封装.
