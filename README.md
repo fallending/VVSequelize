@@ -4,6 +4,11 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
+## 改动(0.3.1-beta1)
+1. 移除jieba分词器
+2. 添加sequelize分词器
+3. 更改高亮方式.
+
 ## 功能
 * [x] 根据Class生成数据表
 * [x] 增删改查,insert,update,upsert,delele,drop...
@@ -56,7 +61,7 @@
 Fts表配置
 ```objc
     NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
-    NSString *tokenizer = [NSString stringWithFormat:@"jieba %@", @(ftsTokenParm)];
+    NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
 
     VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVTestMobile.class];
     ftsConfig.fts = YES;
