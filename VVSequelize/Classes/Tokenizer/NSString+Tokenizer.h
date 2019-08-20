@@ -66,6 +66,13 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (NSArray<NSString *> *)numberStringsForTokenize;
 
+/**
+ 去除掉各种特殊字符之后的干净字符串
+
+ @return 干净字符串
+ */
+- (NSString *)clearString;
+
 @end
 
 NS_ASSUME_NONNULL_END

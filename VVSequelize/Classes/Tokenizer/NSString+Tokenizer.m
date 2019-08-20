@@ -123,9 +123,9 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 - (NSString *)pinyin
 {
     NSMutableString *string = [NSMutableString stringWithString:self];
-    CFStringTransform((CFMutableStringRef)string, NULL, kCFStringTransformToLatin, false);
-    string = (NSMutableString *)[string stringByFoldingWithOptions:NSDiacriticInsensitiveSearch locale:[NSLocale currentLocale]];
-    return [string stringByReplacingOccurrencesOfString:@"'" withString:@""];
+    CFStringTransform((__bridge CFMutableStringRef)string, NULL, kCFStringTransformToLatin, false);
+    NSString *result = [string stringByFoldingWithOptions:NSDiacriticInsensitiveSearch locale:[NSLocale currentLocale]];
+    return [result stringByReplacingOccurrencesOfString:@"'" withString:@""];
 }
 
 - (NSArray<NSString *> *)pinyinsForTokenize
@@ -218,6 +218,23 @@ static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
         return @[unformatted, formatted];
     }
     return @[self];
+}
+
+- (NSString *)clearString
+{
+    static NSCharacterSet *clearSet;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSMutableCharacterSet *set = [[NSMutableCharacterSet alloc] init];
+        [set formUnionWithCharacterSet:[NSCharacterSet controlCharacterSet]];
+        [set formUnionWithCharacterSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        [set formUnionWithCharacterSet:[NSCharacterSet illegalCharacterSet]];
+        [set formUnionWithCharacterSet:[NSCharacterSet punctuationCharacterSet]];
+        [set formUnionWithCharacterSet:[NSCharacterSet newlineCharacterSet]];
+        clearSet = set;
+    });
+    NSArray *array = [self componentsSeparatedByCharactersInSet:clearSet];
+    return [array componentsJoinedByString:@""];
 }
 
 @end

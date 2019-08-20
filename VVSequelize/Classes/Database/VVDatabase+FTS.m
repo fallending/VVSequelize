@@ -167,16 +167,8 @@ static int vv_fts3_open(
     __block NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
 
     VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
-        char *_token = (char *)malloc(len + 1);
-        memcpy(_token, token, len);
-        _token[len] = 0;
-        VVFtsToken *t = [VVFtsToken new];
-        t.token = _token;
-        t.dup = _token;
-        t.len = len;
-        t.start = start;
-        t.end = end;
-        [array addObject:t];
+        NSString *string = [[NSString alloc] initWithBytes:token length:len encoding:NSUTF8StringEncoding];
+        [array addObject:[VVFtsToken token:string len:len start:start end:end]];
     };
 
     if (tok->tokenNum) {
@@ -185,8 +177,7 @@ static int vv_fts3_open(
     if (tok->pinyinMaxLen > 0) {
         for (VVFtsToken *token in array) {
             if (token.len > tok->pinyinMaxLen) continue;
-            NSString *fragment = [NSString stringWithUTF8String:token.token];
-            [VVFtsEnumerator enumeratePinyins:fragment start:token.start end:token.end handler:handler];
+            [VVFtsEnumerator enumeratePinyins:token.token start:token.start end:token.end handler:handler];
         }
         if (nInput < tok->pinyinMaxLen) {
             [VVFtsEnumerator enumeratePinyins:ocString start:0 end:nInput handler:handler];
@@ -226,7 +217,7 @@ static int vv_fts3_next(
     NSArray *array = (__bridge NSArray *)(c->tokens);
     if (array.count == 0 || c->iToken == array.count) return SQLITE_DONE;
     VVFtsToken *t = array[c->iToken];
-    *ppToken = t.token;
+    *ppToken = t.token.UTF8String;
     *pnBytes = t.len;
     *piStartOffset = t.start;
     *piEndOffset = t.end;
@@ -333,7 +324,7 @@ static int vv_fts5_xTokenize(
             NSString *fragment = [NSString stringWithUTF8String:token];
             NSArray *tks = [VVFtsEnumerator enumeratePinyins:fragment start:start end:end];
             for (VVFtsToken *tk in tks) {
-                rc = xToken(pCtx, iUnused, tk.token, tk.len, tk.start, tk.end);
+                rc = xToken(pCtx, iUnused, tk.token.UTF8String, tk.len, tk.start, tk.end);
                 if (rc != SQLITE_OK) {
                     *stop = YES;
                     return;

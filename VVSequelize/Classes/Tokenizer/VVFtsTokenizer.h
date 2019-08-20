@@ -56,11 +56,13 @@ typedef void (*VVFtsXEnumerator)(const char *pText, int nText, const char *_Null
  分词对象
  */
 @interface VVFtsToken : NSObject
-@property (nonatomic, assign) const char *token;  ///< 分词
-@property (nonatomic, assign) char *dup;  ///< for free
+@property (nonatomic, copy) NSString *token;  ///< 分词
 @property (nonatomic, assign) int len;  ///< 分词长度
 @property (nonatomic, assign) int start; ///< 分词对应原始字符串的起始位置
 @property (nonatomic, assign) int end; ///< 分词对应原始字符串的结束位置
+
++ (instancetype)token:(NSString *)token len:(int)len start:(int)start end:(int)end;
+
 @end
 
 NS_ASSUME_NONNULL_END

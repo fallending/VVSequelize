@@ -106,17 +106,15 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         item.ftsDbName = fts;
         item.ftsDbPath = [dir stringByAppendingPathComponent:item.ftsDbName];
         item.ftsDb = [VVDatabase databaseWithPath:item.ftsDbPath];
-        [item.ftsDb registerFtsTokenizer:VVFtsJiebaTokenizer.class forName:@"jieba"];
-        [item.ftsDb registerFtsTokenizer:VVFtsAppleTokenizer.class forName:@"apple"];
+        [item.ftsDb registerFtsTokenizer:VVFtsSequelizeTokenizer.class forName:@"sequelize"];
         [item.ftsDb registerFtsTokenizer:VVFtsNLTokenizer.class forName:@"nl"];
-
+        [item.ftsDb registerFtsTokenizer:VVFtsAppleTokenizer.class forName:@"apple"];
         [item.db setTraceHook:^int (unsigned mask, void *stmt, void *sql) {
             return 0;
         }];
 
         NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
-        NSString *tokenizer = [NSString stringWithFormat:@"jieba zh_CN %@", @(ftsTokenParm)];
-        
+        NSString *tokenizer = [NSString stringWithFormat:@"sequelize zh_CN %@", @(ftsTokenParm)];
         VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
         ftsConfig.fts = YES;
         ftsConfig.ftsModule = @"fts5";
@@ -304,6 +302,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     NSString *text = self.keywordTextField.text;
     NSString *keyword = text;
     if (keyword.length == 0) return;
+    VVFtsHighlighter *highlighter = [[VVFtsHighlighter alloc] initWithOrm:item.ftsOrm keyword:keyword highlightAttributes:@{ NSForegroundColorAttributeName: UIColor.redColor }];
     [self updateUIWithAction:NO isSearch:YES logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
@@ -312,7 +311,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         NSString *string = [NSString stringWithFormat:@"[query] fts: \"%@\", hit: %@, consumed: %@",
                             text, @(messages.count), @(end - begin)];
         DDLogInfo(@"%@", string);
-        NSArray *highlights = [item.ftsOrm highlight:messages field:@"info" keyword:keyword attributes:@{ NSForegroundColorAttributeName: UIColor.redColor }];
+        NSArray *highlights = [highlighter highlight:messages field:@"info"];
         if (highlights) {
             // no warning
         }
