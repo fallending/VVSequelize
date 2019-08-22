@@ -40,7 +40,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 //MARK: - Public
 /**
  从数据表获取配置
- 
+
  @param tableName 表名
  @param vvdb 数据库
  @return ORM配置
@@ -50,7 +50,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 
 /**
  创建ORM配置
- 
+
  @param cls 数据表要存储的类
  @return ORM配置
  */
@@ -58,7 +58,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 
 /**
  创建ORM配置
- 
+
  @param cls 数据表要存储的类
  @param module fts模块:fts3,fts4,fts5...默认为fts5
  @param tokenizer FTS分词器:porter,unicode61,icu,需在database注册
@@ -77,7 +77,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 
 /**
  是否和相比较的ORM配置一致
- 
+
  @param config 做对比的ORM配置
  @return 是否一致
  */
@@ -85,7 +85,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 
 /**
  比较index是否一致
- 
+
  @param config 做比较的ORM配置
  @return 是否一致
  */
@@ -93,7 +93,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 
 /**
  生成普通表建表sql语句
- 
+
  @param tableName 表名
  @return 建表sql语句
  */
@@ -101,7 +101,7 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;       ///< 数据库字段,数据
 
 /**
  生成FTS表建表sql语句
- 
+
  @param tableName 表名
  @return 建表sql语句
  */

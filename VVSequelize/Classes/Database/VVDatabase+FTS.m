@@ -7,7 +7,6 @@
 
 #import "VVDatabase+FTS.h"
 #import "NSString+Tokenizer.h"
-#import "VVFtsEnumerator.h"
 
 #ifdef SQLITE_HAS_CODEC
 #import "sqlite3.h"
@@ -43,7 +42,7 @@ struct sqlite3_tokenizer_module {
         );
     int (*xLanguageid)(sqlite3_tokenizer_cursor *pCsr, int iLangid);
     const char *xName;
-    VVFtsXEnumerator xEnumerator;
+    int xMethod;
 };
 
 struct sqlite3_tokenizer {
@@ -149,10 +148,7 @@ static int vv_fts3_open(
     if (c == NULL) return SQLITE_NOMEM;
 
     const sqlite3_tokenizer_module *module = pTokenizer->pModule;
-    VVFtsXEnumerator enumerator = module->xEnumerator;
-    if (!enumerator) {
-        return SQLITE_ERROR;
-    }
+    VVTokenMethod method = module->xMethod;
 
     int nInput = (pInput == 0) ? 0 : (nBytes < 0 ? (int)strlen(pInput) : nBytes);
 
@@ -162,29 +158,15 @@ static int vv_fts3_open(
     if (tok->transfrom) {
         ocString = ocString.simplifiedChineseString;
     }
-    const char *source = ocString.UTF8String;
 
-    __block NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-
-    VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
-        NSString *string = [[NSString alloc] initWithBytes:token length:len encoding:NSUTF8StringEncoding];
-        [array addObject:[VVFtsToken token:string len:len start:start end:end]];
-    };
-
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
+    [array addObjectsFromArray:[VVTokenEnumerator enumerate:ocString method:method]];
     if (tok->tokenNum) {
-        [VVFtsEnumerator enumerateNumbers:ocString handler:handler];
+        [array addObjectsFromArray:[VVTokenEnumerator enumerateNumbers:ocString]];
     }
-    if (tok->pinyinMaxLen > 0) {
-        for (VVFtsToken *token in array) {
-            if (token.len > tok->pinyinMaxLen) continue;
-            [VVFtsEnumerator enumeratePinyins:token.token start:token.start end:token.end handler:handler];
-        }
-        if (nInput < tok->pinyinMaxLen) {
-            [VVFtsEnumerator enumeratePinyins:ocString start:0 end:nInput handler:handler];
-        }
+    if (tok->pinyinMaxLen > 0 && nInput <= tok->pinyinMaxLen) {
+        [array addObjectsFromArray:[VVTokenEnumerator enumeratePinyins:ocString start:0 end:nInput]];
     }
-
-    enumerator(source, nBytes, tok->locale, handler);
 
     c->pInput = pInput;
     c->nBytes = nInput;
@@ -216,7 +198,7 @@ static int vv_fts3_next(
     vv_fts3_tokenizer_cursor *c = (vv_fts3_tokenizer_cursor *)pCursor;
     NSArray *array = (__bridge NSArray *)(c->tokens);
     if (array.count == 0 || c->iToken == array.count) return SQLITE_DONE;
-    VVFtsToken *t = array[c->iToken];
+    VVToken *t = array[c->iToken];
     *ppToken = t.token.UTF8String;
     *pnBytes = t.len;
     *piStartOffset = t.start;
@@ -253,7 +235,7 @@ struct Fts5VVTokenizer {
     int pinyinMaxLen;
     bool tokenNum;
     bool transfrom;
-    VVFtsXEnumerator enumerator;
+    int method;
 };
 
 static void vv_fts5_xDelete(Fts5Tokenizer *p)
@@ -287,10 +269,8 @@ static int vv_fts5_xCreate(
         }
     }
 
-    VVFtsXEnumerator enumerator = (VVFtsXEnumerator)pUnused;
-    if (!enumerator) return SQLITE_ERROR;
-
-    tok->enumerator = enumerator;
+    VVTokenMethod method = (VVTokenMethod)(*(int *)pUnused);
+    tok->method = method;
     *ppOut = (Fts5Tokenizer *)tok;
     return SQLITE_OK;
 }
@@ -315,32 +295,21 @@ static int vv_fts5_xTokenize(
     if (tok->transfrom) {
         ocString = ocString.simplifiedChineseString;
     }
-    const char *source = ocString.UTF8String;
 
-    VVFtsXEnumerator enumerator = tok->enumerator;
-    VVFtsXTokenHandler handler = nil;
-    handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
-        if (tok->pinyinMaxLen > 0 && len <= tok->pinyinMaxLen && (iUnused & FTS5_TOKENIZE_DOCUMENT)) {
-            NSString *fragment = [NSString stringWithUTF8String:token];
-            NSArray *tks = [VVFtsEnumerator enumeratePinyins:fragment start:start end:end];
-            for (VVFtsToken *tk in tks) {
-                rc = xToken(pCtx, iUnused, tk.token.UTF8String, tk.len, tk.start, tk.end);
-                if (rc != SQLITE_OK) {
-                    *stop = YES;
-                    return;
-                }
-            }
-        }
-        rc = xToken(pCtx, iUnused, token, len, start, end);
-        *stop = (rc != SQLITE_OK);
-    };
+    VVTokenMethod method = tok->method;
 
-    enumerator(source, nInput, tok->locale, handler);
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
+    [array addObjectsFromArray:[VVTokenEnumerator enumerate:ocString method:method]];
     if (tok->tokenNum) {
-        [VVFtsEnumerator enumerateNumbers:ocString handler:handler];
+        [array addObjectsFromArray:[VVTokenEnumerator enumerateNumbers:ocString]];
     }
     if (tok->pinyinMaxLen > 0 && nInput <= tok->pinyinMaxLen && (iUnused & FTS5_TOKENIZE_DOCUMENT)) {
-        [VVFtsEnumerator enumeratePinyins:ocString start:0 end:nInput handler:handler];
+        [array addObjectsFromArray:[VVTokenEnumerator enumeratePinyins:ocString start:0 end:nInput]];
+    }
+
+    for (VVToken *tk in array) {
+        rc = xToken(pCtx, iUnused, tk.token.UTF8String, tk.len, tk.start, tk.end);
+        if (rc != SQLITE_OK) break;
     }
 
     if (rc == SQLITE_DONE) rc = SQLITE_OK;
@@ -349,22 +318,8 @@ static int vv_fts5_xTokenize(
 
 @implementation VVDatabase (FTS)
 
-+ (NSMutableDictionary *)enumerators
+- (BOOL)registerMethod:(VVTokenMethod)method forTokenizer:(NSString *)name
 {
-    static NSMutableDictionary *_enumerators;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _enumerators = [NSMutableDictionary dictionaryWithCapacity:0];
-    });
-    return _enumerators;
-}
-
-- (BOOL)registerFtsTokenizer:(Class<VVFtsTokenizer>)cls forName:(NSString *)name
-{
-    NSAssert([cls conformsToProtocol:@protocol(VVFtsTokenizer)], @"cls must conform `VVFtsTokenizer` protocol");
-
-    VVFtsXEnumerator enumerator = [cls enumerator];
-
     sqlite3_tokenizer_module *module;
     module = (sqlite3_tokenizer_module *)sqlite3_malloc(sizeof(*module));
     module->iVersion = 0;
@@ -374,7 +329,7 @@ static int vv_fts5_xTokenize(
     module->xClose = vv_fts3_close;
     module->xNext = vv_fts3_next;
     module->xName = name.UTF8String;
-    module->xEnumerator = enumerator;
+    module->xMethod = method;
     int rc = fts3_register_tokenizer(self.db, (char *)name.UTF8String, module);
 
     NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];
@@ -389,34 +344,30 @@ static int vv_fts5_xTokenize(
     tokenizer->xDelete = vv_fts5_xDelete;
     tokenizer->xTokenize = vv_fts5_xTokenize;
 
+    int *context = malloc(sizeof(int));
+    *context = (int)method;
+
     rc = pApi->xCreateTokenizer(pApi,
                                 name.UTF8String,
-                                (void *)enumerator,
+                                (void *)context,
                                 tokenizer,
                                 0);
     ret =  [self check:rc sql:errorsql];
-    if (ret) {
-        NSString *addr = [NSString stringWithFormat:@"%p", enumerator];
-        [VVDatabase enumerators][name] = addr;
-    }
     return ret;
 }
 
-- (VVFtsXEnumerator)enumeratorForFtsTokenizer:(NSString *)name
+- (VVTokenMethod)methodForTokenizer:(NSString *)name
 {
     fts5_api *pApi = fts5_api_from_db(self.db);
-    if (!pApi) return nil;
+    if (!pApi) return VVTokenMethodUnknown;
 
     void *pUserdata = 0;
     fts5_tokenizer *tokenizer;
     tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
     int rc = pApi->xFindTokenizer(pApi, name.UTF8String, &pUserdata, tokenizer);
-    if (rc != SQLITE_OK) return nil;
+    if (rc != SQLITE_OK) return VVTokenMethodUnknown;
 
-    NSString *addr = [NSString stringWithFormat:@"%p", pUserdata];
-    NSString *mapped = [VVDatabase enumerators][name];
-    if (![addr isEqualToString:mapped]) return nil;
-    return (VVFtsXEnumerator)pUserdata;
+    return (VVTokenMethod)(*(int *)pUserdata);
 }
 
 @end

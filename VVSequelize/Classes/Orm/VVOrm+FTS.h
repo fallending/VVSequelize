@@ -15,7 +15,7 @@ FOUNDATION_EXPORT NSString *const VVOrmFtsCount;
 
 /**
  全文搜索
- 
+
  @param condition match匹配表达式,比如:"name:zhan*","zhan*",具体的表达请查看sqlite官方文档
  @param orderBy 排序方式
  @param limit 数据条数,为0时不做限制
@@ -29,7 +29,7 @@ FOUNDATION_EXPORT NSString *const VVOrmFtsCount;
 
 /**
  分组全文搜索
- 
+
  @param condition match匹配表达式,比如:"name:zhan*","zhan*",具体的表达请查看sqlite官方文档
  @param groupBy 分组方式
  @param limit 数据条数,为0时不做限制
@@ -44,7 +44,7 @@ FOUNDATION_EXPORT NSString *const VVOrmFtsCount;
 
 /**
  获取匹配数量
- 
+
  @param condition match匹配表达式,比如:"name:zhan*","zhan*",具体的表达请查看sqlite官方文档
  @return 匹配数量
  */
@@ -52,7 +52,7 @@ FOUNDATION_EXPORT NSString *const VVOrmFtsCount;
 
 /**
  全文搜索
- 
+
  @param condition match匹配表达式,比如:"name:zhan*","zhan*",具体的表达请查看sqlite官方文档
  @param orderBy 排序方式
  @param limit 数据条数,为0时不做限制

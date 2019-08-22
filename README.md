@@ -4,10 +4,8 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.1-beta1)
-1. 移除jieba分词器
-2. 添加sequelize分词器
-3. 更改高亮方式.
+## 改动(0.3.1-beta2)
+1. 优化分词方法
 
 ## 功能
 * [x] 根据Class生成数据表

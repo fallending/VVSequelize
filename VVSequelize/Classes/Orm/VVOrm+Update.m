@@ -26,16 +26,16 @@
             [vals addObject:[obj vv_dbStoreValue]];
         }
     }];
-    
+
     if (sets.count == 0) return NO;
-    
+
     if (self.config.logAt) {
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
         NSString *tmp = [NSString stringWithFormat:@"%@ = ?", kVVUpdateAt.quoted];
         [sets addObject:tmp];
         [vals addObject:@(now)];
     }
-    
+
     NSString *setString = [sets componentsJoinedByString:@","];
     NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
     return [self.vvdb run:sql bind:vals];

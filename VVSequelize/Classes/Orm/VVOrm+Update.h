@@ -11,12 +11,12 @@ NS_ASSUME_NONNULL_BEGIN
 @interface VVOrm (Update)
 /**
  根据条件更新数据
- 
+
  @param condition 查询条件
  1.支持原生sql,可传入`where`及之后的所有语句
  2.非套嵌的dictionary,key和value用`=`连接,不同的key value用`and`连接
  3.非套嵌的dictionary数组, 每个dictionary用`or`连接
- 
+
  @param keyValues 要设置的数据,格式为非套嵌的字典:{"field1":data1,"field2":data2,...}
  @return 是否更新成功
  */
@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  更新一条数据,更新不成功不会插入新数据.
- 
+
  @param object 要更新的数据,对象或数组
  @return 是否更新成功
  */
@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  更新一条数据,更新不成功不会插入新数据.
- 
+
  @param object 要更新的数据,对象或数组
  @param fields 只更新某些字段
  @return 是否更新成功
@@ -41,7 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  更新多条数据,更新不成功不会插入新数据.
- 
+
  @param objects 要更新的数据
  @param fields 只更新某些字段
  @return 更新成功的条数
@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSUInteger)updateMulti:(nullable NSArray *)objects fields:(nullable NSArray<NSString *> *)fields;
 /**
  更新多条数据,更新不成功不会插入新数据.
- 
+
  @param objects 要更新的数据
  @return 更新成功的条数
  @note 每条数据依次更新
@@ -61,12 +61,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  将某个字段的值增加某个数值
- 
+
  @param condition 查询条件
  1.支持原生sql,可传入`where`及之后的所有语句
  2.非套嵌的dictionary,key和value用`=`连接,不同的key value用`and`连接
  3.非套嵌的dictionary数组, 每个dictionary用`or`连接
- 
+
  @param field 要更新的指端
  @param value 要增加的值,可为负数
  @return 是否增加成功

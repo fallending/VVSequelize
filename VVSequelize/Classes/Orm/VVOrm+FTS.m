@@ -9,7 +9,6 @@
 #import "VVSelect.h"
 #import "NSObject+VVOrm.h"
 #import "VVDatabase+FTS.h"
-#import "VVFtsTokenizer.h"
 #import "VVDBStatement.h"
 
 NSString *const VVOrmFtsCount = @"vvdb_fts_count";

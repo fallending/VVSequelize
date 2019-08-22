@@ -113,10 +113,10 @@
     if (results) {
         return results;
     }
-    
+
     int columnCount = self.columnCount;
     if (columnCount == 0) return @[];
-    
+
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
     BOOL rc;
     do {
@@ -219,7 +219,7 @@
             case 'B':
                 sqlite3_bind_int(_stmt, index, number.boolValue);
                 break;
-                
+
             case 'c':
             case 'C':
             case 's':
@@ -228,23 +228,23 @@
             case 'I':
                 sqlite3_bind_int(_stmt, index, number.intValue);
                 break;
-                
+
             case 'l':
             case 'L':
             case 'q':
             case 'Q':
                 sqlite3_bind_int64(_stmt, index, number.longValue);
                 break;
-                
+
             case 'f':
                 sqlite3_bind_double(_stmt, index, number.floatValue);
                 break;
-                
+
             case 'd':
             case 'D':
                 sqlite3_bind_double(_stmt, index, number.doubleValue);
                 break;
-                
+
             default:
                 break;
         }

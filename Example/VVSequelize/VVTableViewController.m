@@ -106,9 +106,9 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         item.ftsDbName = fts;
         item.ftsDbPath = [dir stringByAppendingPathComponent:item.ftsDbName];
         item.ftsDb = [VVDatabase databaseWithPath:item.ftsDbPath];
-        [item.ftsDb registerFtsTokenizer:VVFtsSequelizeTokenizer.class forName:@"sequelize"];
-        [item.ftsDb registerFtsTokenizer:VVFtsNLTokenizer.class forName:@"nl"];
-        [item.ftsDb registerFtsTokenizer:VVFtsAppleTokenizer.class forName:@"apple"];
+        [item.ftsDb registerMethod:VVTokenMethodSequelize forTokenizer:@"sequelize"];
+        [item.ftsDb registerMethod:VVTokenMethodNatual forTokenizer:@"nl"];
+        [item.ftsDb registerMethod:VVTokenMethodApple forTokenizer:@"apple"];
         [item.db setTraceHook:^int (unsigned mask, void *stmt, void *sql) {
             return 0;
         }];

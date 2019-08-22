@@ -6,7 +6,7 @@
 //
 
 #import "VVDatabase.h"
-#import "VVFtsTokenizer.h"
+#import "VVTokenEnumerator.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -20,19 +20,19 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  注册分词器,fts3/4/5
 
- @param cls 分词器核心类
+ @param method 分词方法
  @param name 分词器名称
  @return 是否注册成功
  */
-- (BOOL)registerFtsTokenizer:(Class<VVFtsTokenizer>)cls forName:(NSString *)name;
+- (BOOL)registerMethod:(VVTokenMethod)method forTokenizer:(NSString *)name;
 
 /**
  枚举函数
 
  @param name 分词器名称
- @return 分词器的核心枚举函数
+ @return 分词方法
  */
-- (VVFtsXEnumerator)enumeratorForFtsTokenizer:(NSString *)name;
+- (VVTokenMethod)methodForTokenizer:(NSString *)name;
 
 @end
 

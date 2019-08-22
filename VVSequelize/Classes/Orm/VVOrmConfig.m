@@ -93,7 +93,7 @@ NSString *const VVSqlTypeReal = @"REAL";
 {
     VVOrmConfig *config = [[VVOrmConfig alloc] init];
     config.fromTable = YES;
-    
+
     // 获取表的配置
     NSMutableDictionary *types = [NSMutableDictionary dictionaryWithCapacity:0];
     NSMutableDictionary *defaultValues = [NSMutableDictionary dictionaryWithCapacity:0];
@@ -102,35 +102,35 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSMutableArray *notnulls = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *uniques = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *indexes = [NSMutableArray arrayWithCapacity:0];
-    
+
     NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(%@);", tableName.quoted];
     NSArray *infos = [vvdb query:tableInfoSql];
-    
+
     for (NSDictionary *dic in infos) {
         NSString *name =  dic[@"name"];
         NSString *type =  dic[@"type"];
         BOOL notnull = [dic[@"notnull"] boolValue];
         id dflt_value =  dic[@"dflt_value"];
         BOOL pk = [dic[@"pk"] integerValue] > 0;
-        
+
         if ([dflt_value isKindOfClass:[NSNull class]]) {
             dflt_value = nil;
         }
-        
+
         [colmuns addObject:name];
         types[name] = type;
         defaultValues[name] = dflt_value;
         if (pk) [primaries addObject:name];
         if (notnull) [notnulls addObject:name];
     }
-    
+
     // 获取表的索引字段
     NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(%@);", tableName.quoted];
     NSArray *indexList =  [vvdb query:indexListSql];
     for (NSDictionary *indexDic in indexList) {
         NSString *indexName =  indexDic[@"name"];
         BOOL unique = [indexDic[@"unique"] boolValue];
-        
+
         NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(%@);", indexName.quoted];
         NSArray *indexInfos = [vvdb query:indexInfoSql];
         for (NSDictionary *indexInfo in indexInfos) {
@@ -152,7 +152,7 @@ NSString *const VVSqlTypeReal = @"REAL";
             pkAutoIncrement = YES;
         }
     }
-    
+
     config.pkAutoIncrement = pkAutoIncrement;
     config.columns = colmuns;
     config.primaries = primaries.copy;
@@ -161,7 +161,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     config.indexes = indexes.copy;
     config.types = types.copy;
     config.defaultValues = defaultValues.copy;
-    
+
     config.logAt = [colmuns containsObject:kVVCreateAt] && [colmuns containsObject:kVVUpdateAt];
     return config;
 }
@@ -172,14 +172,14 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = %@ AND type = \"table\"", tableName.quoted];
     NSArray *cols = [vvdb query:sql];
     if (cols.count != 1) return nil;
-    
+
     VVOrmConfig *config = [[VVOrmConfig alloc] init];
     config.fromTable = YES;
     config.fts = YES;
-    
+
     NSDictionary *dic = cols.firstObject;
     NSString *tableSQL = dic[@"sql"];
-    
+
     // 获取fts模块名/版本号
     NSInteger ftsVersion = 3;
     NSString *ftsModule = @"fts3";
@@ -191,7 +191,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     }
     config.ftsVersion = ftsVersion;
     config.ftsModule = ftsModule;
-    
+
     // 获取FTS分词器
     range = [tableSQL rangeOfString:@"\\(.*\\)" options:options];
     if (range.location == NSNotFound) return nil;
@@ -205,14 +205,14 @@ NSString *const VVSqlTypeReal = @"REAL";
             break;
         }
     }
-    
+
     // 获取表的配置
     NSMutableArray *colmuns = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *indexes = [NSMutableArray arrayWithCapacity:0];
-    
+
     NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(%@);", tableName.quoted];
     NSArray *infos = [vvdb query:tableInfoSql];
-    
+
     for (NSDictionary *info in infos) {
         NSString *name = info[@"name"];
         NSString *regex = ftsVersion == 5 ? [NSString stringWithFormat:@"%@ +UNINDEXED", name.quoted] : [NSString stringWithFormat:@"notindexed *= *%@", name.quoted];
@@ -231,7 +231,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     if (!cls) return nil;
     VVOrmConfig *config = [[VVOrmConfig alloc] init];
     config.cls = cls;
-    
+
     NSMutableDictionary *types = [NSMutableDictionary dictionaryWithCapacity:0];
     VVClassInfo *classInfo = [VVClassInfo classInfoWithClass:cls];
     [classInfo.propertyInfos enumerateKeysAndObjectsUsingBlock:^(NSString *name, VVPropertyInfo *propertyInfo, BOOL *stop) {
@@ -284,7 +284,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSMutableSet *primariesSet = [NSMutableSet setWithArray:(_primaries ? : @[])];
     NSMutableSet *whitesSet = [NSMutableSet setWithArray:(_whiteList ? : @[])];
     NSMutableSet *blacksSet = [NSMutableSet setWithArray:(_blackList ? : @[])];
-    
+
     if (whitesSet.count > 0) {
         [columnsSet intersectSet:whitesSet];
     } else if (blacksSet.count > 0) {
@@ -294,21 +294,21 @@ NSString *const VVSqlTypeReal = @"REAL";
     [uniquesSet intersectSet:columnsSet];
     [notnullsSet intersectSet:columnsSet];
     [primariesSet intersectSet:columnsSet];
-    
+
     [indexesSet minusSet:uniquesSet];
     [notnullsSet minusSet:primariesSet];
     [uniquesSet minusSet:primariesSet];
-    
+
     NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_types.allKeys ? : @[])];
     NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_defaultValues.allKeys ? : @[])];
-    
+
     [typeTrashKeysSet minusSet:columnsSet];
     [defValTrashKeysSet minusSet:columnsSet];
-    
+
     NSComparator comparator = ^NSComparisonResult (NSString *str1, NSString *str2) {
         return str1 < str2 ? NSOrderedAscending : NSOrderedDescending;
     };
-    
+
     _columns = [columnsSet.allObjects sortedArrayUsingComparator:comparator];
     _indexes = [indexesSet.allObjects sortedArrayUsingComparator:comparator];
     _uniques = [uniquesSet.allObjects sortedArrayUsingComparator:comparator];
@@ -357,7 +357,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     if (_primaries.count == 1 && [_primaries containsObject:column]) {
         pkString = _pkAutoIncrement ? @" NOT NULL PRIMARY KEY AUTOINCREMENT" : @" NOT NULL PRIMARY KEY";
     }
-    
+
     NSString *nullString = [_notnulls containsObject:column] ? @" NOT NULL" : @"";
     NSString *uniqueString = [_uniques containsObject:column] ? @" UNIQUE" : @"";
     id defaultValue = _defaultValues[column];
@@ -385,27 +385,27 @@ NSString *const VVSqlTypeReal = @"REAL";
 {
     [self treate];
     NSArray *notindexeds = [_columns vv_removeObjectsInArray:_indexes];
-    
+
     BOOL fts5 = self.ftsVersion == 5;
     BOOL fts4 = self.ftsVersion == 4;
-    
+
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:_columns.count];
     for (NSString *column in _columns) {
         BOOL flag = [notindexeds containsObject:column] && fts5;
         NSString *unindexed = flag ? @" UNINDEXED" : @"";
         [array addObject:[column.quoted stringByAppendingString:unindexed]];
     }
-    
+
     if (fts4 && notindexeds.count > 0) {
         for (NSString *column in notindexeds) {
             NSString *unindexed = [NSString stringWithFormat:@"notindexed=%@", column.quoted];
             [array addObject:unindexed];
         }
     }
-    
+
     NSString *sql = [array componentsJoinedByString:@","];
     if (sql.length == 0) return @"";
-    
+
     NSString *format = self.ftsVersion < 5 ? @", tokenize=%@" : @", tokenize='%@'";
     NSString *tokenize = _ftsTokenizer.length > 0 ? [NSString stringWithFormat:format, _ftsTokenizer] : @"";
     return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS %@ USING %@(%@ %@)",
@@ -443,7 +443,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     dispatch_once(&onceToken, ^{
         _charset = [NSCharacterSet characterSetWithCharactersInString:@"\"'"];
     });
-    
+
     NSString *str = [string stringByTrimmingCharactersInSet:_charset].strip;
     NSString *other = [otherString stringByTrimmingCharactersInSet:_charset].strip;
     return [str isEqualToString:other];

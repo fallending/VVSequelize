@@ -100,7 +100,7 @@ typedef NS_OPTIONS (NSUInteger, VVPropertyQualifier) {
 
 /**
  Creates and returns a property info object.
- 
+
  @param property property opaque struct
  @return A new object, or nil if an error occurs.
  */

@@ -27,12 +27,8 @@
 #import "VVOrmDefs.h"
 #import "VVSelect.h"
 #import "NSString+Tokenizer.h"
-#import "VVFtsAppleTokenizer.h"
-#import "VVFtsEnumerator.h"
 #import "VVFtsHighlighter.h"
-#import "VVFtsNLTokenizer.h"
-#import "VVFtsSequelizeTokenizer.h"
-#import "VVFtsTokenizer.h"
+#import "VVTokenEnumerator.h"
 #import "VVTransformConst.h"
 #import "VVDBCipher.h"
 #import "VVDBUpgrader.h"
@@ -40,4 +36,3 @@
 
 FOUNDATION_EXPORT double VVSequelizeVersionNumber;
 FOUNDATION_EXPORT const unsigned char VVSequelizeVersionString[];
-

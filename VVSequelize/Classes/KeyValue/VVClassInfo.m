@@ -50,7 +50,7 @@ static OS_ALWAYS_INLINE VVEncodingType VVGetEncodingType(const char *typeEncodin
         }
     }
     *qualifier = t_qualifier;
-    
+
     len = strlen(type);
     if (len == 0) return VVEncodingTypeUnknown;
     switch (*type) {
@@ -140,7 +140,7 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
     objc_property_attribute_t *attrs = property_copyAttributeList(property, &attrCount);
     for (unsigned int i = 0; i < attrCount; i++) {
         switch (attrs[i].name[0]) {
-                //MAKR: type & nsType
+            //MAKR: type & nsType
             case 'T': { // Type encoding
                 if (attrs[i].value) {
                     _typeEncoding = [NSString stringWithUTF8String:attrs[i].value];
@@ -151,7 +151,7 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
                             case VVEncodingTypeObject: {
                                 NSScanner *scanner = [NSScanner scannerWithString:_typeEncoding];
                                 if (![scanner scanString:@"@\"" intoString:NULL]) continue;
-                                
+
                                 NSString *clsName = nil;
                                 if ([scanner scanUpToCharactersFromSet:[NSCharacterSet characterSetWithCharactersInString:@"\"<"] intoString:&clsName]) {
                                     if (clsName.length) {
@@ -160,26 +160,26 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
                                     }
                                 }
                             } break;
-                                
+
                             case VVEncodingTypeStruct:
                             case VVEncodingTypeUnion: {
                                 NSArray *array = [_typeEncoding componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"({=})"]];
                                 if (array.count == 4) _structUnionName = [array[1] isEqualToString:@"?"] ? nil : array[1];
                             } break;
-                                
+
                             default:
                                 break;
                         }
                     }
                 }
             } break;
-                //MARK: ivar name
+            //MARK: ivar name
             case 'V': { // Instance variable
                 if (attrs[i].value) {
                     _ivarName = [NSString stringWithUTF8String:attrs[i].value];
                 }
             } break;
-                //MARK: keyword
+            //MARK: keyword
             case 'R': {
                 keyword |= VVPropertyKeywordReadonly;
             } break;
@@ -217,7 +217,7 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
         free(attrs);
     }
     _keyword = keyword;
-    
+
     if (_name.length) {
         if (!_getter) {
             _getter = NSSelectorFromString(_name);

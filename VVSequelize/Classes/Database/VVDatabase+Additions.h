@@ -50,15 +50,14 @@ NS_ASSUME_NONNULL_BEGIN
 // MARK: - queue
 /**
  串行队列
- 
+
  @return 队列
  */
 + (dispatch_queue_t)serialQueue;
 
-
 /**
  并行队列
- 
+
  @return 队列
  */
 + (dispatch_queue_t)concurrentQueue;
@@ -72,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  异步操作
- 
+
  @param serial 是否串行. YES-在<一个子线程>中<串行>执行, NO-在<多个子线程>中<并行>执行
  @param block 读取操作
  */

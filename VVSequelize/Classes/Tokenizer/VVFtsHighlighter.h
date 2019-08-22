@@ -7,13 +7,12 @@
 
 #import <Foundation/Foundation.h>
 #import "VVOrm.h"
-#import "VVFtsTokenizer.h"
+#import "VVTokenEnumerator.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface VVFtsHighlighter : NSObject
-@property (nonatomic, assign) VVFtsXEnumerator enumerator;
-
+@property (nonatomic, assign) VVTokenMethod method;
 @property (nonatomic, copy) NSString *keyword;
 @property (nonatomic, assign) BOOL pinyin;
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
@@ -24,9 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
                     keyword:(NSString *)keyword
         highlightAttributes:(NSDictionary<NSAttributedStringKey, id> *)highlightAttributes;
 
-- (instancetype)initWithEnumerator:(VVFtsXEnumerator)enumerator
-                           keyword:(NSString *)keyword
-               highlightAttributes:(NSDictionary<NSAttributedStringKey, id> *)highlightAttributes;
+- (instancetype)initWithMethod:(VVTokenMethod)method
+                       keyword:(NSString *)keyword
+           highlightAttributes:(NSDictionary<NSAttributedStringKey, id> *)highlightAttributes;
 
 /**
  对FTS搜索结果进行高亮

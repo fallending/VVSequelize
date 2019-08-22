@@ -19,7 +19,6 @@
  */
 @property (nonatomic, strong) NSProgress *progress;
 
-
 /**
  init with last version key
 
@@ -58,7 +57,6 @@
  @return if need to upgrade
  */
 - (BOOL)needUpgrade;
-
 
 /**
  upgrade all stages

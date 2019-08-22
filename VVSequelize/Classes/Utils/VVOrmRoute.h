@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  根据要插入/更新/删除的单个数据路由到对应的数据库文件和表.通常用于FTS写入数据.
- 
+
  @param object 要插入/更新/删除的单个数据
  @return 数据库文件和表名的路由
  */
@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  根据要插入/更新/删除的一组数据路由到对应的数据库文件和表.通常用于FTS写入数据.
- 
+
  @param objects 要插入/更新/删除的一组数据
  @return 路由和数据组成的字典,格式:{route:[object]}
  */
@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  根据一个范围由到对应的数据库文件和表.通常用于FTS搜索数据.
- 
+
  @param type 范围类型,可能是id,时间等
  @param start 范围的开始
  @param end 范围的结束

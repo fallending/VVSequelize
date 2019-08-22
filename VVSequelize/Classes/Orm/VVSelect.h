@@ -13,7 +13,7 @@
 
 /**
  查询结果
- 
+
  @return 查询结果,对象数组.
  @note 必须设置orm
  */
@@ -21,7 +21,7 @@
 
 /**
  查询结果
- 
+
  @return 查询结果,字典数组
  @note 必须设置orm
  */
@@ -30,7 +30,7 @@
 //MARK: - 链式调用
 /**
  创建VVSelect对象
- 
+
  @param block 链式调用方式赋值
  @return VVSelect对象
  */

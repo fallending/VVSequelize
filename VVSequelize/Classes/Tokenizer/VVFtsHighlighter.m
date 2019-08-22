@@ -9,7 +9,7 @@
 #import "VVDatabase+FTS.h"
 
 @interface VVFtsHighlighter ()
-@property (nonatomic, strong) NSArray<VVFtsToken *> *keywordTokens;
+@property (nonatomic, strong) NSArray<VVToken *> *keywordTokens;
 @end
 
 @implementation VVFtsHighlighter
@@ -22,64 +22,50 @@
     if (self) {
         NSAssert(orm.config.fts && orm.config.ftsTokenizer.length > 0, @"Invalid fts orm!");
         NSString *tokenizer = [orm.config.ftsTokenizer componentsSeparatedByString:@" "].firstObject;
-        _enumerator = [orm.vvdb enumeratorForFtsTokenizer:tokenizer];
+        _method = [orm.vvdb methodForTokenizer:tokenizer];
         _keyword = keyword;
         _highlightAttributes = highlightAttributes;
     }
     return self;
 }
 
-- (instancetype)initWithEnumerator:(VVFtsXEnumerator)enumerator
-                           keyword:(NSString *)keyword
-               highlightAttributes:(NSDictionary<NSAttributedStringKey, id> *)highlightAttributes
+- (instancetype)initWithMethod:(VVTokenMethod)method
+                       keyword:(NSString *)keyword
+           highlightAttributes:(NSDictionary<NSAttributedStringKey, id> *)highlightAttributes
 {
     self = [super init];
     if (self) {
-        _enumerator = enumerator;
+        _method = method;
         _keyword = keyword;
         _highlightAttributes = highlightAttributes;
     }
     return self;
 }
 
-- (NSArray<VVFtsToken *> *)keywordTokens {
+- (NSArray<VVToken *> *)keywordTokens {
     if (!_keywordTokens) {
-        NSAssert(_enumerator != nil && _keyword.length > 0, @"Invalid highlight parameters");
+        NSAssert(_keyword.length > 0, @"Invalid keyword");
         _keywordTokens = [self tokenize:_keyword pinyin:NO];
     }
     return _keywordTokens;
 }
 
 //MARK: - 对FTS搜索结果进行高亮
-- (NSArray<VVFtsToken *> *)tokenize:(NSString *)source
-                             pinyin:(BOOL)pinyin
+- (NSArray<VVToken *> *)tokenize:(NSString *)source
+                          pinyin:(BOOL)pinyin
 {
-    NSAssert(_enumerator != nil && _keyword.length > 0 && _highlightAttributes.count > 0, @"Invalid highlight parameters");
-
-    const char *pText = source.UTF8String;
-
-    if (!pText) {
-        return @[];
+    NSAssert(_keyword.length > 0 && _highlightAttributes.count > 0, @"Invalid highlight parameters");
+    NSArray<VVToken *> *results = [VVTokenEnumerator enumerate:source method:_method];
+    if (pinyin) {
+        NSArray *pys = [VVTokenEnumerator enumeratePinyins:source start:0 end:(int)strlen(source.UTF8String ? : "")];
+        results = [results arrayByAddingObjectsFromArray:pys];
     }
-
-    int nText = (int)strlen(pText);
-    if (!_enumerator) {
-        VVFtsToken *token = [VVFtsToken token:source len:nText start:0 end:nText];
-        return @[token];
-    }
-
-    __block NSMutableArray<VVFtsToken *> *results = [NSMutableArray arrayWithCapacity:0];
-    VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
-        NSString *string = [[NSString alloc] initWithBytes:token length:len encoding:NSUTF8StringEncoding];
-        [results addObject:[VVFtsToken token:string len:len start:start end:end]];
-    };
-    !_enumerator ? : _enumerator(pText, nText, nil, handler);
     return results;
 }
 
 - (NSArray<NSAttributedString *> *)highlight:(NSArray<NSObject *> *)objects field:(NSString *)field
 {
-    NSAssert(_enumerator != nil && _keyword.length > 0 && _highlightAttributes.count > 0 && field.length > 0, @"Invalid highlight parameters");
+    NSAssert(_keyword.length > 0 && _highlightAttributes.count > 0 && field.length > 0, @"Invalid highlight parameters");
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:objects.count];
     for (NSObject *object in objects) {
         NSString *source = [object valueForKey:field];
@@ -92,27 +78,21 @@
 
 - (NSAttributedString *)highlight:(NSString *)source hits:(BOOL *)hits
 {
-    NSString *temp = [source stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
-    const char *pText = temp.UTF8String ? : "";
+    const char *pText = source.UTF8String ? : "";
     int nText = (int)strlen(pText);
-    NSUInteger _hits = 0;
+    int _hits = 0;
 
-    if (nText == 0 || !_enumerator) {
-        if (hits) *hits = _hits;
-        return [[NSAttributedString alloc] init];
-    }
+    NSArray *tokens = [self tokenize:source pinyin:_pinyin];
 
     __block char *tokenized = (char *)malloc(nText + 1);
     memset(tokenized, 0x0, nText + 1);
 
-    VVFtsXTokenHandler handler = ^(const char *token, int len, int start, int end, BOOL *stop) {
-        for (VVFtsToken *kwToken in self.keywordTokens) {
-            if (strncmp(token, kwToken.token.UTF8String, kwToken.len) != 0) continue;
-            memcpy(tokenized + start, pText + start, end - start);
+    for (VVToken *tk in tokens) {
+        for (VVToken *kwtk in self.keywordTokens) {
+            if (strncmp(tk.token.UTF8String, kwtk.token.UTF8String, kwtk.len) != 0) continue;
+            memcpy(tokenized + tk.start, pText + tk.start, tk.end - tk.start);
         }
-    };
-
-    !_enumerator ? : _enumerator(pText, nText, nil, handler);
+    }
 
     for (int i = 0; i < nText + 1; i++) {
         if (tokenized[i] == ' ') {

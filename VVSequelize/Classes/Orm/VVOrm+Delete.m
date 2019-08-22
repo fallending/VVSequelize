@@ -39,7 +39,7 @@
 {
     NSString *where = [condition sqlWhere];
     where = where.length == 0 ? @"" : [NSString stringWithFormat:@" WHERE %@", where];
-    
+
     NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
     return [self.vvdb run:sql];
 }

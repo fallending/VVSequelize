@@ -12,8 +12,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef NS_OPTIONS(NSUInteger, VVOrmInspection) {
-    VVOrmTableExist = 1 << 0,
+typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
+    VVOrmTableExist   = 1 << 0,
     VVOrmTableChanged = 1 << 1,
     VVOrmIndexChanged = 1 << 2,
 };
@@ -29,7 +29,7 @@ typedef NS_OPTIONS(NSUInteger, VVOrmInspection) {
 
 /**
  定义ORM模型,自动创建/修改表和索引,使用临时数据库,默认表名.
- 
+
  @param config ORM配置
  @return ORM模型
  */
@@ -37,7 +37,7 @@ typedef NS_OPTIONS(NSUInteger, VVOrmInspection) {
 
 /**
  定义ORM模型,自动创建/修改表和索引,可指定表名和数据库.
- 
+
  @param config ORM配置
  @param tableName 表名,nil表示使用cls类名
  @param vvdb 数据库,nil表示使用默认数据库
@@ -49,7 +49,7 @@ typedef NS_OPTIONS(NSUInteger, VVOrmInspection) {
 
 /**
  定义ORM模型,可指定表名和数据库.
- 
+
  @param config ORM配置
  @param tableName 表名,nil表示使用cls类名
  @param vvdb 数据库,nil表示使用默认数据库
