@@ -124,10 +124,6 @@ NSString *const VVDBUpgraderLastVersionKey = @"VVDBUpgraderLastVersionKey";
 - (void)pretreat {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *lastVersion = [defaults objectForKey:_versionKey];
-    if (!lastVersion) {
-        _pretreated = YES;
-        return;
-    }
 
     [self.items sortUsingComparator:^NSComparisonResult (VVDBUpgradeItem *item1, VVDBUpgradeItem *item2) {
         return [item1 compare:item2];
