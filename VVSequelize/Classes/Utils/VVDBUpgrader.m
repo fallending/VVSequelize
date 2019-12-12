@@ -1,6 +1,6 @@
 //
 //  VVDBUpgrader.m
-//  VVSequelize
+//  VVDB
 //
 //  Created by Valo on 2018/8/11.
 //
@@ -37,7 +37,7 @@ NSString *const VVDBUpgraderLastVersionKey = @"VVDBUpgraderLastVersionKey";
 - (NSComparisonResult)compare:(VVDBUpgradeItem *)other {
     NSComparisonResult result = [VVDBUpgradeItem compareVersion:self.version with:other.version];
     if (result == NSOrderedSame) {
-        result = self.stage < other.stage ? NSOrderedAscending : (self.stage = other.stage ? NSOrderedSame : NSOrderedDescending);
+        result = self.stage < other.stage ? NSOrderedAscending : (self.stage == other.stage ? NSOrderedSame : NSOrderedDescending);
     }
     return result;
 }

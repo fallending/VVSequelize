@@ -1,6 +1,6 @@
 //
 //  VVOrm.m
-//  VVSequelize
+//  VVDB
 //
 //  Created by Valo on 2018/6/6.
 //
@@ -69,11 +69,11 @@
 {
     VVOrmInspection inspection = 0x0;
     VVOrmConfig *tableConfig = [VVOrmConfig configFromTable:_tableName database:_vvdb];
-    // 检查数据表是否存在
+    // check if table exists
     BOOL ret = [_vvdb isExist:_tableName];
     if (!ret) return inspection;
     inspection |= VVOrmTableExist;
-    // 检查数据表和索引是否需要变更
+    // check table and indexes for updates
     ret = [_config isEqualToConfig:tableConfig];
     if (!ret) inspection |= VVOrmTableChanged;
     ret = [_config isInedexesEqual:tableConfig];
@@ -83,25 +83,25 @@
 
 - (void)setupTableWith:(VVOrmInspection)inspection
 {
-    // 若表存在,检查是否需要进行变更.如需变更,则将原数据表进行更名.
+    // if table exists, check for updates. if need, rename original table
     NSString *tempTableName = [NSString stringWithFormat:@"%@_%@", _tableName, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
     BOOL exist = inspection & VVOrmTableExist;
     BOOL changed = inspection & VVOrmTableChanged;
     BOOL indexChanged = inspection & VVOrmIndexChanged;
-    // 字段发生变更,对原数据表进行更名
+    // rename original table
     if (exist && changed) {
         [self renameToTempTable:tempTableName];
     }
-    // 若表不存在或字段发生变更,需要创建新表
+    // create new table
     if (!exist || changed) {
         [self createTable];
     }
-    // 如果字段发生变更,将原数据表的数据插入新表
+    // migrate data to new table
     if (exist && changed && !_config.fts) {
-        //MARK: FTS表请手动迁移数据
+        //MARK: FTS table must migrate data manually
         [self migrationDataFormTempTable:tempTableName];
     }
-    // 若索引发生变化,则重建索引
+    // rebuild indexes
     if (indexChanged || !exist) {
         [self rebuildIndex];
     }
@@ -111,15 +111,15 @@
 - (void)createTable
 {
     NSString *sql = nil;
-    // 创建FTS表
+    // create fts table
     if (_config.fts) {
         sql = [_config createFtsSQLWith:_tableName];
     }
-    // 创建普通表
+    // create nomarl table
     else {
         sql = [_config createSQLWith:_tableName];
     }
-    // 执行建表SQL
+    // execute create sql
     BOOL ret = [self.vvdb run:sql];
     VV_NO_WARNING(ret);
     NSAssert1(ret, @"Failure to create a table: %@", _tableName);
@@ -160,7 +160,7 @@
 
 - (void)rebuildIndex
 {
-    // FTS表无需创建索引
+    /// fts table do not need this indexes
     if (_config.fts) return;
     NSString *indexesSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type ='index' and tbl_name = %@", _tableName.quoted];
     NSArray *array = [_vvdb query:indexesSQL];
@@ -173,7 +173,7 @@
 
     if (self.config.indexes.count == 0) return;
 
-    // 建立新索引
+    // create new indexes
     NSString *indexName = [NSString stringWithFormat:@"vvdb_index_%@", _tableName];
     NSString *indexSQL = [_config.indexes sqlJoin];
     NSString *createIdxSQL = nil;

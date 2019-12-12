@@ -1,6 +1,6 @@
 //
 //  VVOrm+FTS.m
-//  VVSequelize
+//  VVDB
 //
 //  Created by Valo on 2018/9/15.
 //
@@ -27,20 +27,10 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     return [select allObjects];
 }
 
-/**
- 全文搜索
-
- @param condition match匹配表达式,比如:"name:zhan*","zhan*",具体的表达请查看sqlite官方文档
- @param field 需要进行高亮处理的字段
- @param attributes 高亮使用的属性
- @param orderBy 排序方式
- @param limit 数据条数,为0时不做限制
- @param offset 数据起始位置
- @return 匹配结果,对象数组,格式:[object]
- @bug fts3: snippet函数获取的文本不正确,重复多次.
- @bug fts5: 添加文本属性的位置错误.
- @note 请使用`highlight:field:keyword:attributes:`进行高亮处理
- */
+/// full text search
+/// @bug fts3: snippet() does not match correctly, repeat many times
+/// @bug fts5: Inaccurate highlight
+/// @note use `VVFtsHighlighter` to highlight
 - (NSArray *)match:(nullable VVExpr *)condition
          highlight:(NSString *)field
         attributes:(NSDictionary<NSAttributedStringKey, id> *)attributes

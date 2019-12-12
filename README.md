@@ -4,8 +4,11 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.1-beta2)
+## 改动(0.3.1-beta3)
 1. 优化分词方法
+2. 优化高亮方式
+3. 修改分词器参数传递
+4. 写操作放入同步队列
 
 ## 功能
 * [x] 根据Class生成数据表
@@ -75,7 +78,7 @@ Fts表配置
 * 需设置`ftsConfig.fts=YES`,否则视为普通表.
 * fts3以上版本(fts4,fts5)需设置索引字段`ftsConfig.indexes`,否则不会索引任何字段,无法搜索
 * ftsTokenizer传入参数`pinyin`,表示该表支持拼音分词,多音字并未智能匹配, 5个汉字以内的中文,可返回多个拼音组合, 超过5个汉字则只返回一组.
-* `pinyin`后可带数字参数,比如`jieba pinyin 9`,表示Unicode长度超过9的字符串,不会进行拼音分词
+* `pinyin`后可带数字参数,比如`sequelize pinyin 9`,表示Unicode长度超过9的字符串,不会进行拼音分词
 
 ### 定义ORM模型 
 可自定义表名和存放的数据库文件.

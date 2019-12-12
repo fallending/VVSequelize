@@ -14,7 +14,7 @@
 #import <sqlite3.h>
 #endif
 
-//MARK: - FTS3
+//MARK: - FTS3/4
 typedef struct sqlite3_tokenizer_module   sqlite3_tokenizer_module;
 typedef struct sqlite3_tokenizer          sqlite3_tokenizer;
 typedef struct sqlite3_tokenizer_cursor   sqlite3_tokenizer_cursor;
@@ -56,9 +56,7 @@ struct sqlite3_tokenizer_cursor {
 typedef struct vv_fts3_tokenizer {
     sqlite3_tokenizer base;
     char locale[16];
-    int pinyinMaxLen;
-    bool tokenNum;
-    bool transfrom;
+    uint64_t mask;
 } vv_fts3_tokenizer;
 
 typedef struct vv_fts3_tokenizer_cursor {
@@ -108,17 +106,13 @@ static int vv_fts3_create(
     memset(tok, 0, sizeof(*tok));
 
     memset(tok->locale, 0x0, 16);
-    tok->pinyinMaxLen = 0;
-    tok->tokenNum = false;
-    tok->transfrom = false;
+    tok->mask = 0;
 
     for (int i = 0; i < MIN(2, argc); i++) {
         const char *arg = argv[i];
-        uint32_t flag = (uint32_t)atol(arg);
-        if (flag > 0) {
-            tok->pinyinMaxLen = flag & VVFtsTokenParamPinyin;
-            tok->tokenNum = (flag & VVFtsTokenParamNumber) > 0;
-            tok->transfrom = (flag & VVFtsTokenParamTransform) > 0;
+        uint64_t mask = (uint64_t)atoll(arg);
+        if (mask > 0) {
+            tok->mask = mask;
         } else {
             strncpy(tok->locale, arg, 15);
         }
@@ -155,18 +149,7 @@ static int vv_fts3_open(
     vv_fts3_tokenizer *tok = (vv_fts3_tokenizer *)pTokenizer;
 
     NSString *ocString = [NSString stringWithUTF8String:pInput].lowercaseString;
-    if (tok->transfrom) {
-        ocString = ocString.simplifiedChineseString;
-    }
-
-    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-    [array addObjectsFromArray:[VVTokenEnumerator enumerate:ocString method:method]];
-    if (tok->tokenNum) {
-        [array addObjectsFromArray:[VVTokenEnumerator enumerateNumbers:ocString]];
-    }
-    if (tok->pinyinMaxLen > 0 && nInput <= tok->pinyinMaxLen) {
-        [array addObjectsFromArray:[VVTokenEnumerator enumeratePinyins:ocString start:0 end:nInput]];
-    }
+    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:tok->mask];
 
     c->pInput = pInput;
     c->nBytes = nInput;
@@ -232,9 +215,7 @@ static fts5_api * fts5_api_from_db(sqlite3 *db)
 typedef struct Fts5VVTokenizer Fts5VVTokenizer;
 struct Fts5VVTokenizer {
     char locale[16];
-    int pinyinMaxLen;
-    bool tokenNum;
-    bool transfrom;
+    uint64_t mask;
     int method;
 };
 
@@ -253,24 +234,20 @@ static int vv_fts5_xCreate(
     if (!tok) return SQLITE_NOMEM;
 
     memset(tok->locale, 0x0, 16);
-    tok->pinyinMaxLen = 0;
-    tok->tokenNum = false;
-    tok->transfrom = false;
+    tok->mask = 0;
 
     for (int i = 0; i < MIN(2, nArg); i++) {
         const char *arg = azArg[i];
-        uint32_t flag = (uint32_t)atol(arg);
-        if (flag > 0) {
-            tok->pinyinMaxLen = flag & VVFtsTokenParamPinyin;
-            tok->tokenNum = (flag & VVFtsTokenParamNumber) > 0;
-            tok->transfrom = (flag & VVFtsTokenParamTransform) > 0;
+        uint32_t mask = (uint32_t)atoll(arg);
+        if (mask > 0) {
+            tok->mask = mask;
         } else {
             strncpy(tok->locale, arg, 15);
         }
     }
 
     VVTokenMethod method = (VVTokenMethod)(*(int *)pUnused);
-    tok->method = method;
+    tok->method = (int)method;
     *ppOut = (Fts5Tokenizer *)tok;
     return SQLITE_OK;
 }
@@ -289,23 +266,13 @@ static int vv_fts5_xTokenize(
 
     __block int rc = SQLITE_OK;
     Fts5VVTokenizer *tok = (Fts5VVTokenizer *)pTokenizer;
-    int nInput = (pText == 0) ? 0 : (nText < 0 ? (int)strlen(pText) : nText);
-
     NSString *ocString = [NSString stringWithUTF8String:pText].lowercaseString;
-    if (tok->transfrom) {
-        ocString = ocString.simplifiedChineseString;
-    }
-
     VVTokenMethod method = tok->method;
-
-    NSMutableArray *array = [NSMutableArray arrayWithCapacity:0];
-    [array addObjectsFromArray:[VVTokenEnumerator enumerate:ocString method:method]];
-    if (tok->tokenNum) {
-        [array addObjectsFromArray:[VVTokenEnumerator enumerateNumbers:ocString]];
+    uint64_t mask = tok->mask;
+    if (!(iUnused & FTS5_TOKENIZE_DOCUMENT)) {
+        mask = mask & ~VVTokenMaskPinyin;
     }
-    if (tok->pinyinMaxLen > 0 && nInput <= tok->pinyinMaxLen && (iUnused & FTS5_TOKENIZE_DOCUMENT)) {
-        [array addObjectsFromArray:[VVTokenEnumerator enumeratePinyins:ocString start:0 end:nInput]];
-    }
+    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:tok->mask];
 
     for (VVToken *tk in array) {
         rc = xToken(pCtx, iUnused, tk.token.UTF8String, tk.len, tk.start, tk.end);
@@ -329,7 +296,7 @@ static int vv_fts5_xTokenize(
     module->xClose = vv_fts3_close;
     module->xNext = vv_fts3_next;
     module->xName = name.UTF8String;
-    module->xMethod = method;
+    module->xMethod = (int)method;
     int rc = fts3_register_tokenizer(self.db, (char *)name.UTF8String, module);
 
     NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];

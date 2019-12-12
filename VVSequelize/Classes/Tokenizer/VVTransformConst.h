@@ -7,5 +7,5 @@
 
 #import <Foundation/Foundation.h>
 
-FOUNDATION_EXPORT NSString *const VVSimplifiedCodes;
-FOUNDATION_EXPORT NSString *const VVTraditionalCodes;
+FOUNDATION_EXPORT NSString * const VVSimplifiedCodes;
+FOUNDATION_EXPORT NSString * const VVTraditionalCodes;

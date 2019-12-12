@@ -1,6 +1,6 @@
 //
 //  VVOrm+Update.h
-//  VVSequelize
+//  VVDB
 //
 //  Created by Valo on 2018/9/12.
 //
@@ -9,68 +9,28 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface VVOrm (Update)
-/**
- 根据条件更新数据
 
- @param condition 查询条件
- 1.支持原生sql,可传入`where`及之后的所有语句
- 2.非套嵌的dictionary,key和value用`=`连接,不同的key value用`and`连接
- 3.非套嵌的dictionary数组, 每个dictionary用`or`连接
-
- @param keyValues 要设置的数据,格式为非套嵌的字典:{"field1":data1,"field2":data2,...}
- @return 是否更新成功
- */
+/// update records by condition
+/// @param condition update condtiion.
+/// 1.NSString:  native sql, all subsequent statements after `where`;
+/// 2.NSDictionary: key and value are connected with '=', different key values are connected with 'and';
+/// 3.NSArray: [dictionary], Each dictionary is connected with 'or'
+/// @param keyValues {field1:value1, field2:value2,...}
 - (BOOL)update:(nullable VVExpr *)condition keyValues:(NSDictionary<NSString *, id> *)keyValues;
 
-/**
- 更新一条数据,更新不成功不会插入新数据.
-
- @param object 要更新的数据,对象或数组
- @return 是否更新成功
- */
+/// updat a record, failure will not insert new record
 - (BOOL)updateOne:(nonnull id)object;
 
-/**
- 更新一条数据,更新不成功不会插入新数据.
-
- @param object 要更新的数据,对象或数组
- @param fields 只更新某些字段
- @return 是否更新成功
- */
+/// updat a record, failure will not insert new record,limit update fields
 - (BOOL)updateOne:(nonnull id)object fields:(nullable NSArray<NSString *> *)fields;
 
-/**
- 更新多条数据,更新不成功不会插入新数据.
-
- @param objects 要更新的数据
- @param fields 只更新某些字段
- @return 更新成功的条数
- @note 每条数据依次更新
- @warning 若update大量数据,请放入事务中进行操作
- */
+/// updat many records, failure will not insert new record,limit update fields, use transaction
 - (NSUInteger)updateMulti:(nullable NSArray *)objects fields:(nullable NSArray<NSString *> *)fields;
-/**
- 更新多条数据,更新不成功不会插入新数据.
 
- @param objects 要更新的数据
- @return 更新成功的条数
- @note 每条数据依次更新
- @warning 若update大量数据,请放入事务中进行操作
- */
+/// updat many records, failure will not insert new record, use transaction
 - (NSUInteger)updateMulti:(nullable NSArray *)objects;
 
-/**
- 将某个字段的值增加某个数值
-
- @param condition 查询条件
- 1.支持原生sql,可传入`where`及之后的所有语句
- 2.非套嵌的dictionary,key和value用`=`连接,不同的key value用`and`连接
- 3.非套嵌的dictionary数组, 每个dictionary用`or`连接
-
- @param field 要更新的指端
- @param value 要增加的值,可为负数
- @return 是否增加成功
- */
+/// Add a value to a field
 - (BOOL)increase:(nullable VVExpr *)condition
            field:(nonnull NSString *)field
            value:(NSInteger)value;

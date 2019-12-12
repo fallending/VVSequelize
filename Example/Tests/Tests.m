@@ -45,13 +45,13 @@
         }
     }
 
-    [self.vvdb registerFtsTokenizer:VVFtsJiebaTokenizer.class forName:@"jieba"];
+    [self.vvdb registerFtsTokenizer:VVFtsJiebaTokenizer.class forName:@"sequelize"];
 
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
     self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
     NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
-    NSString *tokenizer = [NSString stringWithFormat:@"jieba %@", @(ftsTokenParm)];
+    NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
     VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"mobile", @"industry"]];
 
     self.ftsModel = [VVOrm ormWithConfig:ftsConfig tableName:@"fts_mobiles" dataBase:self.vvdb];
@@ -386,7 +386,8 @@
     NSArray *array1 = [self.ftsModel match:@"mobile".match(keyword) orderBy:nil limit:0 offset:0];
     NSArray *array2 = [self.ftsModel match:@"mobile".match(keyword) groupBy:nil limit:0 offset:0];
     NSUInteger count = [self.ftsModel matchCount:@"mobile".match(keyword)];
-    NSArray *highlighted = [self.ftsModel highlight:array1 field:@"mobile" keyword:keyword attributes:@{ NSForegroundColorAttributeName: [UIColor redColor] }];
+    VVSearchHighlighter *highlighter = [[VVFtsHighlighter alloc] initWithOrm:self.ftsModel keyword:keyword highlightAttributes:@{ NSForegroundColorAttributeName: [UIColor redColor] }];
+    NSArray *highlighted = [highlighter highlight:array1 field:@"mobile"];
     if (array1 && array2 && count && highlighted) {
     }
 }

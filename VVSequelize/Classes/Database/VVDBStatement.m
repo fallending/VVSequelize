@@ -1,5 +1,5 @@
 //
-//  VVSequelizeStatement.m
+//  VVDBStatement.m
 //  VVSequelize
 //
 //  Created by Valo on 2019/3/19.
@@ -100,9 +100,11 @@
 - (BOOL)run
 {
     sqlite3_reset(_stmt);
-    int rc;
+    __block int rc;
     do {
-        rc = sqlite3_step(_stmt);
+        [self.vvdb sync:^{
+            rc = sqlite3_step(self.stmt);
+        }];
     } while (rc == SQLITE_ROW);
     return [self.vvdb check:rc sql:_sql];
 }

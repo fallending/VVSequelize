@@ -7,9 +7,6 @@
 
 #import "VVDatabase+Additions.h"
 
-static const char *const VVDBSerialKey = "com.valo.database.serial";
-static const char *const VVDBConcurrentKey = "com.valo.database.concurrent";
-
 @implementation VVDatabase (Additions)
 // MARK: - pool
 + (instancetype)databaseInPoolWithPath:(nullable NSString *)path
@@ -47,44 +44,6 @@ static const char *const VVDBConcurrentKey = "com.valo.database.concurrent";
     int aFlags = flags | VVDBEssentialFlags;
     NSString *aKey = key ? : @"";
     return [NSString stringWithFormat:@"%@|%@|%@", aPath, @(aFlags), aKey];
-}
-
-// MARK: - queue
-+ (dispatch_queue_t)serialQueue
-{
-    static dispatch_queue_t _serialQueue;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _serialQueue = dispatch_queue_create(VVDBSerialKey, DISPATCH_QUEUE_SERIAL);
-        dispatch_queue_set_specific(_serialQueue, VVDBSerialKey, (void *)VVDBSerialKey, NULL);
-    });
-    return _serialQueue;
-}
-
-+ (dispatch_queue_t)concurrentQueue
-{
-    static dispatch_queue_t _concurrentQueue;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _concurrentQueue = dispatch_queue_create(VVDBConcurrentKey, DISPATCH_QUEUE_CONCURRENT);
-        dispatch_queue_set_specific(_concurrentQueue, VVDBConcurrentKey, (void *)VVDBConcurrentKey, NULL);
-    });
-    return _concurrentQueue;
-}
-
-+ (void)sync:(void (^)(void))block
-{
-    if (dispatch_get_specific(VVDBSerialKey)) {
-        block();
-    } else {
-        dispatch_sync([self serialQueue], block);
-    }
-}
-
-+ (void)async:(BOOL)serial block:(void (^)(void))block
-{
-    dispatch_queue_t queue = serial ? [self serialQueue] : [self concurrentQueue];
-    dispatch_async(queue, block);
 }
 
 @end

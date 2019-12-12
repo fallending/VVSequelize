@@ -1,6 +1,6 @@
 //
 //  NSObject+VVKeyValue.m
-//  VVSequelize
+//  VVDB
 //
 //  Created by Valo on 2018/7/13.
 //
@@ -48,18 +48,18 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
 {
     NSString *newStr = [dataDescription stringByReplacingOccurrencesOfString:@" " withString:@""]; //去掉空格
     NSString *replaceString = [newStr substringWithRange:NSMakeRange(1, newStr.length - 2)]; //去掉<>符号
-    const char *hexChar = [replaceString UTF8String]; //转换为 char 字符串
-    Byte *byte = malloc(sizeof(Byte) * (replaceString.length / 2)); // 开辟空间 用来存放 转换后的byte
+    const char *hexChar = [replaceString UTF8String];
+    Byte *byte = malloc(sizeof(Byte) * (replaceString.length / 2));
     char tmpChar[3] = { '\0', '\0', '\0' };
     int btIndex = 0;
     for (int i = 0; i < replaceString.length; i += 2) {
         tmpChar[0] = hexChar[i];
         tmpChar[1] = hexChar[i + 1];
-        byte[btIndex] = strtoul(tmpChar, NULL, 16); // 将 hexstring 转换为 byte 的c方法 16 为16进制
+        byte[btIndex] = strtoul(tmpChar, NULL, 16);
         btIndex++;
     }
-    NSData *data = [NSData dataWithBytes:byte length:btIndex]; //创建 nsdata 对象
-    free(byte); //释放空间
+    NSData *data = [NSData dataWithBytes:byte length:btIndex];
+    free(byte);
     return data;
 }
 
@@ -180,10 +180,10 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
     NSArray *ignores = [[self class] ignoreProperties];
     unsigned int propsCount;
-    objc_property_t *props = class_copyPropertyList([self class], &propsCount);//获得属性列表
+    objc_property_t *props = class_copyPropertyList([self class], &propsCount);
     for (int i = 0; i < propsCount; i++) {
         objc_property_t prop = props[i];
-        NSString *propName = [NSString stringWithUTF8String:property_getName(prop)];//获得属性的名称
+        NSString *propName = [NSString stringWithUTF8String:property_getName(prop)];
         VVPropertyInfo *properyInfo = info.propertyInfos[propName];
         if ([ignores containsObject:propName]) continue;
         dic[propName] = [self valueForProperty:properyInfo];
@@ -227,12 +227,8 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
 }
 
 //MARK: - Private
-/**
- Array/Set中需要转换的模型类
-
- @return Array/Set属性名和类的映射关系
- @note 依次遍历VVKeyValue,MJExtension,YYModel的映射关系,只使用最先获取到的结果.
- */
+/// class in Array/Set, key: array property name, value: class or name
+/// @note traverse mapping relations VVKeyValue,MJExtension,YYModel, use the first result
 + (NSDictionary *)customMapper
 {
     NSString *className = NSStringFromClass(self);
@@ -269,12 +265,8 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return _mapper;
 }
 
-/**
- 对象/字典转换中不转换的属性
-
- @return 黑名单数组
- @note 依次遍历VVKeyValue,MJExtension,YYModel的黑名单,只使用最先获取到的结果.
- */
+/// ingnore properties
+/// @note traverse VVKeyValue,MJExtension,YYModel, use the first result
 + (NSArray *)ignoreProperties
 {
     NSString *className = NSStringFromClass(self);
@@ -306,12 +298,8 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return ignores;
 }
 
-/**
- 生成当前对象存储时的数据类型
-
- @return 存储的数据
- @note NSData->Blob, NSURL->String, Array->JsonString, Dictionary->JsonString, NSValue->Blob, OtherClass->JsonString
- */
+/// generate db storage data
+/// @note NSData->Blob, NSURL->String, Array->JsonString, Dictionary->JsonString, NSValue->Blob, OtherClass->JsonString
 - (id)vv_targetValue
 {
     VVEncodingNSType nstype = VVClassGetNSType(self.class);
@@ -394,13 +382,8 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return tempdic;
 }
 
-/**
- 根据属性生成要存储的数据类型
-
- @param propertyInfo 属性信息
- @return 存储的数据
- @note SEL->String, Struct->Blob, Union->Blob, CNumber->Number
- */
+/// get  storage type for property
+/// @note SEL->String, Struct->Blob, Union->Blob, CNumber->Number
 - (id)valueForProperty:(VVPropertyInfo *)propertyInfo
 {
     id value = [self valueForKey:propertyInfo.name];
@@ -443,11 +426,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return nil;
 }
 
-/**
- 将存储的数据转换为原数据
-
- @param propertyInfo 属性信息
- */
+/// stored data -> original data
 - (void)setValue:(id)value forProperty:(VVPropertyInfo *)propertyInfo
 {
     NSString *propertyName = propertyInfo.name;

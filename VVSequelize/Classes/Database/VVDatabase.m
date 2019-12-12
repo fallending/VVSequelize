@@ -18,9 +18,10 @@
 
 NSString *const VVDBPathInMemory = @":memory:";
 NSString *const VVDBPathTemporary = @"";
-NSString *const VVDBErrorDomain = @"com.valo.sequelize";
+NSString *const VVDBErrorDomain = @"com.sequelize.db";
 
 int VVDBEssentialFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX;
+static const char *const VVDBSpecificKey = "com.sequelize.db.specific";
 
 // MARK: - sqlite callbacks
 static int vvdb_busy_callback(void *pCtx, int times)
@@ -55,21 +56,33 @@ static void vvdb_rollback_hook(void *pCtx)
     !vvdb.rollbackHook ? : vvdb.rollbackHook();
 }
 
+static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSString *type, dispatch_queue_attr_t _Nullable attr)
+{
+    static NSUInteger i = 0;
+    NSString *label = [NSString stringWithFormat:@"com.sequelize.db.%@.%@.%@", tag ? : @"temp", type, @(i++)];
+    dispatch_queue_t queue = dispatch_queue_create(label.UTF8String, attr);
+    dispatch_queue_set_specific(queue, VVDBSpecificKey, (__bridge void *)queue, NULL);
+    return queue;
+}
+
 // MARK: -
 @interface VVDatabase ()
+@property (nonatomic, copy) NSString *path;
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, assign) sqlite3 *db;
 @property (nonatomic, strong) NSMutableArray<NSArray *> *updates;
 @end
 
 @implementation VVDatabase
+@synthesize readQueue = _readQueue;
+@synthesize writeQueue = _writeQueue;
 
 - (instancetype)initWithPath:(NSString *)path
 {
     self = [super init];
     if (self) {
-        self.updates = [NSMutableArray array];
-        self.path = path;
+        _updates = [NSMutableArray array];
+        _path = path;
     }
     return self;
 }
@@ -179,6 +192,22 @@ static void vvdb_rollback_hook(void *pCtx)
     return _path;
 }
 
+- (dispatch_queue_t)writeQueue
+{
+    if (!_writeQueue) {
+        _writeQueue = dispatch_create_db_queue(self.path, @"write", DISPATCH_QUEUE_SERIAL);
+    }
+    return _writeQueue;
+}
+
+- (dispatch_queue_t)readQueue
+{
+    if (!_readQueue) {
+        _readQueue = dispatch_create_db_queue(self.path, @"read", DISPATCH_QUEUE_CONCURRENT);
+    }
+    return _readQueue;
+}
+
 // MARK: - getter
 - (BOOL)isOpen
 {
@@ -205,6 +234,16 @@ static void vvdb_rollback_hook(void *pCtx)
     return sqlite3_last_insert_rowid(self.db);
 }
 
+// MARK: - queue
+- (void)sync:(void (^)(void))block
+{
+    if (dispatch_get_specific(VVDBSpecificKey) == (__bridge void *)self.writeQueue) {
+        block();
+    } else {
+        dispatch_sync(self.writeQueue, block);
+    }
+}
+
 // MARK: - Execute
 - (BOOL)excute:(NSString *)sql
 {
@@ -224,75 +263,6 @@ static void vvdb_rollback_hook(void *pCtx)
     return [statement bind:values];
 }
 
-// MARK: - Merge
-/**
- 合并操作
-
- @param sql 更新操作的sql语句
- @param values 更新操作的绑定数据
- @return `NO`-不进行合并操作,`YES`-已合并数据
- */
-- (BOOL)merge:(NSString *)sql values:(NSArray *)values
-{
-    if (_updateInterval <= 0) {
-        return NO;
-    }
-    if (_updates.count == 0) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_updateInterval * NSEC_PER_SEC)), [VVDatabase serialQueue], ^{
-            [self runMergeUpdates];
-        });
-    }
-    [_updates addObject:@[sql, values ? : @[]]];
-    return YES;
-}
-
-- (BOOL)runMergeUpdates
-{
-#if DEBUG
-    printf("\n[VVDB][Merge] now: %f, count: %lu, db: %s\n", CFAbsoluteTimeGetCurrent(), (unsigned long)_updates.count, _path.lastPathComponent.UTF8String);
-#endif
-    NSArray *array = _updates.copy;
-    if (array.count == 0) {
-        return YES;
-    }
-    [_updates removeAllObjects];
-
-    BOOL result = [self transaction:VVDBTransactionImmediate block:^BOOL {
-        NSUInteger count = 0;
-        for (NSArray *sub in array) {
-            NSString *sql = sub[0];
-            NSArray *values = sub[1];
-            BOOL ret = YES;
-            if (values.count > 0) {
-                ret = [[self prepare:sql bind:values] run];
-            } else {
-                ret = [[self prepare:sql] run];
-            }
-            if (ret) count++;
-        }
-        return count > 0;
-    }];
-    if (!result) {
-        @synchronized (_updates) {
-            NSArray *temp = _updates.copy;
-            [_updates removeAllObjects];
-            [_updates addObjectsFromArray:array];
-            [_updates addObjectsFromArray:temp];
-        };
-    }
-    return result;
-}
-
-- (void)setUpdateInterval:(CFAbsoluteTime)updateInterval
-{
-    _updateInterval = updateInterval;
-    if (updateInterval > 0) {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(runMergeUpdates) name:UIApplicationWillTerminateNotification object:nil];
-    } else {
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
-    }
-}
-
 // MARK: - Run
 - (NSArray *)query:(NSString *)sql
 {
@@ -307,19 +277,11 @@ static void vvdb_rollback_hook(void *pCtx)
 
 - (BOOL)run:(NSString *)sql
 {
-    BOOL ret = [self merge:sql values:@[]];
-    if (ret) {
-        return ret;
-    }
     return [[self prepare:sql] run];
 }
 
 - (BOOL)run:(NSString *)sql bind:(NSArray *)values
 {
-    NSInteger ret = [self merge:sql values:values];
-    if (ret) {
-        return ret;
-    }
     return [[self prepare:sql bind:values] run];
 }
 

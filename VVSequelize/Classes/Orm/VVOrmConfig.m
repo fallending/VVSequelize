@@ -1,6 +1,6 @@
 //
 //  VVOrmConfig.m
-//  VVSequelize
+//  VVDB
 //
 //  Created by Valo on 2018/9/10.
 //
@@ -88,13 +88,13 @@ NSString *const VVSqlTypeReal = @"REAL";
     return config;
 }
 
-//TODO: 可优化
+//TODO: optimizable
 + (instancetype)configWithNormalTable:(NSString *)tableName database:(VVDatabase *)vvdb
 {
     VVOrmConfig *config = [[VVOrmConfig alloc] init];
     config.fromTable = YES;
 
-    // 获取表的配置
+    // get table configuration
     NSMutableDictionary *types = [NSMutableDictionary dictionaryWithCapacity:0];
     NSMutableDictionary *defaultValues = [NSMutableDictionary dictionaryWithCapacity:0];
     NSMutableArray *colmuns = [NSMutableArray arrayWithCapacity:0];
@@ -124,7 +124,7 @@ NSString *const VVSqlTypeReal = @"REAL";
         if (notnull) [notnulls addObject:name];
     }
 
-    // 获取表的索引字段
+    // get indexes
     NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(%@);", tableName.quoted];
     NSArray *indexList =  [vvdb query:indexListSql];
     for (NSDictionary *indexDic in indexList) {
@@ -148,7 +148,7 @@ NSString *const VVSqlTypeReal = @"REAL";
         NSArray *cols = [vvdb query:sql];
         NSDictionary *tableInfo = cols.firstObject;
         NSString *tableSql = tableInfo[@"sql"];
-        if ([tableSql isMatch:@"AUTOINCREMENT"]) {
+        if ([tableSql isMatch:@"AUTOINCRVVENT"]) {
             pkAutoIncrement = YES;
         }
     }
@@ -166,7 +166,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     return config;
 }
 
-//TODO: 可优化
+//TODO: optimizable
 + (instancetype)configWithFtsTable:(NSString *)tableName database:(VVDatabase *)vvdb
 {
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM sqlite_master WHERE tbl_name = %@ AND type = \"table\"", tableName.quoted];
@@ -180,7 +180,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSDictionary *dic = cols.firstObject;
     NSString *tableSQL = dic[@"sql"];
 
-    // 获取fts模块名/版本号
+    // get fts module/version
     NSInteger ftsVersion = 3;
     NSString *ftsModule = @"fts3";
     NSStringCompareOptions options = NSRegularExpressionSearch | NSCaseInsensitiveSearch;
@@ -192,7 +192,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     config.ftsVersion = ftsVersion;
     config.ftsModule = ftsModule;
 
-    // 获取FTS分词器
+    // get tokenizer
     range = [tableSQL rangeOfString:@"\\(.*\\)" options:options];
     if (range.location == NSNotFound) return nil;
     NSString *ftsOptionsString = [tableSQL substringWithRange:range];
@@ -206,7 +206,7 @@ NSString *const VVSqlTypeReal = @"REAL";
         }
     }
 
-    // 获取表的配置
+    // get table configuration
     NSMutableArray *colmuns = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *indexes = [NSMutableArray arrayWithCapacity:0];
 
@@ -355,7 +355,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSString *typeString = _types[column];
     NSString *pkString = @"";
     if (_primaries.count == 1 && [_primaries containsObject:column]) {
-        pkString = _pkAutoIncrement ? @" NOT NULL PRIMARY KEY AUTOINCREMENT" : @" NOT NULL PRIMARY KEY";
+        pkString = _pkAutoIncrement ? @" NOT NULL PRIMARY KEY AUTOINCRVVENT" : @" NOT NULL PRIMARY KEY";
     }
 
     NSString *nullString = [_notnulls containsObject:column] ? @" NOT NULL" : @"";
@@ -413,7 +413,6 @@ NSString *const VVSqlTypeReal = @"REAL";
 }
 
 // MARK: - Utils
-
 + (BOOL)ormArray:(NSArray *)array isEqual:(NSArray *)otherArray
 {
     if (array.count == 0 && otherArray.count == 0) {

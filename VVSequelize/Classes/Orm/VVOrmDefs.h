@@ -11,23 +11,23 @@
 #define $(field) NSStringFromSelector(@selector(field))
 #endif
 
-// VVExpr 查询表达式, where/having子句
-// NSString,原生sql,可传入`where`及之后的所有语句
-// NSDictionary,非套嵌,key和value用`=`连接,不同的key value用`and`连接
-// NSArray,非套嵌的dictionary数组, 每个dictionary用`or`连接
+/// query expression, where/having sub statement
+/// 1.NSString:  native sql, all subsequent statements after `where`;
+/// 2.NSDictionary: key and value are connected with '=', different key values are connected with 'and';
+/// 3.NSArray: [dictionary], Each dictionary is connected with 'or'
 typedef NSObject   VVExpr;
 
-// VVFields 指定查询的字段
+// specify the fields
 // NSString: `"field1","field2",...`, `count(*) as count`, ...
 // NSArray: ["field1","field2",...]
 typedef NSObject   VVFields;
 
-// VVOrderBy 排序表达式
+// sort expression
 // NSString: "field1 asc", "field1,field2 desc", "field1 asc,field2,field3 desc", ...
 // NSArray:  ["field1 asc","field2,field3 desc",...]
 typedef NSObject   VVOrderBy;
 
-// VVGroupBy 分组表达式
+// group expression
 // NSString: "field1","field2",...
 // NSArray:  ["field1","field2",...]
 typedef NSObject   VVGroupBy;

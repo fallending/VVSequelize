@@ -1,0 +1,37 @@
+PODS:
+  - CocoaLumberjack (3.5.2):
+    - CocoaLumberjack/Core (= 3.5.2)
+  - CocoaLumberjack/Core (3.5.2)
+  - SQLCipher (4.1.0):
+    - SQLCipher/standard (= 4.1.0)
+  - SQLCipher/common (4.1.0)
+  - SQLCipher/standard (4.1.0):
+    - SQLCipher/common
+  - VVSequelize (0.3.1-beta3):
+    - VVSequelize/cipher (= 0.3.1-beta3)
+  - VVSequelize/cipher (0.3.1-beta3):
+    - SQLCipher
+    - VVSequelize/common
+  - VVSequelize/common (0.3.1-beta3)
+
+DEPENDENCIES:
+  - CocoaLumberjack
+  - VVSequelize (from `../`)
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - CocoaLumberjack
+    - SQLCipher
+
+EXTERNAL SOURCES:
+  VVSequelize:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  CocoaLumberjack: 118bf4a820efc641f79fa487b75ed928dccfae23
+  SQLCipher: efbdb52cdbe340bcd892b1b14297df4e07241b7f
+  VVSequelize: 0f395439551af09e54b6f71b14a1e9888cbf33f0
+
+PODFILE CHECKSUM: 93551fd5907f9990e8b8f19e0abcc0881f8dd7dd
+
+COCOAPODS: 1.8.4

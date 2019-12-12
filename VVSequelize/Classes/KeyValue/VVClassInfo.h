@@ -1,6 +1,6 @@
 //
 //  VVClassInfo.h
-//  VVSequelize
+//  VVDB
 //
 //  Created by Valo on 2018/7/17.
 //
@@ -112,7 +112,7 @@ typedef NS_OPTIONS (NSUInteger, VVPropertyQualifier) {
 @property (nonatomic, assign, readonly) Class cls;
 @property (nonatomic, assign, readonly) Class metaCls;
 @property (nonatomic, readonly) BOOL isMeta;
-@property (nullable, nonatomic, strong, readonly) NSDictionary *propertyInfos; ///< 属性
+@property (nullable, nonatomic, strong, readonly) NSDictionary *propertyInfos; ///< property
 
 + (nullable instancetype)classInfoWithClass:(Class)cls;
 @end

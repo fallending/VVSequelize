@@ -1,6 +1,6 @@
 //
-//  VVSequelizeCipher.m
-//  VVSequelize
+//  VVDBCipher.m
+//  VVDB
 //
 //  Created by Valo on 2018/6/19.
 //
@@ -48,7 +48,7 @@
     if (key.length == 0) {
         return NO;
     }
-
+    
     const char *sql = [[NSString stringWithFormat:@"ATTACH DATABASE '%@' AS encrypted KEY '%@';", target, key] UTF8String];
     sqlite3 *db;
     if (sqlite3_open([source UTF8String], &db) == SQLITE_OK) {
@@ -72,7 +72,7 @@
     if (key.length == 0) {
         return NO;
     }
-
+    
     const char *sql = [[NSString stringWithFormat:@"ATTACH DATABASE '%@' AS plaintext KEY '';", target] UTF8String];
     sqlite3 *db;
     if (sqlite3_open([source UTF8String], &db) == SQLITE_OK) {

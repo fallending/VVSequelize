@@ -1,5 +1,5 @@
 //
-//  VVSequelizeStatement.h
+//  VVDBStatement.h
 //  VVSequelize
 //
 //  Created by Valo on 2019/3/19.
@@ -11,9 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class VVDatabase, VVDBStatement;
 
-/**
- sqlit3_stmt游标,用于绑定数据,读取数据
- */
+/// sqlit3_stmt cursor, use to bind/read data
 @interface VVDBCursor : NSObject
 - (instancetype)initWithStatement:(VVDBStatement *)statement;
 
@@ -25,80 +23,47 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-/**
- sqlite3_stmt封装类
- */
+/// packaged sqlite3_stmt
 @interface VVDBStatement : NSObject
-/**
- 查询/绑定数据的行数
- */
+/// query/bind lines
 @property (nonatomic, assign, readonly) int columnCount;
-/**
- 查询/绑定数据的字段名称
- */
+
+/// query/bind column names
 @property (nonatomic, strong, readonly) NSArray<NSString *> *columnNames;
-/**
- 游标
- */
+
+/// cursor
 @property (nonatomic, strong, readonly) VVDBCursor *cursor;
 
-/**
- 生成VVDBStatement对象,有缓存机制
-
- @param vvdb 数据库
- @param sql 原生sql语句
- @return VVDBStatement对象
- */
+/// create/get VVDBStatement object
+/// @param vvdb db object
+/// @param sql native sql
+/// @note has cache
 + (instancetype)statementWithDatabase:(VVDatabase *)vvdb sql:(NSString *)sql;
 
-/**
- 初始化VVDBStatement对象
-
- @param vvdb 数据库
- @param sql 原生sql语句
- @return VVDBStatement对象
- */
+/// Initialize VVDBStatement
+/// @param vvdb db object
+/// @param sql native sql
 - (instancetype)initWithDatabase:(VVDatabase *)vvdb sql:(NSString *)sql;
 
-/**
- 绑定数据
-
- @param values 数据数组,和`columnNames`一一对应
- @return 当前VVDBStatement对象
- */
+/// bind data
+/// @param values data array, corresponding to 'columnnames' one by one
 - (VVDBStatement *)bind:(nullable NSArray *)values;
 
 - (id)scalar:(nullable NSArray *)values;
 
-/**
- 执行sqlite3_stmt
-
- @return 是否执行成功
- */
+/// excute sqlite3_stmt
 - (BOOL)run;
 
-/**
- 执行sqlite3_stmt查询操作
-
- @return 查询结果
- */
+/// excute sqlite3_stmt query
 - (nullable NSArray<NSDictionary *> *)query;
 
-/**
- 执行sqlite3_step()
-
- @return 是否执行成功
- */
+/// execute sqlite3_step()
 - (BOOL)step;
 
-/**
- 重置sqlite3_stmt,不清除绑定数据
- */
+/// reset sqlite3_stmt, do not clean bind data
 - (void)reset;
 
-/**
- 重置sqlite3_stmt,并清除绑定数据
- */
+/// reset sqlite3_stmt, clean bind data
 - (void)resetAndClear;
 
 @end
