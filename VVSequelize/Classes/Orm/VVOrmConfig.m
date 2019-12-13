@@ -148,7 +148,7 @@ NSString *const VVSqlTypeReal = @"REAL";
         NSArray *cols = [vvdb query:sql];
         NSDictionary *tableInfo = cols.firstObject;
         NSString *tableSql = tableInfo[@"sql"];
-        if ([tableSql isMatch:@"AUTOINCRVVENT"]) {
+        if ([tableSql isMatch:@"AUTOINCREMENT"]) {
             pkAutoIncrement = YES;
         }
     }
@@ -355,7 +355,7 @@ NSString *const VVSqlTypeReal = @"REAL";
     NSString *typeString = _types[column];
     NSString *pkString = @"";
     if (_primaries.count == 1 && [_primaries containsObject:column]) {
-        pkString = _pkAutoIncrement ? @" NOT NULL PRIMARY KEY AUTOINCRVVENT" : @" NOT NULL PRIMARY KEY";
+        pkString = _pkAutoIncrement ? @" NOT NULL PRIMARY KEY AUTOINCREMENT" : @" NOT NULL PRIMARY KEY";
     }
 
     NSString *nullString = [_notnulls containsObject:column] ? @" NOT NULL" : @"";

@@ -45,12 +45,12 @@
         }
     }
 
-    [self.vvdb registerFtsTokenizer:VVFtsJiebaTokenizer.class forName:@"sequelize"];
+    [self.vvdb registerMethod:VVTokenMethodSequelize forTokenizer:@"sequelize"];
 
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
     self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
-    NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
+    NSUInteger ftsTokenParm = VVTokenMaskNumber | VVTokenMaskTransform | 15;
     NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
     VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"mobile", @"industry"]];
 
@@ -382,20 +382,49 @@
 //MARK: - FTS表
 - (void)testMatch
 {
-    NSString *keyword = @"180*";
-    NSArray *array1 = [self.ftsModel match:@"mobile".match(keyword) orderBy:nil limit:0 offset:0];
-    NSArray *array2 = [self.ftsModel match:@"mobile".match(keyword) groupBy:nil limit:0 offset:0];
+    NSString *keyword = @"yinyue*";
+    NSArray *array1 = [self.ftsModel match:@"industry".match(keyword) orderBy:nil limit:0 offset:0];
+    NSArray *array2 = [self.ftsModel match:@"industry".match(keyword) groupBy:nil limit:0 offset:0];
     NSUInteger count = [self.ftsModel matchCount:@"mobile".match(keyword)];
-    VVSearchHighlighter *highlighter = [[VVFtsHighlighter alloc] initWithOrm:self.ftsModel keyword:keyword highlightAttributes:@{ NSForegroundColorAttributeName: [UIColor redColor] }];
+    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithOrm:self.ftsModel keyword:keyword];
+    highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
     NSArray *highlighted = [highlighter highlight:array1 field:@"mobile"];
     if (array1 && array2 && count && highlighted) {
     }
 }
 
+- (void)testTokenizer
+{
+    VVTokenMask mask = VVTokenMaskManual | VVTokenMaskExtra | VVTokenMaskSplitPinyin;
+    NSArray *texts = @[
+        @"音乐舞蹈",
+        @"音乐123舞蹈",
+        @"18180684312",
+        @"jintiantianqizhenhao",
+        @"hello world",
+    ];
+    for (NSString *text in texts) {
+        NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
+        NSLog(@"%@:\n%@", text, tokens);
+    }
+}
+
+- (void)testHighlight
+{
+    NSString *keyword = @"yinyue";
+    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithMethod:VVTokenMethodSequelize keyword:keyword];
+    highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
+    highlighter.mask = VVTokenMaskAll;
+    VVResultMatch *match = [highlighter highlight:@"音乐舞蹈"];
+    if (match) {
+    }
+}
+
 - (void)testPinyin
 {
-    NSArray *array = [@"成都曾经" pinyinsForTokenize];
-    NSLog(@"array: %@", array);
+    NSArray *array = [@"成都曾经" pinyinsForMatch];
+    NSArray *array1 = [@"成都曾经" pinyinMatrix];
+    NSLog(@"array: %@\narray1: %@", array, array1);
 }
 
 @end

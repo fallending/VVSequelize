@@ -11,8 +11,6 @@
 static NSString *const kVVPinYinResourceBundle = @"VVPinYin.bundle";
 static NSString *const kVVPinYinResourceFile = @"pinyin.plist";
 static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
-static NSString *const kVVPinYinPolyphoneFile = @"polyphone.plist";
-static NSUInteger _kVVMaxSupportLengthOfPolyphone = 5;
 
 typedef NS_ENUM (NSUInteger, VVStringGroupType) {
     VVStringGroupNone             = 0,
@@ -23,16 +21,15 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
     VVStringGroupAuxiPlaneOther   = 0xFFFFFFFF,
 };
 
-@interface VVPinYin : NSObject
+@interface VVPinYin ()
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, strong) NSCache *firstLettersCache;
-@property (nonatomic, strong) NSDictionary *polyphones;
 @property (nonatomic, strong) NSDictionary *hanzi2pinyins;
 @property (nonatomic, strong) NSDictionary *pinyins;
 @property (nonatomic, strong) NSDictionary *gb2big5Map;
 @property (nonatomic, strong) NSDictionary *big52gbMap;
 @property (nonatomic, strong) NSCharacterSet *trimmingSet;
-@property (nonatomic, strong) NSCharacterSet *clearSet;
+@property (nonatomic, strong) NSCharacterSet *cleanSet;
 @property (nonatomic, strong) NSCharacterSet *symbolSet;
 @property (nonatomic, strong) NSNumberFormatter *numberFormatter;
 @end
@@ -85,18 +82,6 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
     return _hanzi2pinyins;
 }
 
-- (NSDictionary *)polyphones
-{
-    if (!_polyphones) {
-        NSBundle *parentBundle = [NSBundle bundleForClass:self.class];
-        NSString *bundlePath = [parentBundle pathForResource:kVVPinYinResourceBundle ofType:nil];
-        NSBundle *bundle = [NSBundle bundleWithPath:bundlePath];
-        NSString *path = [bundle pathForResource:kVVPinYinPolyphoneFile ofType:nil];
-        _polyphones = [NSDictionary dictionaryWithContentsOfFile:path];
-    }
-    return _polyphones;
-}
-
 - (NSDictionary *)gb2big5Map {
     if (!_gb2big5Map) {
         NSMutableDictionary *dic = [NSMutableDictionary dictionary];
@@ -134,18 +119,18 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
     return _trimmingSet;
 }
 
-- (NSCharacterSet *)clearSet
+- (NSCharacterSet *)cleanSet
 {
-    if (!_clearSet) {
+    if (!_cleanSet) {
         NSMutableCharacterSet *set = [[NSMutableCharacterSet alloc] init];
         [set formUnionWithCharacterSet:[NSCharacterSet controlCharacterSet]];
         [set formUnionWithCharacterSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         [set formUnionWithCharacterSet:[NSCharacterSet illegalCharacterSet]];
         [set formUnionWithCharacterSet:[NSCharacterSet punctuationCharacterSet]];
         [set formUnionWithCharacterSet:[NSCharacterSet newlineCharacterSet]];
-        _clearSet = set;
+        _cleanSet = set;
     }
-    return _clearSet;
+    return _cleanSet;
 }
 
 - (NSCharacterSet *)symbolSet
@@ -165,7 +150,7 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
 
 - (NSNumberFormatter *)numberFormatter
 {
-    if (_numberFormatter) {
+    if (!_numberFormatter) {
         _numberFormatter = [[NSNumberFormatter alloc] init];
         _numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
     }
@@ -178,12 +163,7 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
 
 + (void)preloadingForPinyin
 {
-    [@"中文" pinyinsForTokenize];
-}
-
-+ (void)setMaxSupportLengthOfPolyphone:(NSUInteger)maxSupportLength
-{
-    _kVVMaxSupportLengthOfPolyphone = maxSupportLength;
+    [@"中文" pinyinsForMatch];
 }
 
 - (NSString *)simplifiedChineseString {
@@ -213,218 +193,102 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
     return [predicate evaluateWithObject:self];
 }
 
-- (NSArray<NSString *> *)pinyinTokensOfChineseCharacter
-{
-    if (self.length != 1) return @[];
-    NSString *string = self.simplifiedChineseString;
-    unichar ch = [string characterAtIndex:0];
-    NSString *key = [NSString stringWithFormat:@"%X", ch];
-    NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
-    NSMutableOrderedSet *results = [NSMutableOrderedSet orderedSet];
-    for (NSString *py in pinyins) {
-        [results addObject:[py substringToIndex:1]];
-        [results addObject:[py substringToIndex:py.length - 1]];
-    }
-    return results.array;
-}
-
-- (NSArray<NSString *> *)grouped
-{
-    const char *cSource = self.UTF8String ? : "";
-    NSUInteger inputLen = strlen(cSource);
-    if (inputLen == 0) return @[];
-
-    NSMutableArray *results = [NSMutableArray array];
-    __block u_long spos = 0;
-    __block u_long slen = 0;
-    __block VVStringGroupType stype = VVStringGroupNone;
-
-    u_long offset = 0;
-    u_long len = 0;
-    VVStringGroupType type = VVStringGroupNone;
-    BOOL end = NO;
-
-    void (^ addResult)(u_long, u_long, VVStringGroupType) = ^(u_long offset, u_long len, VVStringGroupType type) {
-        NSStringEncoding encoding = 0;
-        switch (stype) {
-            case VVStringGroupMultiPlaneLetter: encoding = NSASCIIStringEncoding; break;
-            case VVStringGroupMultiPlaneDigit: encoding = NSASCIIStringEncoding; break;
-            case VVStringGroupMultiPlaneSymbol: encoding = NSUTF8StringEncoding; break;
-            case VVStringGroupMultiPlaneOther: encoding = NSUTF8StringEncoding; break;
-            case VVStringGroupAuxiPlaneOther:  encoding = NSUTF8StringEncoding; break;
-            default: break;
-        }
-        if (encoding > 0) {
-            NSString *str = [[NSString alloc] initWithBytes:cSource + spos length:slen encoding:encoding];
-            [results addObject:str];
-            spos = offset;
-            slen = 0;
-        }
-        stype = type;
-    };
-
-    while (offset < inputLen) {
-        @autoreleasepool {
-            const unsigned char ch = cSource[offset];
-            if (ch < 0xC0) {
-                len = 1;
-                if (ch >= 0x30 && ch <= 0x39) {
-                    type = VVStringGroupMultiPlaneDigit;
-                } else if ((ch >= 0x41 && ch <= 0x5a) || (ch >= 0x61 && ch <= 0x7a)) {
-                    type = VVStringGroupMultiPlaneLetter;
-                } else {
-                    BOOL isSymbol = [VVPinYin.shared.symbolSet characterIsMember:ch];
-                    type = isSymbol ? VVStringGroupMultiPlaneSymbol : VVStringGroupMultiPlaneOther;
-                }
-            } else if (ch < 0xF0) {
-                unichar unicode = 0;
-                if (ch < 0xE0) {
-                    len = 2;
-                    unicode = ch & 0x1F;
-                } else {
-                    len = 3;
-                    unicode = ch & 0x0F;
-                }
-                for (u_long j = offset + 1; j < offset + len; ++j) {
-                    if (j < inputLen) {
-                        unicode = (unicode << 6) | (cSource[j] & 0x3F);
-                    } else {
-                        type = VVStringGroupNone;
-                        len = inputLen - j;
-                        end = YES;
-                    }
-                }
-                if (!end) {
-                    BOOL isSymbol = [VVPinYin.shared.symbolSet characterIsMember:ch];
-                    type = isSymbol ? VVStringGroupMultiPlaneSymbol : VVStringGroupMultiPlaneOther;
-                }
-            } else {
-                type = VVStringGroupAuxiPlaneOther;
-                if (ch < 0xF8) {
-                    len = 4;
-                } else if (ch < 0xFC) {
-                    len = 5;
-                } else {
-                    len = 3; // split every chinese character
-                    // len = 6; // split every two chinese characters
-                }
-            }
-
-            if (end) break;
-            if (stype != type) {
-                addResult(offset, len, type);
-            }
-            offset += len;
-            slen += len;
-        }
-    }
-    addResult(offset, len, type);
-
-    return results;
-}
-
 - (NSString *)pinyin
 {
-    NSString *prepared = [self.grouped componentsJoinedByString:@" "];
-    NSMutableString *string = [NSMutableString stringWithString:prepared];
+    NSMutableString *string = [NSMutableString stringWithString:self];
     CFStringTransform((__bridge CFMutableStringRef)string, NULL, kCFStringTransformToLatin, false);
     NSString *result = [string stringByFoldingWithOptions:NSDiacriticInsensitiveSearch locale:[NSLocale currentLocale]];
     return [result stringByReplacingOccurrencesOfString:@"'" withString:@""];
 }
 
-- (NSArray<NSString *> *)pinyinsForTokenize
+- (NSArray<NSArray<NSString *> *> *)pinyinsAtIndex:(NSUInteger)index
+{
+    NSString *string = self.simplifiedChineseString;
+    unichar ch = [string characterAtIndex:index];
+    NSString *key = [NSString stringWithFormat:@"%X", ch];
+    NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
+    NSMutableOrderedSet *fulls = [NSMutableOrderedSet orderedSet];
+    NSMutableOrderedSet *firsts = [NSMutableOrderedSet orderedSet];
+    for (NSString *pinyin in pinyins) {
+        if (pinyin.length < 1) continue;
+        [fulls addObject:[pinyin substringToIndex:pinyin.length - 1]];
+        [firsts addObject:[pinyin substringToIndex:1]];
+    }
+    return @[fulls.array, firsts.array];
+}
+
+- (NSArray<NSArray<NSString *> *> *)pinyinsForMatch
 {
     NSArray *results = [[VVPinYin shared].cache objectForKey:self];
     if (results) return results;
 
-    NSString *prepared = [self stringByTrimmingCharactersInSet:[VVPinYin shared].trimmingSet];
-    NSString *string = [prepared pinyin];
+    NSArray<NSArray<NSString *> *> *pinyins = [self pinyinsAtIndex:0];
+    NSString *letter = [self substringToIndex:1];
+    NSArray<NSString *> *headFulls = pinyins.firstObject.count > 0 ? pinyins.firstObject : @[letter];
+    NSArray<NSString *> *headFirsts = pinyins.lastObject.count > 0 ? pinyins.lastObject : @[letter];
 
-    NSArray *pinyins = [string componentsSeparatedByString:@" "];
-    NSDictionary *polyphones = [prepared polyphonePinyins];
-    NSArray *flattened = [NSString flatten:pinyins polyphones:polyphones];
-    NSMutableArray *array = [NSMutableArray array];
-    for (NSArray *sub in flattened) {
-        NSMutableString *totalstring = [NSMutableString stringWithCapacity:0];
-        NSMutableString *firstLetters = [NSMutableString stringWithCapacity:flattened.count];
-        for (NSString *pinyin in sub) {
-            if (pinyin.length < 1) continue;
-            [totalstring appendString:pinyin];
-            [firstLetters appendString:[pinyin substringToIndex:1]];
-        }
-        [array addObjectsFromArray:@[totalstring, firstLetters]];
+    if (self.length == 1) {
+        return @[headFulls, headFirsts];
     }
+    NSString *substring = [self substringFromIndex:1];
+    NSArray<NSArray<NSString *> *> *subPinyins = [substring pinyinsForMatch];
+    NSArray<NSString *> *subFulls = subPinyins.firstObject;
+    NSArray<NSString *> *subFirsts = subPinyins.lastObject;
 
-    results = [NSOrderedSet orderedSetWithArray:array].array;
+    NSMutableArray<NSString *> *fulls = [NSMutableArray array];
+    NSMutableArray<NSString *> *firsts = [NSMutableArray array];
+    for (NSString *headfull in headFulls) {
+        for (NSString *subfull in subFulls) {
+            [fulls addObject:[headfull stringByAppendingString:subfull]];
+        }
+    }
+    for (NSString *headfirst in headFirsts) {
+        for (NSString *subfirst in subFirsts) {
+            [firsts addObject:[headfirst stringByAppendingString:subfirst]];
+        }
+    }
+    results = @[fulls, firsts];
     [[VVPinYin shared].cache setObject:results forKey:self];
     return results;
 }
 
-- (NSArray<NSString *> *)firstLettersForFilter
+- (NSArray<NSArray<NSArray<NSString *> *> *> *)pinyinMatrix
 {
-    NSArray *results = [[VVPinYin shared].firstLettersCache objectForKey:self];
-    if (results) return results;
+    NSArray<NSArray<NSString *> *> *pinyins = [self pinyinsAtIndex:0];
+    NSString *letter = [self substringToIndex:1];
+    NSArray<NSString *> *_headFulls = pinyins.firstObject.count > 0 ? pinyins.firstObject : @[letter];
+    NSArray<NSString *> *_headFirsts = pinyins.lastObject.count > 0 ? pinyins.lastObject : @[letter];
 
-    NSString *prepared = [self stringByTrimmingCharactersInSet:[VVPinYin shared].trimmingSet];
-    NSString *string = [prepared pinyin];
-
-    NSArray *pinyins = [string componentsSeparatedByCharactersInSet:[VVPinYin shared].trimmingSet];
-    NSDictionary *polyphones = [prepared polyphonePinyins];
-    NSArray *flattened = [NSString flatten:pinyins polyphones:polyphones];
-    NSMutableArray *array = [NSMutableArray array];
-    for (NSArray *sub in flattened) {
-        NSMutableString *firstLetters = [NSMutableString stringWithCapacity:flattened.count];
-        for (NSString *pinyin in sub) {
-            if (pinyin.length < 1) continue;
-            [firstLetters appendString:[pinyin substringToIndex:1]];
-        }
-        [array addObject:firstLetters];
+    NSMutableArray<NSArray<NSString *> *> *headFulls = [NSMutableArray array];
+    NSMutableArray<NSArray<NSString *> *> *headFirsts = [NSMutableArray array];
+    for (NSString *full in _headFulls) {
+        [headFulls addObject:@[full]];
+    }
+    for (NSString *first in _headFirsts) {
+        [headFirsts addObject:@[first]];
     }
 
-    results = [NSOrderedSet orderedSetWithArray:array].array;
-    [[VVPinYin shared].firstLettersCache setObject:results forKey:self];
-    return results;
-}
-
-- (NSArray<NSString *> *)polyphonePinyinsAtIndex:(NSUInteger)index
-{
-    unichar ch = [self characterAtIndex:index];
-    NSString *key = [NSString stringWithFormat:@"%X", ch];
-    return [[VVPinYin shared].polyphones objectForKey:key];
-}
-
-- (NSDictionary<NSNumber *, NSArray *> *)polyphonePinyins
-{
-    if (self.length > _kVVMaxSupportLengthOfPolyphone) return nil;
-    NSMutableDictionary *dic = [NSMutableDictionary dictionary];
-    for (NSUInteger i = 0; i < self.length; i++) {
-        NSArray *polys = [self polyphonePinyinsAtIndex:i];
-        NSMutableOrderedSet *set = [NSMutableOrderedSet orderedSet];
-        for (NSString *poly in polys) {
-            if (poly.length > 1) [set addObject:[poly substringToIndex:poly.length - 1]];
-        }
-        dic[@(i)] = set.array;
+    if (self.length == 1) {
+        return @[headFulls, headFirsts];
     }
-    return dic;
-}
+    NSString *substring = [self substringFromIndex:1];
+    NSArray<NSArray<NSArray<NSString *> *> *> *subPinyins = [substring pinyinMatrix];
+    NSArray<NSArray<NSString *> *> *subFulls = subPinyins.firstObject;
+    NSArray<NSArray<NSString *> *> *subFirsts = subPinyins.lastObject;
 
-+ (NSArray<NSArray *> *)flatten:(NSArray *)pinyins polyphones:(NSDictionary<NSNumber *, NSArray *> *)polyphones
-{
-    if (polyphones.count == 0) return @[pinyins];
-    NSUInteger chineseCount = pinyins.count;
-    __block NSMutableOrderedSet *results = [NSMutableOrderedSet orderedSet];
-    [results addObject:pinyins];
-    [polyphones enumerateKeysAndObjectsUsingBlock:^(NSNumber *key, NSArray *polyPinyins, BOOL *stop) {
-        NSUInteger idx = key.unsignedIntegerValue;
-        if (idx >= chineseCount || polyPinyins.count == 0) { return; }
-        for (NSString *poly in polyPinyins) {
-            NSMutableArray *tempArray = [pinyins mutableCopy];
-            tempArray[idx] = poly;
-            [results addObject:tempArray];
+    NSMutableArray<NSArray<NSString *> *> *fulls = [NSMutableArray array];
+    NSMutableArray<NSArray<NSString *> *> *firsts = [NSMutableArray array];
+    for (NSArray<NSString *> *headfull in headFulls) {
+        for (NSArray<NSString *> *subfull in subFulls) {
+            [fulls addObject:[headfull arrayByAddingObjectsFromArray:subfull]];
         }
-    }];
-
-    return results.array;
+    }
+    for (NSArray<NSString *> *headfirst in headFirsts) {
+        for (NSArray<NSString *> *subfirst in subFirsts) {
+            [firsts addObject:[headfirst arrayByAddingObjectsFromArray:subfirst]];
+        }
+    }
+    return @[fulls, firsts];
 }
 
 - (NSArray<NSString *> *)numberStringsForTokenize {
@@ -440,7 +304,7 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
 
 - (NSString *)cleanString
 {
-    NSArray *array = [self componentsSeparatedByCharactersInSet:[VVPinYin shared].clearSet];
+    NSArray *array = [self componentsSeparatedByCharactersInSet:[VVPinYin shared].cleanSet];
     return [array componentsJoinedByString:@""];
 }
 
@@ -504,7 +368,7 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
         NSMutableArray *array = [NSMutableArray array];
         [array addObject:string.lowercaseString.simplifiedChineseString];
         if (pinyin) {
-            NSArray *pinyins = [string pinyinsForTokenize];
+            NSArray *pinyins = [string pinyinsForMatch];
             [array addObjectsFromArray:pinyins];
         }
         NSArray *filtered = [array filteredArrayUsingPredicate:predicate];

@@ -45,6 +45,16 @@
     return self.type < other.type ? NSOrderedAscending : NSOrderedDescending;
 }
 
+- (NSString *)description {
+    NSValue *r = [NSValue valueWithRange:_range];
+    return [NSString stringWithFormat:@"%@ | %@ | %@", @(_type), r, _attrText];
+}
+
+- (NSString *)debugDescription {
+    NSValue *r = [NSValue valueWithRange:_range];
+    return [NSString stringWithFormat:@"%@ | %@ | %@", @(_type), r, _attrText];
+}
+
 @end
 
 @interface VVSearchHighlighter ()
@@ -78,17 +88,12 @@
 - (NSArray<VVToken *> *)keywordTokens {
     if (!_keywordTokens) {
         NSAssert(_keyword.length > 0, @"Invalid keyword");
-        VVTokenMask ops = self.mask | VVTokenMaskPinyin;
-        _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:ops];
+        uint64_t pylen = self.mask & VVTokenMaskPinyin;
+        pylen = MAX(pylen, 16);
+        VVTokenMask mask = (self.mask & (~VVTokenMaskPinyin)) | VVTokenMaskSplitPinyin | pylen;
+        _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
-}
-
-- (VVTokenMask)mask {
-    if (_mask == 0) {
-        _mask = VVTokenMaskDeault;
-    }
-    return _mask;
 }
 
 - (NSDictionary<NSAttributedStringKey, id> *)normalAttributes {
@@ -177,22 +182,24 @@
 
     u_long len = self.mask & VVTokenMaskPinyin;
     if (nText < len) {
-        NSArray *pinyins = [source pinyinsForTokenize];
-        for (NSString *py in pinyins) {
-            found = [py rangeOfString:kw];
-            if (found.length > 0) {
-                if (found.location == 0 && found.length == py.length) {
-                    match.type = VVMatchPinyinFull;
-                    break;
-                } else if (found.location == 0 && found.length < py.length) {
-                    match.type = VVMatchPinyinPrefix;
-                } else if (found.location > 0 && match.type == VVMatchNone) {
-                    NSSet *ak = [NSSet setWithArray:[kw splitIntoPinyins]];
-                    NSMutableSet *at = [NSMutableSet setWithArray:[py splitIntoPinyins]];
-                    NSUInteger count = at.count;
-                    [at minusSet:ak];
-                    if (at.count < count) {
-                        match.type = VVMatchPinyinNonPrefix;
+        NSArray<NSArray<NSString *> *> *pinyins = [source pinyinsForMatch];
+        for (NSArray<NSString *> *sub in pinyins) {
+            for (NSString *py in sub) {
+                found = [py rangeOfString:kw];
+                if (found.length > 0) {
+                    if (found.location == 0 && found.length == py.length) {
+                        match.type = VVMatchPinyinFull;
+                        break;
+                    } else if (found.location == 0 && found.length < py.length) {
+                        match.type = VVMatchPinyinPrefix;
+                    } else if (found.location > 0 && match.type == VVMatchNone) {
+                        NSSet *ak = [NSSet setWithArray:[kw splitIntoPinyins]];
+                        NSMutableSet *at = [NSMutableSet setWithArray:[py splitIntoPinyins]];
+                        NSUInteger count = at.count;
+                        [at minusSet:ak];
+                        if (at.count < count) {
+                            match.type = VVMatchPinyinNonPrefix;
+                        }
                     }
                 }
             }
@@ -202,7 +209,7 @@
     __block char *tokenized = (char *)malloc(nText + 1);
     memset(tokenized, 0x0, nText + 1);
 
-    NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:pText method:VVTokenMethodSequelize mask:self.mask];
+    NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:pText method:self.method mask:self.mask];
 
     unsigned long count = tokens.count;
     unsigned long kwcount = self.keywordTokens.count;

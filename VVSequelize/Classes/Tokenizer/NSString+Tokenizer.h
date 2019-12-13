@@ -9,13 +9,19 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@interface VVPinYin : NSObject
+@property (nonatomic, strong, readonly) NSCharacterSet *trimmingSet;
+@property (nonatomic, strong, readonly) NSCharacterSet *cleanSet;
+@property (nonatomic, strong, readonly) NSCharacterSet *symbolSet;
+
++ (instancetype)shared;
+
+@end
+
 @interface NSString (Tokenizer)
 
 /// pinyin token resource preloading
 + (void)preloadingForPinyin;
-
-/// set the maximum length of generate polyphone pinyin, default is 5
-+ (void)setMaxSupportLengthOfPolyphone:(NSUInteger)maxSupportLength;
 
 /// convert to simplified chinese string
 - (NSString *)simplifiedChineseString;
@@ -26,13 +32,16 @@ NS_ASSUME_NONNULL_BEGIN
 /// check whether the string contains chinese
 - (BOOL)hasChinese;
 
-- (NSArray<NSString *> *)pinyinTokensOfChineseCharacter;
-
 /// get chinese pinyin
 - (NSString *)pinyin;
 
-/// get pinyin tokens
-- (NSArray<NSString *> *)pinyinsForTokenize;
+/// get pinyin
+/// @return two-dimensional array: [ [full pinyin],  [first letter] ]
+- (NSArray<NSArray<NSString *> *> *)pinyinsAtIndex:(NSUInteger)index;
+
+- (NSArray<NSArray<NSString *> *> *)pinyinsForMatch;
+
+- (NSArray<NSArray<NSArray<NSString *> *> *> *)pinyinMatrix;
 
 /// get number tokens
 - (NSArray<NSString *> *)numberStringsForTokenize;

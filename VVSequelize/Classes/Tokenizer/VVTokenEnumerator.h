@@ -30,13 +30,15 @@ typedef NS_ENUM (NSUInteger, VVTokenMethod) {
 
 typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskPinyin      = 0xFFFF, ///< placeholder, it will be executed without setting
-    VVTokenMaskNumber      = 1 << 16,
+    VVTokenMaskFirstLetter = 1 << 16,
     VVTokenMaskCharacter   = 1 << 17,
-    VVTokenMaskSplitPinyin = 1 << 18,
-    VVTokenMaskTransform = 1 << 19,
+    VVTokenMaskNumber      = 1 << 18,
+    VVTokenMaskSplitPinyin = 1 << 19,
+    VVTokenMaskTransform   = 1 << 20,
 
-    VVTokenMaskDeault      = VVTokenMaskNumber,
-    VVTokenMaskManual      = VVTokenMaskDeault | VVTokenMaskTransform | VVTokenMaskPinyin,
+    VVTokenMaskDeault      = 0,
+    VVTokenMaskManual      = VVTokenMaskNumber | VVTokenMaskTransform,
+    VVTokenMaskExtra       = VVTokenMaskPinyin | VVTokenMaskFirstLetter | VVTokenMaskNumber,
     VVTokenMaskAll         = 0xFFFFFFFF,
 };
 
@@ -45,10 +47,6 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
 + (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
 
 + (NSArray<VVToken *> *)enumerateCString:(const char *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
-
-+ (NSArray<VVToken *> *)enumeratePinyins:(NSString *)fragment start:(int)start end:(int)end;
-
-+ (NSArray<VVToken *> *)enumerateNumbers:(NSString *)whole;
 
 @end
 
