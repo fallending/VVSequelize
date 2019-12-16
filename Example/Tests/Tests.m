@@ -46,19 +46,28 @@
     }
 
     [self.vvdb registerMethod:VVTokenMethodSequelize forTokenizer:@"sequelize"];
+//    [self.vvdb setTraceHook:^int(unsigned int mask, void * _Nonnull stmt, void * _Nonnull sql) {
+//        NSLog(@"mask: %@, sql: %s",@(mask),(char *)sql);
+//        return 0;
+//    }];
 
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
     self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
-    NSUInteger ftsTokenParm = VVTokenMaskNumber | VVTokenMaskTransform | 15;
+    NSUInteger ftsTokenParm = VVTokenMaskNumber | VVTokenMaskTransform | VVTokenMaskCharacter | 15;
     NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
-    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"mobile", @"industry"]];
+    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"industry"]];
 
     self.ftsModel = [VVOrm ormWithConfig:ftsConfig tableName:@"fts_mobiles" dataBase:self.vvdb];
     //复制数据到fts表
     NSUInteger count = [self.ftsModel count:nil];
     if (count == 0) {
-        [self.vvdb excute:@"INSERT INTO fts_mobiles (mobile, province, city, carrier, industry, relative, times) SELECT mobile, province, city, carrier, industry, relative, times FROM mobiles"];
+        for (NSUInteger i = 3; ; i ++) {
+            VVTestMobile *mobile = [self.mobileModel findAll:nil orderBy:nil limit:1 offset:i].firstObject;
+            if (!mobile) break;
+            [self.ftsModel insertOne:mobile];
+        }
+        //[self.vvdb excute:@"INSERT INTO fts_mobiles (mobile, province, city, carrier, industry, relative, times) SELECT mobile, province, city, carrier, industry, relative, times FROM mobiles"];
     }
 }
 
@@ -382,13 +391,14 @@
 //MARK: - FTS表
 - (void)testMatch
 {
-    NSString *keyword = @"yinyue*";
+    [self.ftsModel.vvdb.cache removeAllObjects];
+    NSString *keyword = @"音乐舞";
     NSArray *array1 = [self.ftsModel match:@"industry".match(keyword) orderBy:nil limit:0 offset:0];
     NSArray *array2 = [self.ftsModel match:@"industry".match(keyword) groupBy:nil limit:0 offset:0];
-    NSUInteger count = [self.ftsModel matchCount:@"mobile".match(keyword)];
+    NSUInteger count = [self.ftsModel matchCount:@"industry".match(keyword)];
     VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithOrm:self.ftsModel keyword:keyword];
     highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
-    NSArray *highlighted = [highlighter highlight:array1 field:@"mobile"];
+    NSArray *highlighted = [highlighter highlight:array1 field:@"industry"];
     if (array1 && array2 && count && highlighted) {
     }
 }
@@ -406,6 +416,73 @@
     for (NSString *text in texts) {
         NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
         NSLog(@"%@:\n%@", text, tokens);
+    }
+}
+
+- (void)testTokenizer1
+{
+    VVTokenMask mask = VVTokenMaskManual | VVTokenMaskExtra | VVTokenMaskSplitPinyin;
+    NSArray *texts = @[
+        @"陕西",
+        @"西安",
+        @"中国电信",
+        @"中国移动",
+        @"会计",
+        @"体育运动",
+        @"保健",
+        @"保险业",
+        @"健康",
+        @"公益组织",
+        @"军人",
+        @"农业",
+        @"出版",
+        @"化学",
+        @"医疗服务",
+        @"司机",
+        @"司法",
+        @"咨询",
+        @"因特网",
+        @"培训",
+        @"媒体",
+        @"学术研究",
+        @"宾馆",
+        @"广告业",
+        @"建筑业",
+        @"律师",
+        @"房地产",
+        @"批发",
+        @"政府机关",
+        @"教育",
+        @"旅游业",
+        @"服务",
+        @"服装业",
+        @"木材",
+        @"机械制造",
+        @"消防",
+        @"演艺",
+        @"电讯业",
+        @"美容",
+        @"能源",
+        @"航空航天",
+        @"艺术",
+        @"警察",
+        @"计算机",
+        @"设计",
+        @"运输业",
+        @"造纸",
+        @"邮政快递",
+        @"采矿",
+        @"金属冶炼",
+        @"金融",
+        @"银行",
+        @"零售",
+        @"音乐舞蹈",
+        @"餐饮"
+    ];
+    for (NSString *text in texts) {
+        NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
+        if(tokens){}
+        //NSLog(@"%@:\n%@", text, tokens);
     }
 }
 

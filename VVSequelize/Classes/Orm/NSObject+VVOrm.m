@@ -236,7 +236,7 @@
 - (NSString *(^)(id))match
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ MATCH %@", self, [value sqlExpressionValue]];
+        return [NSString stringWithFormat:@"%@ MATCH %@", self, [value sqlExpressionValue].singleQuoted];
     };
 }
 

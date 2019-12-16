@@ -294,7 +294,7 @@ typedef NS_ENUM (NSUInteger, VVStringGroupType) {
 - (NSArray<NSString *> *)numberStringsForTokenize {
     NSNumberFormatter *formatter = [VVPinYin shared].numberFormatter;
     NSNumber *number = [formatter numberFromString:self];
-    if (number) {
+    if (number != nil) {
         NSString *unformatted = number.stringValue;
         NSString *formatted = [formatter stringFromNumber:number];
         return @[unformatted, formatted];

@@ -264,7 +264,7 @@ static int vv_fts5_xTokenize(
     UNUSED_PARAM(pText);
     if (pText == 0) return SQLITE_OK;
 
-    __block int rc = SQLITE_OK;
+    int rc = SQLITE_OK;
     Fts5VVTokenizer *tok = (Fts5VVTokenizer *)pTokenizer;
     NSString *ocString = [NSString stringWithUTF8String:pText].lowercaseString;
     VVTokenMethod method = tok->method;
@@ -272,7 +272,7 @@ static int vv_fts5_xTokenize(
     if (!(iUnused & FTS5_TOKENIZE_DOCUMENT)) {
         mask = mask & ~VVTokenMaskPinyin;
     }
-    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:tok->mask];
+    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:mask];
 
     for (VVToken *tk in array) {
         rc = xToken(pCtx, iUnused, tk.token.UTF8String, tk.len, tk.start, tk.end);
