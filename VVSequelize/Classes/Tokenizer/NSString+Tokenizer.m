@@ -12,15 +12,6 @@ static NSString *const kVVPinYinResourceBundle = @"VVPinYin.bundle";
 static NSString *const kVVPinYinResourceFile = @"pinyin.plist";
 static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 
-typedef NS_ENUM (NSUInteger, VVStringGroupType) {
-    VVStringGroupNone             = 0,
-    VVStringGroupMultiPlaneLetter = 0x00000001,
-    VVStringGroupMultiPlaneDigit  = 0x00000002,
-    VVStringGroupMultiPlaneSymbol = 0x00000003,
-    VVStringGroupMultiPlaneOther  = 0x0000FFFF,
-    VVStringGroupAuxiPlaneOther   = 0xFFFFFFFF,
-};
-
 @interface VVPinYin ()
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, strong) NSCache *firstLettersCache;
