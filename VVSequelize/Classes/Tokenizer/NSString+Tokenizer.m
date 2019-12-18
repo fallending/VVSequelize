@@ -14,7 +14,6 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 
 @interface VVPinYin ()
 @property (nonatomic, strong) NSCache *cache;
-@property (nonatomic, strong) NSCache *firstLettersCache;
 @property (nonatomic, strong) NSDictionary *hanzi2pinyins;
 @property (nonatomic, strong) NSDictionary *pinyins;
 @property (nonatomic, strong) NSDictionary *gb2big5Map;
@@ -43,8 +42,6 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     if (self) {
         _cache = [[NSCache alloc] init];
         _cache.totalCostLimit = 10 * 1024;
-        _firstLettersCache = [[NSCache alloc] init];
-        _firstLettersCache.totalCostLimit = 10 * 1024;
     }
     return self;
 }
