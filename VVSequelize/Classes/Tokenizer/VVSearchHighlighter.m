@@ -63,11 +63,21 @@
 
 @implementation VVSearchHighlighter
 
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self setup];
+    }
+    return self;
+}
+
 - (instancetype)initWithOrm:(VVOrm *)orm keyword:(NSString *)keyword
 {
     self = [super init];
     if (self) {
         NSAssert(orm.config.fts && orm.config.ftsTokenizer.length > 0, @"Invalid fts orm!");
+        [self setup];
         NSString *tokenizer = [orm.config.ftsTokenizer componentsSeparatedByString:@" "].firstObject;
         _method = [orm.vvdb methodForTokenizer:tokenizer];
         _keyword = keyword;
@@ -79,10 +89,17 @@
 {
     self = [super init];
     if (self) {
+        [self setup];
         _method = method;
         _keyword = keyword;
     }
     return self;
+}
+
+- (void)setup {
+    _method = VVTokenMethodSequelize;
+    _mask = VVTokenMaskDeault | 30;
+    _attrTextMaxLength = 17;
 }
 
 - (NSArray<VVToken *> *)keywordTokens {
@@ -164,6 +181,10 @@
         NSString *s1 = [source substringToIndex:found.location];
         NSString *sk = [source substringWithRange:found];
         NSString *s2 = [source substringFromIndex:NSMaxRange(found)];
+        if (s1.length + sk.length > _attrTextMaxLength) {
+            NSInteger rem = MAX(0, _attrTextMaxLength - sk.length);
+            s1 = [@"..." stringByAppendingString:[s1 substringFromIndex:s1.length - rem]];
+        }
         NSAttributedString *a1 = [[NSAttributedString alloc] initWithString:s1 attributes:self.normalAttributes];
         NSAttributedString *ak = [[NSAttributedString alloc] initWithString:sk attributes:self.highlightAttributes];
         NSAttributedString *a2 = [[NSAttributedString alloc] initWithString:s2 attributes:self.normalAttributes];
@@ -250,8 +271,8 @@
         if (remained[pos] != 0x0) {
             int rlen = (int)strlen(remained + pos);
             NSString *str = [[NSString alloc] initWithBytes:(remained + pos) length:rlen encoding:NSUTF8StringEncoding] ? : @"";
-            if (isBegin && str.length + firstMatchLen > 17) {
-                str = [@"..." stringByAppendingString:[str substringFromIndex:str.length + firstMatchLen - 17]];
+            if (isBegin && str.length + firstMatchLen > _attrTextMaxLength) {
+                str = [@"..." stringByAppendingString:[str substringFromIndex:str.length + firstMatchLen - _attrTextMaxLength]];
             }
             isBegin = NO;
             [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:self.normalAttributes]];

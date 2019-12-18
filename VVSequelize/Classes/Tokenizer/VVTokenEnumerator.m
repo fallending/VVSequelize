@@ -319,23 +319,23 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         }
     };
 
-    void (^ addTwiceToken)(VVTokenCursor *) = ^(VVTokenCursor *c) {
+    void (^ addOnceToken)(VVTokenCursor *) = ^(VVTokenCursor *c) {
         NSString *string = [[NSString alloc] initWithBytes:cSource + c.offset length:c.len encoding:encoding];
         if (string.length > 0) {
-            string = [string stringByAppendingString:string];
-            VVToken *tk = [VVToken token:string len:(int)(c.len * 2) start:(int)c.offset end:(int)(c.offset + c.len)];
+            //string = [string stringByAppendingString:string];
+            VVToken *tk = [VVToken token:string len:(int)c.len start:(int)c.offset end:(int)(c.offset + c.len)];
             [results addObject:tk];
         }
     };
 
-    addTwiceToken(cursors.firstObject);
+    //addTwiceToken(cursors.firstObject);
     NSUInteger count = cursors.count - 1;
     for (NSUInteger i = 0; i < count; i++) {
         VVTokenCursor *c1 = cursors[i];
         VVTokenCursor *c2 = cursors[i + 1];
         addToken(c1.offset, c1.len + c2.len);
     }
-    addTwiceToken(cursors.lastObject);
+    addOnceToken(cursors.lastObject);
     return results;
 }
 

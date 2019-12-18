@@ -34,9 +34,10 @@ typedef NS_ENUM (NSUInteger, VVMatchType) {
 @end
 
 @interface VVSearchHighlighter : NSObject
-@property (nonatomic, assign) VVTokenMethod method;
+@property (nonatomic, assign) VVTokenMethod method; ///< default is VVTokenMethodSequelize
 @property (nonatomic, copy) NSString *keyword;
-@property (nonatomic, assign) VVTokenMask mask;
+@property (nonatomic, assign) VVTokenMask mask; ///< default is VVTokenMaskDeault | 30
+@property (nonatomic, assign) NSUInteger attrTextMaxLength; ///< default is 17
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *normalAttributes;
 @property (nonatomic, strong) id reserved;
