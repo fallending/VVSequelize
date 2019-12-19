@@ -23,6 +23,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// pinyin token resource preloading
 + (void)preloadingForPinyin;
 
+- (const char *)cString;
+
 /// convert to simplified chinese string
 - (NSString *)simplifiedChineseString;
 

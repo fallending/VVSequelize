@@ -154,6 +154,17 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     [@"中文" pinyinsForMatch];
 }
 
+- (const char *)cString
+{
+    const char *str = self.UTF8String;
+    if (str) return str;
+    for (NSUInteger encoding = 0; encoding <= 30; encoding++) {
+        str = [self cStringUsingEncoding:encoding];
+        if (str) return str;
+    }
+    return "";
+}
+
 - (NSString *)simplifiedChineseString {
     NSMutableString *string = [NSMutableString string];
     for (NSUInteger i = 0; i < self.length; i++) {
@@ -299,14 +310,14 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 //MARK: - pinyin
 - (NSArray<NSString *> *)headPinyins
 {
-    const char *str = self.UTF8String ? : "";
+    const char *str = self.cString;
     if (strlen(str) <= 0) return @[];
     NSString *firstLetter = [self substringToIndex:1];
     NSArray *array = [[VVPinYin shared].pinyins objectForKey:firstLetter];
     if (array.count == 0) return @[];
     NSMutableArray *results = [NSMutableArray array];
     for (NSString *pinyin in array) {
-        const char *py = pinyin.UTF8String;
+        const char *py = pinyin.cString;
         int len = (int)strlen(py);
         if (strncmp(py, str, len) == 0) {
             [results addObject:pinyin];

@@ -70,7 +70,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     if (input.length <= 0) return @[];
     NSString *source = input.lowercaseString;
     if (mask & VVTokenMaskTransform) source = source.simplifiedChineseString;
-    const char *cSource = source.UTF8String ? : "";
+    const char *cSource = source.cString;
     NSArray *array = @[];
     switch (method) {
         case VVTokenMethodApple:
@@ -118,8 +118,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             // get current range
             range = CFStringTokenizerGetCurrentTokenRange(tokenizer);
             NSString *sub = [source substringWithRange:NSMakeRange(range.location, range.length)];
-            const char *pre = [source substringWithRange:NSMakeRange(0, range.location)].UTF8String ? : "";
-            const char *token = sub.UTF8String ? : "";
+            const char *pre = [source substringWithRange:NSMakeRange(0, range.location)].cString;
+            const char *token = sub.cString;
             int start = (int)strlen(pre);
             int len = (int)strlen(token);
             int end = start + len;
@@ -166,8 +166,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         [tokenizer enumerateTokensInRange:range usingBlock:^(NSRange tokenRange, NLTokenizerAttributes flags, BOOL *stop) {
             @autoreleasepool {
                 NSString *tk = [tokenizer.string substringWithRange:tokenRange];
-                const char *pre = [tokenizer.string substringToIndex:tokenRange.location].UTF8String;
-                const char *token = tk.UTF8String;
+                const char *pre = [tokenizer.string substringToIndex:tokenRange.location].cString;
+                const char *token = tk.cString;
                 int start = (int)strlen(pre);
                 int len   = (int)strlen(token);
                 int end   = (int)(start + len);
@@ -380,7 +380,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             if (encoding > 0) {
                 NSString *string = [[NSString alloc] initWithBytes:cSource + cursor.offset length:cursor.len encoding:encoding];
                 if (string.length > 0) {
-                    VVToken *token = [VVToken token:string len:(int)strlen(string.UTF8String) start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
+                    VVToken *token = [VVToken token:string len:(int)strlen(string.cString) start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
                     [results addObject:token];
                 }
             }
@@ -526,7 +526,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         NSArray<NSString *> *numbers = [numstr numberStringsForTokenize];
         if (numbers.count >= 2) {
             for (NSString *num in numbers) {
-                const char *token = num.UTF8String ? : "";
+                const char *token = num.cString;
                 int len = (int)strlen(token);
                 if (len <= 0) continue;
                 [results addObject:[VVToken token:num len:len start:start + offset end:start + offset + (int)numstr.length]];

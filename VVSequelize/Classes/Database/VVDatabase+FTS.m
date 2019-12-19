@@ -182,7 +182,7 @@ static int vv_fts3_next(
     NSArray *array = (__bridge NSArray *)(c->tokens);
     if (array.count == 0 || c->iToken == array.count) return SQLITE_DONE;
     VVToken *t = array[c->iToken];
-    *ppToken = t.token.UTF8String;
+    *ppToken = t.token.cString;
     *pnBytes = t.len;
     *piStartOffset = t.start;
     *piEndOffset = t.end;
@@ -275,7 +275,7 @@ static int vv_fts5_xTokenize(
     NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:mask];
 
     for (VVToken *tk in array) {
-        rc = xToken(pCtx, iUnused, tk.token.UTF8String, tk.len, tk.start, tk.end);
+        rc = xToken(pCtx, iUnused, tk.token.cString, tk.len, tk.start, tk.end);
         if (rc != SQLITE_OK) break;
     }
 
@@ -295,9 +295,9 @@ static int vv_fts5_xTokenize(
     module->xOpen = vv_fts3_open;
     module->xClose = vv_fts3_close;
     module->xNext = vv_fts3_next;
-    module->xName = name.UTF8String;
+    module->xName = name.cString;
     module->xMethod = (int)method;
-    int rc = fts3_register_tokenizer(self.db, (char *)name.UTF8String, module);
+    int rc = fts3_register_tokenizer(self.db, (char *)name.cString, module);
 
     NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];
     BOOL ret =  [self check:rc sql:errorsql];
@@ -315,7 +315,7 @@ static int vv_fts5_xTokenize(
     *context = (int)method;
 
     rc = pApi->xCreateTokenizer(pApi,
-                                name.UTF8String,
+                                name.cString,
                                 (void *)context,
                                 tokenizer,
                                 0);
@@ -331,7 +331,7 @@ static int vv_fts5_xTokenize(
     void *pUserdata = 0;
     fts5_tokenizer *tokenizer;
     tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
-    int rc = pApi->xFindTokenizer(pApi, name.UTF8String, &pUserdata, tokenizer);
+    int rc = pApi->xFindTokenizer(pApi, name.cString, &pUserdata, tokenizer);
     if (rc != SQLITE_OK) return VVTokenMethodUnknown;
 
     return (VVTokenMethod)(*(int *)pUserdata);

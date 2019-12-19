@@ -150,8 +150,8 @@
         temp = temp.simplifiedChineseString;
         kw = kw.simplifiedChineseString;
     }
-    const char *pText = temp.UTF8String ? : "";
-    int nText = pText ? (int)strlen(pText) : 0;
+    const char *pText = temp.cString;
+    int nText = (int)strlen(pText);
 
     VVResultMatch *match = [[VVResultMatch alloc] init];
     match.source = source;
@@ -175,7 +175,7 @@
         [attrText appendAttributedString:a2];
 
         match.type = VVMatchPrefix;
-        match.range = NSMakeRange(0, strlen(kw.UTF8String));
+        match.range = NSMakeRange(0, strlen(kw.cString));
         match.attrText = attrText;
     } else if (found.location != NSNotFound && found.length > 0) {
         NSString *s1 = [source substringToIndex:found.location];
@@ -193,7 +193,7 @@
         [attrText appendAttributedString:a2];
 
         match.type = VVMatchNonPrefix;
-        match.range = NSMakeRange(strlen(s1.UTF8String), strlen(sk.UTF8String));
+        match.range = NSMakeRange(strlen(s1.cString), strlen(sk.cString));
         match.attrText = attrText;
     }
 
@@ -209,7 +209,7 @@
                 found = [py rangeOfString:kw];
                 if (found.length > 0) {
                     if (found.location == 0 && found.length == py.length) {
-                        match.type = VVMatchPinyinFull;
+                        match.type = kw.length == 1 ? VVMatchPinyinPrefix : VVMatchPinyinFull;
                         break;
                     } else if (found.location == 0 && found.length < py.length) {
                         match.type = VVMatchPinyinPrefix;
@@ -242,7 +242,7 @@
         VVToken *kwToken = self.keywordTokens[j];
         for (unsigned long i = k; i < count; i++) {
             VVToken *token = tokens[i];
-            if (strcmp(token.token.UTF8String, kwToken.token.UTF8String) != 0) continue;
+            if (strcmp(token.token.cString, kwToken.token.cString) != 0) continue;
             memcpy(tokenized + token.start, pText + token.start, token.len);
             if (firstMatchLen == 0) firstMatchLen = token.len;
             k = i + 1;
