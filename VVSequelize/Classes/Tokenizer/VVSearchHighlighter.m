@@ -59,6 +59,7 @@
 
 @interface VVSearchHighlighter ()
 @property (nonatomic, strong) NSArray<VVToken *> *keywordTokens;
+@property (nonatomic, strong) NSSet<NSArray<NSString *> *> *keywordSplitedPinyins;
 @end
 
 @implementation VVSearchHighlighter
@@ -111,6 +112,13 @@
         _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
+}
+
+- (NSSet<NSArray<NSString *> *> *)keywordSplitedPinyins{
+    if (!_keywordSplitedPinyins) {
+        _keywordSplitedPinyins = [NSSet setWithArray:_keyword.splitIntoPinyins];
+    }
+    return _keywordSplitedPinyins;
 }
 
 - (NSDictionary<NSAttributedStringKey, id> *)normalAttributes {
@@ -214,10 +222,9 @@
                     } else if (found.location == 0 && found.length < py.length) {
                         match.type = VVMatchPinyinPrefix;
                     } else if (found.location > 0 && match.type == VVMatchNone) {
-                        NSSet *ak = [NSSet setWithArray:[kw splitIntoPinyins]];
                         NSMutableSet *at = [NSMutableSet setWithArray:[py splitIntoPinyins]];
                         NSUInteger count = at.count;
-                        [at minusSet:ak];
+                        [at minusSet:self.keywordSplitedPinyins];
                         if (at.count < count) {
                             match.type = VVMatchPinyinNonPrefix;
                         }

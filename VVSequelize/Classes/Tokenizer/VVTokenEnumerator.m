@@ -345,22 +345,22 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 {
     NSMutableArray *results = [NSMutableArray array];
     VVTokenType lastType = VVTokenTypeNone;
-    BOOL dochar = (mask & VVTokenMaskCharacter);
+    BOOL flag = (mask & VVTokenMaskCharacter);
 
     NSMutableArray<VVTokenCursor *> *subCursors = [NSMutableArray array];
     for (VVTokenCursor *cursor in cursors) {
         BOOL change = cursor.type != lastType;
-        NSStringEncoding encoding = 0;
+        NSStringEncoding encoding = NSUIntegerMax;
         if (change) {
             switch (lastType) {
                 case VVTokenMultilingualPlaneLetter: encoding = NSASCIIStringEncoding; break;
                 case VVTokenMultilingualPlaneDigit: encoding = NSASCIIStringEncoding; break;
-                case VVTokenMultilingualPlaneSymbol: encoding = dochar ? 0 : NSUTF8StringEncoding; break;
-                case VVTokenMultilingualPlaneOther: encoding =  dochar ? 0 : NSUTF8StringEncoding; break;
-                case VVTokenAuxiliaryPlaneOther:  encoding =  dochar ? 0 : NSUTF8StringEncoding; break;
+                case VVTokenMultilingualPlaneSymbol: encoding = flag ? NSUIntegerMax : NSUTF8StringEncoding; break;
+                case VVTokenMultilingualPlaneOther: encoding =  flag ? NSUIntegerMax : NSUTF8StringEncoding; break;
+                case VVTokenAuxiliaryPlaneOther:  encoding =  flag ? NSUIntegerMax : NSUTF8StringEncoding; break;
                 default: break;
             }
-            if (encoding > 0) {
+            if (encoding != NSUIntegerMax) {
                 NSArray *tokens = [self wordTokensByCombine:cSource cursors:subCursors encoding:encoding];
                 [results addObjectsFromArray:tokens];
             }
@@ -368,8 +368,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             [subCursors removeAllObjects];
         }
 
-        if (dochar) {
-            encoding = 0;
+        if (flag) {
+            encoding = NSUIntegerMax;
             switch (cursor.type) {
                 case VVTokenMultilingualPlaneSymbol: encoding = NSUTF8StringEncoding; break;
                 case VVTokenMultilingualPlaneOther: encoding = NSUTF8StringEncoding; break;
@@ -377,7 +377,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
                 default: break;
             }
 
-            if (encoding > 0) {
+            if (encoding != NSUIntegerMax) {
                 NSString *string = [[NSString alloc] initWithBytes:cSource + cursor.offset length:cursor.len encoding:encoding];
                 if (string.length > 0) {
                     VVToken *token = [VVToken token:string len:(int)strlen(string.cString) start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
