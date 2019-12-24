@@ -23,6 +23,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// pinyin token resource preloading
 + (void)preloadingForPinyin;
 
+/// using utf8 or ascii encoding to generate objc string
++ (instancetype)ocStringWithCString:(const char *)cString;
+
+/// using utf8 or ascii encoding to generate c string
 - (const char *)cString;
 
 /// convert to simplified chinese string
@@ -41,8 +45,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// @return two-dimensional array: [ [full pinyin],  [first letter] ]
 - (NSArray<NSArray<NSString *> *> *)pinyinsAtIndex:(NSUInteger)index;
 
+/// get pinyin
+/// @return two-dimensional array: [ [full pinyin],  [first letter] ]
 - (NSArray<NSArray<NSString *> *> *)pinyinsForMatch;
 
+/// get pinyin
+/// @return three-dimensional array: [ [[full pinyin]],  [[first letter]] ]
 - (NSArray<NSArray<NSArray<NSString *> *> *> *)pinyinMatrix;
 
 /// get number tokens
@@ -51,15 +59,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// clean string after removing special characters
 - (NSString *)cleanString;
 
+/// split into pinyins
 - (NSArray<NSArray<NSString *> *> *)splitIntoPinyins;
-
-@end
-
-@interface NSArray (Tokenizer)
-
-- (NSArray *)filteredArrayUsingKeyword:(NSString *)keyword;
-
-- (NSArray *)filteredArrayUsingKeyword:(NSString *)keyword pinyin:(BOOL)pinyin;
 
 @end
 

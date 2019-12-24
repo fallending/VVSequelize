@@ -148,7 +148,7 @@ static int vv_fts3_open(
 
     vv_fts3_tokenizer *tok = (vv_fts3_tokenizer *)pTokenizer;
 
-    NSString *ocString = [NSString stringWithUTF8String:pInput].lowercaseString;
+    NSString *ocString = [NSString ocStringWithCString:pInput];
     NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:tok->mask];
 
     c->pInput = pInput;
@@ -266,7 +266,7 @@ static int vv_fts5_xTokenize(
 
     int rc = SQLITE_OK;
     Fts5VVTokenizer *tok = (Fts5VVTokenizer *)pTokenizer;
-    NSString *ocString = [NSString stringWithUTF8String:pText].lowercaseString;
+    NSString *ocString = [NSString ocStringWithCString:pText];
     VVTokenMethod method = tok->method;
     uint64_t mask = tok->mask;
     if (!(iUnused & FTS5_TOKENIZE_DOCUMENT)) {

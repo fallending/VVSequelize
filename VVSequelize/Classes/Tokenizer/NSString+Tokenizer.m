@@ -154,14 +154,21 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     [@"中文" pinyinsForMatch];
 }
 
++ (instancetype)ocStringWithCString:(const char *)cString
+{
+    NSString *str = [NSString stringWithUTF8String:cString];
+    if (str) return str;
+    str = [NSString stringWithCString:cString encoding:NSASCIIStringEncoding];
+    if (str) return str;
+    return @"";
+}
+
 - (const char *)cString
 {
     const char *str = self.UTF8String;
     if (str) return str;
-    for (NSUInteger encoding = 0; encoding <= 30; encoding++) {
-        str = [self cStringUsingEncoding:encoding];
-        if (str) return str;
-    }
+    str = [self cStringUsingEncoding:NSASCIIStringEncoding];
+    if (str) return str;
     return "";
 }
 
@@ -343,35 +350,6 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
             NSArray<NSString *> *result = [@[first] arrayByAddingObjectsFromArray:pinyins];
             [results addObject:result];
         }
-    }
-    return results;
-}
-
-@end
-
-@implementation NSArray (Tokenizer)
-
-- (NSArray *)filteredArrayUsingKeyword:(NSString *)keyword
-{
-    return [self filteredArrayUsingKeyword:keyword pinyin:YES];
-}
-
-- (NSArray *)filteredArrayUsingKeyword:(NSString *)keyword pinyin:(BOOL)pinyin
-{
-    if (keyword.length == 0) return self;
-    NSMutableArray *results = [NSMutableArray array];
-    NSString *like = [NSString stringWithFormat:@"*%@*", keyword.lowercaseString.simplifiedChineseString];
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"SELF LIKE %@", like];
-    for (NSString *string in self) {
-        if (string.length == 0) continue;
-        NSMutableArray *array = [NSMutableArray array];
-        [array addObject:string.lowercaseString.simplifiedChineseString];
-        if (pinyin) {
-            NSArray *pinyins = [string pinyinsForMatch];
-            [array addObjectsFromArray:pinyins];
-        }
-        NSArray *filtered = [array filteredArrayUsingPredicate:predicate];
-        if (filtered.count > 0) [results addObject:string];
     }
     return results;
 }

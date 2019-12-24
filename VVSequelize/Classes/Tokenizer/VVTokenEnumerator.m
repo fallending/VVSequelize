@@ -53,11 +53,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@" %@ ,%@,%@,%@,%@", _token, @(_start), @(_end), @(_len), @(self.hash)];
-}
-
-- (NSString *)debugDescription {
-    return [NSString stringWithFormat:@" %@ ,%@,%@,%@,%@", _token, @(_start), @(_end), @(_len), @(self.hash)];
+    return [NSString stringWithFormat:@"[%@-%@](%@) '%@' %@", @(_start), @(_end), @(_len), _token, @(self.hash)];
 }
 
 @end

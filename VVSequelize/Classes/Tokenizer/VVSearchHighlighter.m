@@ -50,11 +50,6 @@
     return [NSString stringWithFormat:@"%@ | %@ | %@", @(_type), r, _attrText];
 }
 
-- (NSString *)debugDescription {
-    NSValue *r = [NSValue valueWithRange:_range];
-    return [NSString stringWithFormat:@"%@ | %@ | %@", @(_type), r, _attrText];
-}
-
 @end
 
 @interface VVSearchHighlighter ()
