@@ -322,6 +322,7 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     NSString *firstLetter = [self substringToIndex:1];
     NSArray *array = [[VVPinYin shared].pinyins objectForKey:firstLetter];
     if (array.count == 0) return @[];
+    array = [array arrayByAddingObject:firstLetter];
     NSMutableArray *results = [NSMutableArray array];
     for (NSString *pinyin in array) {
         const char *py = pinyin.cString;

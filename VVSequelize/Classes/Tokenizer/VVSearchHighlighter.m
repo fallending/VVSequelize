@@ -29,8 +29,8 @@
             case VVMatchPinyinPrefix:
                 return [self.source compare:other.source];
 
-            case VVMatchNonPrefix:
-            case VVMatchPinyinNonPrefix: {
+            case VVMatchMiddle:
+            case VVMatchPinyinMiddle: {
                 if (self.range.location == other.range.location) {
                     return self.range.length > other.range.length ? NSOrderedAscending : NSOrderedDescending;
                 } else {
@@ -147,14 +147,15 @@
 
 - (VVResultMatch *)highlight:(NSString *)source
 {
-    NSString *temp = [source stringByReplacingOccurrencesOfString:@"\n" withString:@" "].lowercaseString;
+    NSString *clean = [source stringByReplacingOccurrencesOfString:@"\n" withString:@" "].lowercaseString;
+    NSString *comparison = clean;
     NSString *kw = _keyword.lowercaseString;
     if (self.mask & VVTokenMaskTransform) {
-        temp = temp.simplifiedChineseString;
+        comparison = comparison.simplifiedChineseString;
         kw = kw.simplifiedChineseString;
     }
-    const char *pText = temp.cString;
-    int nText = (int)strlen(pText);
+    const char *pText = comparison.cString;
+    int nText = pText ? (int)strlen(pText) : 0;
 
     VVResultMatch *match = [[VVResultMatch alloc] init];
     match.source = source;
@@ -164,14 +165,23 @@
         return match;
     }
 
-    NSRange found = [temp rangeOfString:kw];
+    void (^ TrimAttrText)(NSRange) = ^(NSRange r) {
+        if (r.location + r.length > self.attrTextMaxLength) {
+            NSInteger rlen = MIN(r.location, r.location + r.length - self.attrTextMaxLength);
+            [attrText deleteCharactersInRange:NSMakeRange(0, rlen)];
+            NSAttributedString *ellipsis = [[NSAttributedString alloc] initWithString:@"..."];
+            [attrText insertAttributedString:ellipsis atIndex:0];
+        }
+    };
+
+    NSRange found = [comparison rangeOfString:kw];
     if (found.location == 0 && found.length == source.length) {
         match.type = VVMatchFull;
         match.range = NSMakeRange(0, nText);
         match.attrText = [[NSAttributedString alloc] initWithString:source attributes:self.highlightAttributes];
     } else if (found.location == 0 && found.length < source.length) {
-        NSString *sk = [source substringToIndex:kw.length];
-        NSString *s2 = [source substringFromIndex:kw.length];
+        NSString *sk = [clean substringToIndex:kw.length];
+        NSString *s2 = [clean substringFromIndex:kw.length];
         NSAttributedString *ak = [[NSAttributedString alloc] initWithString:sk attributes:self.highlightAttributes];
         NSAttributedString *a2 = [[NSAttributedString alloc] initWithString:s2 attributes:self.normalAttributes];
         [attrText appendAttributedString:ak];
@@ -181,13 +191,9 @@
         match.range = NSMakeRange(0, strlen(kw.cString));
         match.attrText = attrText;
     } else if (found.location != NSNotFound && found.length > 0) {
-        NSString *s1 = [source substringToIndex:found.location];
-        NSString *sk = [source substringWithRange:found];
-        NSString *s2 = [source substringFromIndex:NSMaxRange(found)];
-        if (s1.length + sk.length > _attrTextMaxLength) {
-            NSInteger rem = MAX(0, _attrTextMaxLength - sk.length);
-            s1 = [@"..." stringByAppendingString:[s1 substringFromIndex:s1.length - rem]];
-        }
+        NSString *s1 = [clean substringToIndex:found.location];
+        NSString *sk = [clean substringWithRange:found];
+        NSString *s2 = [clean substringFromIndex:NSMaxRange(found)];
         NSAttributedString *a1 = [[NSAttributedString alloc] initWithString:s1 attributes:self.normalAttributes];
         NSAttributedString *ak = [[NSAttributedString alloc] initWithString:sk attributes:self.highlightAttributes];
         NSAttributedString *a2 = [[NSAttributedString alloc] initWithString:s2 attributes:self.normalAttributes];
@@ -195,8 +201,9 @@
         [attrText appendAttributedString:ak];
         [attrText appendAttributedString:a2];
 
-        match.type = VVMatchNonPrefix;
+        match.type = VVMatchMiddle;
         match.range = NSMakeRange(strlen(s1.cString), strlen(sk.cString));
+        TrimAttrText(found);
         match.attrText = attrText;
     }
 
@@ -206,7 +213,7 @@
 
     u_long len = self.mask & VVTokenMaskPinyin;
     if (nText < len) {
-        NSArray<NSArray<NSString *> *> *pinyins = [source pinyinsForMatch];
+        NSArray<NSArray<NSString *> *> *pinyins = [clean pinyinsForMatch];
         for (NSArray<NSString *> *sub in pinyins) {
             for (NSString *py in sub) {
                 found = [py rangeOfString:kw];
@@ -217,27 +224,27 @@
                     } else if (found.location == 0 && found.length < py.length) {
                         match.type = VVMatchPinyinPrefix;
                     } else if (found.location > 0 && match.type == VVMatchNone) {
-                        NSMutableSet *at = [NSMutableSet setWithArray:[py splitIntoPinyins]];
-                        NSUInteger count = at.count;
-                        [at minusSet:self.keywordSplitedPinyins];
-                        if (at.count < count) {
-                            match.type = VVMatchPinyinNonPrefix;
-                        }
+                        match.type = VVMatchPinyinMiddle;
                     }
                 }
             }
         }
     }
 
-    __block char *tokenized = (char *)malloc(nText + 1);
+    __block uint8_t *tokenized = (uint8_t *)malloc(nText + 1);
     memset(tokenized, 0x0, nText + 1);
 
     NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:pText method:self.method mask:self.mask];
+    tokens = [tokens sortedArrayUsingComparator:^NSComparisonResult (VVToken *token1, VVToken *token2) {
+        if (token1.start == token2.start) {
+            return token1.end < token2.end ? NSOrderedAscending : NSOrderedDescending;
+        } else {
+            return token1.start < token2.start ? NSOrderedAscending : NSOrderedDescending;
+        }
+    }];
 
     unsigned long count = tokens.count;
     unsigned long kwcount = self.keywordTokens.count;
-    NSUInteger firstMatchLen = 0;
-    NSRange range = NSMakeRange(NSNotFound, 0);
 
     unsigned long k = 0;
     for (unsigned long j = 0; j < kwcount; j++) {
@@ -245,21 +252,20 @@
         for (unsigned long i = k; i < count; i++) {
             VVToken *token = tokens[i];
             if (strcmp(token.token.cString, kwToken.token.cString) != 0) continue;
-            memcpy(tokenized + token.start, pText + token.start, token.len);
-            if (firstMatchLen == 0) firstMatchLen = token.len;
+            memcpy(tokenized + token.start, pText + token.start, token.end - token.start);
             k = i + 1;
             break;
         }
     }
 
-    for (int i = 0; i < nText + 1; i++) {
-        if (tokenized[i] == ' ') {
-            memset(tokenized + i, 0x0, 1);
-        }
-    }
+//    for (int i = 0; i < nText + 1; i++) {
+//        if (tokenized[i] == ' ') {
+//            memset(tokenized + i, 0x0, 1);
+//        }
+//    }
 
-    char *remained = (char *)malloc(nText + 1);
-    strncpy(remained, pText, nText);
+    uint8_t *remained = (uint8_t *)malloc(nText + 1);
+    memcpy(remained, pText, nText);
     remained[nText] = 0x0;
     for (int i = 0; i < nText + 1; i++) {
         if (tokenized[i] != 0) {
@@ -267,34 +273,34 @@
         }
     }
 
-    int pos = 0;
-    BOOL isBegin = YES;
-    while (pos < nText) {
-        if (remained[pos] != 0x0) {
-            int rlen = (int)strlen(remained + pos);
-            NSString *str = [[NSString alloc] initWithBytes:(remained + pos) length:rlen encoding:NSUTF8StringEncoding] ? : @"";
-            if (isBegin && str.length + firstMatchLen > _attrTextMaxLength) {
-                str = [@"..." stringByAppendingString:[str substringFromIndex:str.length + firstMatchLen - _attrTextMaxLength]];
+    int pos = 0, spos = 0, matchflag = -1;
+    NSRange range = NSMakeRange(NSNotFound, 0);
+    while (pos < nText + 1) {
+        int curflag = tokenized[pos] == 0x0 ? 0 : 1;
+        if (matchflag != curflag || pos == nText) {
+            int len = pos - spos;
+            if (len > 0) {
+                uint8_t *bytes = (matchflag ? tokenized : remained) + spos;
+                NSString *str = [[NSString alloc] initWithBytes:bytes length:len encoding:NSUTF8StringEncoding] ? : @"";
+                if (matchflag == 1 && range.location == NSNotFound) {
+                    range = NSMakeRange(attrText.length, str.length);
+                }
+                NSDictionary *attributes = matchflag == 1 ? self.highlightAttributes : self.normalAttributes;
+                [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:attributes]];
             }
-            isBegin = NO;
-            [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:self.normalAttributes]];
-            pos += rlen;
-        } else {
-            isBegin = NO;
-            int tlen = (int)strlen(tokenized + pos);
-            NSString *str = [[NSString alloc] initWithBytes:(tokenized + pos) length:tlen encoding:NSUTF8StringEncoding] ? : @"";
-            if (str.length > 0 && range.length == 0) {
-                range = NSMakeRange(pos, tlen);
-            }
-            [attrText appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:self.highlightAttributes]];
-            pos += tlen;
+            spos = pos;
+            matchflag = curflag;
         }
+        pos++;
     }
     free(remained);
     free(tokenized);
 
     if (range.length > 0) {
-        match.range = range;
+        NSString *s1 = [attrText.string substringToIndex:range.location];
+        NSString *sk = [attrText.string substringWithRange:range];
+        match.range = NSMakeRange(strlen(s1.cString), strlen(sk.cString));
+        TrimAttrText(range);
         match.attrText = attrText;
         if (match.type == VVMatchNone) {
             match.type = VVMatchOther;

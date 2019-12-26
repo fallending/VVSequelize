@@ -16,8 +16,8 @@ typedef NS_ENUM (NSUInteger, VVMatchType) {
     VVMatchPinyinFull,
     VVMatchPrefix,
     VVMatchPinyinPrefix,
-    VVMatchNonPrefix,
-    VVMatchPinyinNonPrefix,
+    VVMatchMiddle,
+    VVMatchPinyinMiddle,
 
     VVMatchOther,
     VVMatchNone,
