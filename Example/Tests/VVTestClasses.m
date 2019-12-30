@@ -15,19 +15,11 @@
     return [NSString stringWithFormat:@"%@ | %@ | %@ | %@ | %@ | %2.f | %@", _mobile, _province, _city, _carrier, _industry, _relative, @(_times)];
 }
 
-- (NSString *)debugDescription {
-    return [NSString stringWithFormat:@"%@ | %@ | %@ | %@ | %@ | %2.f | %@", _mobile, _province, _city, _carrier, _industry, _relative, @(_times)];
-}
-
 @end
 
 @implementation VVTestPerson
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"%@ | %@ | %@ | %@ | %@", _name, _idcard, @(_age), _birth, _mobile];
-}
-
-- (NSString *)debugDescription {
     return [NSString stringWithFormat:@"%@ | %@ | %@ | %@ | %@", _name, _idcard, @(_age), _birth, _mobile];
 }
 
