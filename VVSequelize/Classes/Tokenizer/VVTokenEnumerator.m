@@ -446,7 +446,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
                                                cursors:(NSArray<VVTokenCursor *> *)cursors
                                                   mask:(VVTokenMask)mask
 {
-    BOOL flag = (mask & VVTokenMaskSplitPinyin);
+    BOOL flag = (mask & VVTokenMaskPinyin) && (mask & VVTokenMaskSplitPinyin);
     if (!flag) return @[];
 
     NSMutableArray *results = [NSMutableArray array];

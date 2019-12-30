@@ -342,14 +342,16 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 - (NSArray<NSArray<NSString *> *> *)_splitIntoPinyins
 {
     NSMutableArray<NSArray<NSString *> *> *results = [NSMutableArray array];
-    NSArray<NSString *> *array = [self headPinyins];
-    if (array.count == 0) return @[@[self]];
-    for (NSString *first in array) {
-        NSString *tail = [self substringFromIndex:first.length];
-        NSArray<NSArray<NSString *> *> *components = [tail _splitIntoPinyins];
-        for (NSArray<NSString *> *pinyins in components) {
-            NSArray<NSString *> *result = [@[first] arrayByAddingObjectsFromArray:pinyins];
-            [results addObject:result];
+    @autoreleasepool {
+        NSArray<NSString *> *array = [self headPinyins];
+        if (array.count == 0) return @[@[self]];
+        for (NSString *first in array) {
+            NSString *tail = [self substringFromIndex:first.length];
+            NSArray<NSArray<NSString *> *> *components = [tail _splitIntoPinyins];
+            for (NSArray<NSString *> *pinyins in components) {
+                NSArray<NSString *> *result = [@[first] arrayByAddingObjectsFromArray:pinyins];
+                [results addObject:result];
+            }
         }
     }
     return results;
