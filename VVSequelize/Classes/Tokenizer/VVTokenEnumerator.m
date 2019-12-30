@@ -84,7 +84,12 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         default:
             break;
     }
-    NSArray *results = [NSOrderedSet orderedSetWithArray:array].array;
+    NSSet *set = [NSSet setWithArray:array];
+    NSArray *results = [set.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
+        return tk1.start == tk1.start ?
+        (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) :
+        (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
+    }];
     return results;
 }
 
@@ -422,24 +427,18 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 + (NSArray<VVToken *> *)pinyinTokensBySplit:(NSString *)fragment start:(int)start
 {
     NSArray<NSArray<NSString *> *> *splited = [fragment splitIntoPinyins];
-    NSMutableSet *set = [NSMutableSet set];
+    NSMutableSet *results = [NSMutableSet set];
     for (NSArray<NSString *> *pinyins in splited) {
         int offset = 0;
         for (int i = 0; i < pinyins.count - 1; i++) {
             NSString *pinyin = pinyins[i];
             int len = (int)pinyin.length;
             VVToken *tk = [VVToken token:pinyin len:len start:(start + offset) end:(start + offset + len)];
-            [set addObject:tk];
+            [results addObject:tk];
             offset += len;
         }
     }
-    NSArray *results = [set.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
-        return tk1.start < tk2.start ? NSOrderedAscending :
-        (tk1.start > tk2.start ? NSOrderedDescending :
-         (tk1.len < tk2.len ? NSOrderedAscending :
-          (tk1.len > tk2.len ? NSOrderedDescending : NSOrderedSame)));
-    }];
-    return results;
+    return results.allObjects;
 }
 
 + (NSArray<VVToken *> *)splitedPinyinTokensWithCString:(const char *)cSource

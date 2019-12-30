@@ -54,7 +54,6 @@
 
 @interface VVSearchHighlighter ()
 @property (nonatomic, strong) NSArray<VVToken *> *keywordTokens;
-@property (nonatomic, strong) NSSet<NSArray<NSString *> *> *keywordSplitedPinyins;
 @end
 
 @implementation VVSearchHighlighter
@@ -102,18 +101,11 @@
     if (!_keywordTokens) {
         NSAssert(_keyword.length > 0, @"Invalid keyword");
         uint64_t pylen = self.mask & VVTokenMaskPinyin;
-        pylen = MAX(pylen, 16);
+        pylen = MAX(pylen, 30);
         VVTokenMask mask = (self.mask & (~VVTokenMaskPinyin)) | VVTokenMaskSplitPinyin | pylen;
         _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
-}
-
-- (NSSet<NSArray<NSString *> *> *)keywordSplitedPinyins{
-    if (!_keywordSplitedPinyins) {
-        _keywordSplitedPinyins = [NSSet setWithArray:_keyword.splitIntoPinyins];
-    }
-    return _keywordSplitedPinyins;
 }
 
 - (NSDictionary<NSAttributedStringKey, id> *)normalAttributes {
@@ -147,24 +139,23 @@
 
 - (VVResultMatch *)highlight:(NSString *)source
 {
-    NSString *clean = [source stringByReplacingOccurrencesOfString:@"\n" withString:@" "].lowercaseString;
-    NSString *comparison = clean;
+    VVResultMatch *match = [[VVResultMatch alloc] init];
+    match.source = source;
+    if (source.length == 0) return match;
+
+    NSString *clean = [source stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+    NSString *comparison = clean.lowercaseString;
     NSString *kw = _keyword.lowercaseString;
     if (self.mask & VVTokenMaskTransform) {
         comparison = comparison.simplifiedChineseString;
         kw = kw.simplifiedChineseString;
     }
+    const char *cleanText = clean.cString;
     const char *pText = comparison.cString;
-    int nText = pText ? (int)strlen(pText) : 0;
-
-    VVResultMatch *match = [[VVResultMatch alloc] init];
-    match.source = source;
+    int nText = (int)strlen(pText);
+    if (nText == 0) return match;
 
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] init];
-    if (nText == 0) {
-        return match;
-    }
-
     void (^ TrimAttrText)(NSRange) = ^(NSRange r) {
         if (r.location + r.length > self.attrTextMaxLength) {
             NSInteger rlen = MIN(r.location, r.location + r.length - self.attrTextMaxLength);
@@ -235,13 +226,6 @@
     memset(tokenized, 0x0, nText + 1);
 
     NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:pText method:self.method mask:self.mask];
-    tokens = [tokens sortedArrayUsingComparator:^NSComparisonResult (VVToken *token1, VVToken *token2) {
-        if (token1.start == token2.start) {
-            return token1.end < token2.end ? NSOrderedAscending : NSOrderedDescending;
-        } else {
-            return token1.start < token2.start ? NSOrderedAscending : NSOrderedDescending;
-        }
-    }];
 
     unsigned long count = tokens.count;
     unsigned long kwcount = self.keywordTokens.count;
@@ -252,7 +236,7 @@
         for (unsigned long i = k; i < count; i++) {
             VVToken *token = tokens[i];
             if (strcmp(token.token.cString, kwToken.token.cString) != 0) continue;
-            memcpy(tokenized + token.start, pText + token.start, token.end - token.start);
+            memcpy(tokenized + token.start, cleanText + token.start, token.end - token.start);
             k = i + 1;
             break;
         }
@@ -265,7 +249,7 @@
 //    }
 
     uint8_t *remained = (uint8_t *)malloc(nText + 1);
-    memcpy(remained, pText, nText);
+    memcpy(remained, cleanText, nText);
     remained[nText] = 0x0;
     for (int i = 0; i < nText + 1; i++) {
         if (tokenized[i] != 0) {

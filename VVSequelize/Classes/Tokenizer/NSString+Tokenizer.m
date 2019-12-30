@@ -46,14 +46,19 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     return self;
 }
 
++ (NSDictionary *)dictionaryWithResource:(NSString *)resource
+{
+    NSBundle *parentBundle = [NSBundle bundleForClass:self];
+    NSString *bundlePath = [parentBundle pathForResource:kVVPinYinResourceBundle ofType:nil];
+    NSBundle *bundle = [NSBundle bundleWithPath:bundlePath];
+    NSString *path = [bundle pathForResource:resource ofType:nil];
+    return [NSDictionary dictionaryWithContentsOfFile:path];
+}
+
 - (NSDictionary *)pinyins
 {
     if (!_pinyins) {
-        NSBundle *parentBundle = [NSBundle bundleForClass:self.class];
-        NSString *bundlePath = [parentBundle pathForResource:kVVPinYinResourceBundle ofType:nil];
-        NSBundle *bundle = [NSBundle bundleWithPath:bundlePath];
-        NSString *path = [bundle pathForResource:kVVPinYinResourceFile ofType:nil];
-        _pinyins = [NSDictionary dictionaryWithContentsOfFile:path];
+        _pinyins = [[self class] dictionaryWithResource:kVVPinYinResourceFile];
     }
     return _pinyins;
 }
@@ -61,11 +66,7 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 - (NSDictionary *)hanzi2pinyins
 {
     if (!_hanzi2pinyins) {
-        NSBundle *parentBundle = [NSBundle bundleForClass:self.class];
-        NSString *bundlePath = [parentBundle pathForResource:kVVPinYinResourceBundle ofType:nil];
-        NSBundle *bundle = [NSBundle bundleWithPath:bundlePath];
-        NSString *path = [bundle pathForResource:kVVPinYinHanzi2PinyinFile ofType:nil];
-        _hanzi2pinyins = [NSDictionary dictionaryWithContentsOfFile:path];
+        _hanzi2pinyins = [[self class] dictionaryWithResource:kVVPinYinHanzi2PinyinFile];
     }
     return _hanzi2pinyins;
 }
@@ -213,14 +214,14 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     unichar ch = [string characterAtIndex:index];
     NSString *key = [NSString stringWithFormat:@"%X", ch];
     NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
-    NSMutableOrderedSet *fulls = [NSMutableOrderedSet orderedSet];
-    NSMutableOrderedSet *firsts = [NSMutableOrderedSet orderedSet];
+    NSMutableSet *fulls = [NSMutableSet set];
+    NSMutableSet *firsts = [NSMutableSet set];
     for (NSString *pinyin in pinyins) {
         if (pinyin.length < 1) continue;
         [fulls addObject:[pinyin substringToIndex:pinyin.length - 1]];
         [firsts addObject:[pinyin substringToIndex:1]];
     }
-    return @[fulls.array, firsts.array];
+    return @[fulls.allObjects, firsts.allObjects];
 }
 
 - (NSArray<NSArray<NSString *> *> *)pinyinsForMatch
