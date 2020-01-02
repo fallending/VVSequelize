@@ -110,14 +110,14 @@
 - (NSString *(^)(id))and
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"%@ AND %@", self, [value sqlWhere]];
+        return self.length == 0 ? [value sqlWhere] : [NSString stringWithFormat:@"%@ AND %@", self, [value sqlWhere]];
     };
 }
 
 - (NSString *(^)(id))or
 {
     return ^(id value) {
-        return [NSString stringWithFormat:@"(%@) OR (%@)", self, [value sqlWhere]];
+        return  self.length == 0 ? [value sqlWhere] : [NSString stringWithFormat:@"(%@) OR (%@)", self, [value sqlWhere]];
     };
 }
 
