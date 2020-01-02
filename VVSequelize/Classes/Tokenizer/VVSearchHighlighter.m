@@ -157,8 +157,9 @@
 
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] init];
     void (^ TrimAttrText)(NSRange) = ^(NSRange r) {
-        if (r.location + r.length > self.attrTextMaxLength) {
-            NSInteger rlen = MIN(r.location, r.location + r.length - self.attrTextMaxLength);
+        NSInteger upper = r.location + r.length;
+        if (upper > self.attrTextMaxLength && upper <= attrText.length) {
+            NSInteger rlen = MIN(r.location, upper - self.attrTextMaxLength);
             [attrText deleteCharactersInRange:NSMakeRange(0, rlen)];
             NSAttributedString *ellipsis = [[NSAttributedString alloc] initWithString:@"..."];
             [attrText insertAttributedString:ellipsis atIndex:0];
