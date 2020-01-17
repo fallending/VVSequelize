@@ -406,15 +406,13 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         NSString *string = [[NSString alloc] initWithBytes:cSource + cursor.offset length:cursor.len encoding:NSUTF8StringEncoding];
         if (string.length == 0) continue;
 
-        NSArray<NSArray<NSString *> *> *pinyins = [string pinyinsAtIndex:0];
-        NSArray<NSString *> *fulls = pinyins.firstObject;
-        for (NSString *pinyin in fulls) {
+        VVPinYinItem *item = [string pinyinsAtIndex:0];
+        for (NSString *pinyin in item.fulls) {
             VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
             [results addObject:pytk];
         }
         if (mask & VVTokenMaskFirstLetter) {
-            NSArray<NSString *> *firsts = pinyins.lastObject;
-            for (NSString *pinyin in firsts) {
+            for (NSString *pinyin in item.firsts) {
                 VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
                 [results addObject:pytk];
             }

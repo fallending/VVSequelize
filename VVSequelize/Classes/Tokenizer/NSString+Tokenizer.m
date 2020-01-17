@@ -148,6 +148,18 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 
 @end
 
+@implementation VVPinYinItem
+
++ (instancetype)itemWithFirsts:(NSArray<NSString *> *)firsts fulls:(NSArray<NSString *> *)fulls
+{
+    VVPinYinItem *item = [VVPinYinItem new];
+    item.firsts = firsts;
+    item.fulls = fulls;
+    return item;
+}
+
+@end
+
 @implementation NSString (Tokenizer)
 
 + (void)preloadingForPinyin
@@ -208,8 +220,11 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     return [result stringByReplacingOccurrencesOfString:@"'" withString:@""];
 }
 
-- (NSArray<NSArray<NSString *> *> *)pinyinsAtIndex:(NSUInteger)index
+- (VVPinYinItem *)pinyinsAtIndex:(NSUInteger)index
 {
+    if (self.length <= index) {
+        return [VVPinYinItem itemWithFirsts:@[] fulls:@[]];
+    }
     NSString *string = self.simplifiedChineseString;
     unichar ch = [string characterAtIndex:index];
     NSString *key = [NSString stringWithFormat:@"%X", ch];
@@ -221,50 +236,53 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
         [fulls addObject:[pinyin substringToIndex:pinyin.length - 1]];
         [firsts addObject:[pinyin substringToIndex:1]];
     }
-    return @[fulls.allObjects, firsts.allObjects];
+    return [VVPinYinItem itemWithFirsts:firsts.allObjects fulls:fulls.allObjects];
 }
 
-- (NSArray<NSArray<NSString *> *> *)pinyinsForMatch
+- (VVPinYinItem *)pinyinsForMatch
 {
-    NSArray *results = [[VVPinYin shared].cache objectForKey:self];
+    if (self.length < 1) {
+        return [VVPinYinItem itemWithFirsts:@[self] fulls:@[self]];
+    }
+    VVPinYinItem *results = [[VVPinYin shared].cache objectForKey:self];
     if (results) return results;
 
-    NSArray<NSArray<NSString *> *> *pinyins = [self pinyinsAtIndex:0];
+    VVPinYinItem *pinyins = [self pinyinsAtIndex:0];
     NSString *letter = [self substringToIndex:1];
-    NSArray<NSString *> *headFulls = pinyins.firstObject.count > 0 ? pinyins.firstObject : @[letter];
-    NSArray<NSString *> *headFirsts = pinyins.lastObject.count > 0 ? pinyins.lastObject : @[letter];
+    NSArray<NSString *> *headFirsts = pinyins.firsts.count > 0 ? pinyins.firsts : @[letter];
+    NSArray<NSString *> *headFulls = pinyins.fulls.count > 0 ? pinyins.fulls : @[letter];
 
     if (self.length == 1) {
-        return @[headFulls, headFirsts];
+        return [VVPinYinItem itemWithFirsts:headFirsts fulls:headFulls];
     }
     NSString *substring = [self substringFromIndex:1];
-    NSArray<NSArray<NSString *> *> *subPinyins = [substring pinyinsForMatch];
-    NSArray<NSString *> *subFulls = subPinyins.firstObject;
-    NSArray<NSString *> *subFirsts = subPinyins.lastObject;
+    VVPinYinItem *subPinyins = [substring pinyinsForMatch];
+    NSArray<NSString *> *subFirsts = subPinyins.firsts;
+    NSArray<NSString *> *subFulls = subPinyins.fulls;
 
-    NSMutableArray<NSString *> *fulls = [NSMutableArray array];
     NSMutableArray<NSString *> *firsts = [NSMutableArray array];
-    for (NSString *headfull in headFulls) {
-        for (NSString *subfull in subFulls) {
-            [fulls addObject:[headfull stringByAppendingString:subfull]];
-        }
-    }
+    NSMutableArray<NSString *> *fulls = [NSMutableArray array];
     for (NSString *headfirst in headFirsts) {
         for (NSString *subfirst in subFirsts) {
             [firsts addObject:[headfirst stringByAppendingString:subfirst]];
         }
     }
-    results = @[fulls, firsts];
+    for (NSString *headfull in headFulls) {
+        for (NSString *subfull in subFulls) {
+            [fulls addObject:[headfull stringByAppendingString:subfull]];
+        }
+    }
+    results = [VVPinYinItem itemWithFirsts:firsts fulls:fulls];
     [[VVPinYin shared].cache setObject:results forKey:self];
     return results;
 }
 
 - (NSArray<NSArray<NSArray<NSString *> *> *> *)pinyinMatrix
 {
-    NSArray<NSArray<NSString *> *> *pinyins = [self pinyinsAtIndex:0];
+    VVPinYinItem *pinyins = [self pinyinsAtIndex:0];
     NSString *letter = [self substringToIndex:1];
-    NSArray<NSString *> *_headFulls = pinyins.firstObject.count > 0 ? pinyins.firstObject : @[letter];
-    NSArray<NSString *> *_headFirsts = pinyins.lastObject.count > 0 ? pinyins.lastObject : @[letter];
+    NSArray<NSString *> *_headFirsts = pinyins.firsts.count > 0 ? pinyins.firsts : @[letter];
+    NSArray<NSString *> *_headFulls = pinyins.fulls.count > 0 ? pinyins.fulls : @[letter];
 
     NSMutableArray<NSArray<NSString *> *> *headFulls = [NSMutableArray array];
     NSMutableArray<NSArray<NSString *> *> *headFirsts = [NSMutableArray array];

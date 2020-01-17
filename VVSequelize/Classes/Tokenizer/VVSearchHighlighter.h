@@ -11,23 +11,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef NS_ENUM (NSUInteger, VVMatchType) {
-    VVMatchFull,
-    VVMatchPinyinFull,
-    VVMatchPrefix,
-    VVMatchPinyinPrefix,
-    VVMatchMiddle,
-    VVMatchPinyinMiddle,
-
-    VVMatchOther,
-    VVMatchNone,
-};
-
 @interface VVResultMatch : NSObject
-@property (nonatomic, assign) VVMatchType type;
+@property (nonatomic, assign) UInt64 weight;
 @property (nonatomic, assign) NSRange range;
 @property (nonatomic, copy) NSString *source;
 @property (nonatomic, copy) NSAttributedString *attrText;
+
+//used to calculate weights
+@property (nonatomic, assign, readonly) NSUInteger lv1;
+@property (nonatomic, assign, readonly) NSUInteger lv2;
+@property (nonatomic, assign, readonly) NSUInteger lv3;
 
 - (NSComparisonResult)compare:(VVResultMatch *)other;
 
@@ -36,6 +29,8 @@ typedef NS_ENUM (NSUInteger, VVMatchType) {
 @interface VVSearchHighlighter : NSObject
 @property (nonatomic, assign) VVTokenMethod method; ///< default is VVTokenMethodSequelize
 @property (nonatomic, copy) NSString *keyword;
+@property (nonatomic, assign) BOOL fuzzyMatch;
+@property (nonatomic, assign) BOOL tokenMatch;
 @property (nonatomic, assign) VVTokenMask mask; ///< default is VVTokenMaskDeault | 30
 @property (nonatomic, assign) NSUInteger attrTextMaxLength; ///< default is 17
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;

@@ -18,6 +18,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+@interface VVPinYinItem : NSObject
+@property (nonatomic, strong) NSArray<NSString *> *firsts;
+@property (nonatomic, strong) NSArray<NSString *> *fulls;
+
++ (instancetype)itemWithFirsts:(NSArray<NSString *> *)firsts fulls:(NSArray<NSString *> *)fulls;
+@end
+
 @interface NSString (Tokenizer)
 
 /// pinyin token resource preloading
@@ -43,11 +50,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// get pinyin
 /// @return two-dimensional array: [ [full pinyin],  [first letter] ]
-- (NSArray<NSArray<NSString *> *> *)pinyinsAtIndex:(NSUInteger)index;
+- (VVPinYinItem *)pinyinsAtIndex:(NSUInteger)index;
 
 /// get pinyin
 /// @return two-dimensional array: [ [full pinyin],  [first letter] ]
-- (NSArray<NSArray<NSString *> *> *)pinyinsForMatch;
+- (VVPinYinItem *)pinyinsForMatch;
 
 /// get pinyin
 /// @return three-dimensional array: [ [[full pinyin]],  [[first letter]] ]
