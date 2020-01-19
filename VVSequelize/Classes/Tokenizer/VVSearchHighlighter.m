@@ -27,9 +27,9 @@ typedef NS_ENUM (NSUInteger, EMMatchLV2) {
 };
 
 typedef NS_ENUM (NSUInteger, EMMatchLV3) {
-    EMMatchLV3_0 = 0,
-    EMMatchLV3_1,
-    EMMatchLV3_2,
+    EMMatchLV3_Low = 0,
+    EMMatchLV3_Mid,
+    EMMatchLV3_High,
 };
 
 @interface VVResultMatch ()
@@ -156,7 +156,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
                 keyword = keyword.simplifiedChineseString;
             }
             VVPinYinItem *item = [keyword.lowercaseString pinyinsForMatch];
-            _keywordFullPinyin = item.fulls.firstObject;
+            _keywordFullPinyin = item.fulls.firstObject ? : @"";
         }
     }
     return _keywordFullPinyin;
@@ -270,7 +270,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
     }
 
     if (match.lv2 != EMMatchLV2_None) {
-        match.lv3 = EMMatchLV3_2;
+        match.lv3 = EMMatchLV3_High;
         return match;
     }
 
@@ -294,7 +294,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
                     if ((lv2 > match.lv2) || (lv2 == match.lv2 && found.location < match.range.location)) {
                         match.lv2 = lv2;
                         match.range = found;
-                        match.lv3 = (i == 1) ? EMMatchLV3_1 : EMMatchLV3_0;
+                        match.lv3 = (i == 1) ? EMMatchLV3_Mid : EMMatchLV3_Low;
                         //match.lv3 = ((i == 0) ^ (lv1 == EMMatchLV1_Origin)) ? EMMatchLV3_0 : EMMatchLV3_1;
                     }
                 }
@@ -366,7 +366,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
         match.range = range;
         if (match.lv2 == EMMatchLV2_None && self.tokenMatch) {
             match.lv2 = EMMatchLV2_Other;
-            match.lv3 = EMMatchLV3_0;
+            match.lv3 = EMMatchLV3_Low;
         }
     } else {
         match.attrText = [[NSAttributedString alloc] initWithString:source attributes:self.normalAttributes];
