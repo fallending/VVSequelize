@@ -9,33 +9,33 @@
 #import "VVDatabase+FTS.h"
 #import "NSString+Tokenizer.h"
 
-#define _EMMatchPinyinLen 30
+#define _VVMatchPinyinLen 30
 
-typedef NS_ENUM (NSUInteger, EMMatchLV1) {
-    EMMatchLV1_None = 0,
-    EMMatchLV1_Firsts,
-    EMMatchLV1_Fulls,
-    EMMatchLV1_Origin,
+typedef NS_ENUM (NSUInteger, VVMatchLV1) {
+    VVMatchLV1_None = 0,
+    VVMatchLV1_Firsts,
+    VVMatchLV1_Fulls,
+    VVMatchLV1_Origin,
 };
 
-typedef NS_ENUM (NSUInteger, EMMatchLV2) {
-    EMMatchLV2_None = 0,
-    EMMatchLV2_Other,
-    EMMatchLV2_NonPrefix,
-    EMMatchLV2_Prefix,
-    EMMatchLV2_Full,
+typedef NS_ENUM (NSUInteger, VVMatchLV2) {
+    VVMatchLV2_None = 0,
+    VVMatchLV2_Other,
+    VVMatchLV2_NonPrefix,
+    VVMatchLV2_Prefix,
+    VVMatchLV2_Full,
 };
 
-typedef NS_ENUM (NSUInteger, EMMatchLV3) {
-    EMMatchLV3_Low = 0,
-    EMMatchLV3_Mid,
-    EMMatchLV3_High,
+typedef NS_ENUM (NSUInteger, VVMatchLV3) {
+    VVMatchLV3_Low = 0,
+    VVMatchLV3_Mid,
+    VVMatchLV3_High,
 };
 
 @interface VVResultMatch ()
-@property (nonatomic, assign) NSUInteger lv1; ///< EMMatchLV1
-@property (nonatomic, assign) NSUInteger lv2; ///< EMMatchLV2
-@property (nonatomic, assign) NSUInteger lv3; ///< EMMatchLV3
+@property (nonatomic, assign) NSUInteger lv1; ///< VVMatchLV1
+@property (nonatomic, assign) NSUInteger lv2; ///< VVMatchLV2
+@property (nonatomic, assign) NSUInteger lv3; ///< VVMatchLV3
 @end
 
 @implementation VVResultMatch
@@ -115,7 +115,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
 
 - (void)setup {
     _method = VVTokenMethodSequelize;
-    _mask = VVTokenMaskDeault | _EMMatchPinyinLen;
+    _mask = VVTokenMaskDeault | _VVMatchPinyinLen;
     _attrTextMaxLength = 17;
 }
 
@@ -126,7 +126,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
 - (NSArray<VVToken *> *)keywordTokens {
     if (!_keywordTokens) {
         NSAssert(_keyword.length > 0, @"Invalid keyword");
-        VVTokenMask mask = (_mask & (~VVTokenMaskPinyin)) | VVTokenMaskSplitPinyin | _EMMatchPinyinLen;
+        VVTokenMask mask = (_mask & (~VVTokenMaskPinyin)) | VVTokenMaskSplitPinyin | _VVMatchPinyinLen;
         _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
@@ -148,7 +148,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
 
 - (NSString *)keywordFullPinyin {
     if (!_keywordFullPinyin) {
-        if (_keyword.length > _EMMatchPinyinLen) {
+        if (_keyword.length > _VVMatchPinyinLen) {
             _keywordFullPinyin = @"";
         } else {
             NSString *keyword = _keyword.lowercaseString;
@@ -198,12 +198,12 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
         keyword = keyword.simplifiedChineseString;
     }
 
-    match = [self highlight:source keyword:keyword lv1:EMMatchLV1_Origin
+    match = [self highlight:source keyword:keyword lv1:VVMatchLV1_Origin
                       clean:clean comparison:comparison cleanText:cleanText pText:pText];
     if (match.weight == 0 && self.fuzzyMatch) {
         VVResultMatch *otherMatch = nil;
         if (self.keywordFullPinyin.length > 0 && ![self.keywordFullPinyin isEqualToString:self.keyword]) {
-            otherMatch = [self highlight:source keyword:self.keywordFullPinyin lv1:EMMatchLV1_Fulls
+            otherMatch = [self highlight:source keyword:self.keywordFullPinyin lv1:VVMatchLV1_Fulls
                                    clean:clean comparison:comparison cleanText:cleanText pText:pText];
             if (otherMatch.weight > 0) return otherMatch;
         }
@@ -211,7 +211,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
     return match;
 }
 
-- (VVResultMatch *)highlight:(NSString *)source keyword:(NSString *)keyword lv1:(EMMatchLV1)lv1
+- (VVResultMatch *)highlight:(NSString *)source keyword:(NSString *)keyword lv1:(VVMatchLV1)lv1
                        clean:(NSString *)clean comparison:(NSString *)comparison
                    cleanText:(const char *)cleanText pText:(const char *)pText
 {
@@ -238,7 +238,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
     NSString *exp = hasSpace ? [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:NSRegularExpressionSearch range:NSMakeRange(0, keyword.length)] : keyword;
     NSRange found = hasSpace ? [comparison rangeOfString:exp options:NSRegularExpressionSearch] : [comparison rangeOfString:keyword];
     if (found.location == 0 && found.length == source.length) {
-        match.lv2 = EMMatchLV2_Full;
+        match.lv2 = VVMatchLV2_Full;
         match.range = found;
         match.attrText = [[NSAttributedString alloc] initWithString:source attributes:self.highlightAttributes];
     } else if (found.location == 0 && found.length < source.length) {
@@ -249,7 +249,7 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
         [attrText appendAttributedString:ak];
         [attrText appendAttributedString:a2];
 
-        match.lv2 = EMMatchLV2_Prefix;
+        match.lv2 = VVMatchLV2_Prefix;
         match.range = found;
         match.attrText = attrText;
     } else if (found.location != NSNotFound && found.length > 0) {
@@ -263,48 +263,54 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
         [attrText appendAttributedString:ak];
         [attrText appendAttributedString:a2];
 
-        match.lv2 = EMMatchLV2_NonPrefix;
+        match.lv2 = VVMatchLV2_NonPrefix;
         match.range = found;
         TrimAttrText(found);
         match.attrText = attrText;
     }
 
-    if (match.lv2 != EMMatchLV2_None) {
-        match.lv3 = EMMatchLV3_High;
+    if (match.lv2 != VVMatchLV2_None) {
+        match.lv3 = lv1 == VVMatchLV1_Origin ?  VVMatchLV3_High : VVMatchLV3_Mid;
         return match;
     }
 
     u_long len = self.mask & VVTokenMaskPinyin;
-    if (nText <= len) {
-        VVPinYinItem *item = [comparison pinyinsForMatch];
-        NSArray *pinyins = @[(lv1 == EMMatchLV1_Origin ? item.firsts : @[]), item.fulls];
+    if (len > 0) {
+        NSArray *pinyins = @[];
+        if (nText <= _VVMatchPinyinLen) {
+            VVPinYinItem *item = [comparison pinyinsForMatch];
+            pinyins = @[(lv1 == VVMatchLV1_Origin ? item.firsts : @[]), item.fulls];
+        } else {
+            NSString *py = [[comparison pinyin] stringByReplacingOccurrencesOfString:@" " withString:@""];
+            pinyins = @[@[], @[py]];
+        }
         for (NSInteger i = 0; i < pinyins.count; i++) {
             NSArray *itemsubs = pinyins[i];
             for (NSString *py in itemsubs) {
                 found = hasSpace ? [py rangeOfString:exp options:NSRegularExpressionSearch] : [py rangeOfString:keyword];
                 if (found.length > 0) {
-                    EMMatchLV2 lv2 = EMMatchLV2_None;
+                    VVMatchLV2 lv2 = VVMatchLV2_None;
                     if (found.location == 0 && found.length == py.length) {
-                        lv2 = keyword.length == 1 ? EMMatchLV2_Prefix : EMMatchLV2_Full;
+                        lv2 = keyword.length == 1 ? VVMatchLV2_Prefix : VVMatchLV2_Full;
                     } else if (found.location == 0 && found.length < py.length) {
-                        lv2 = EMMatchLV2_Prefix;
+                        lv2 = VVMatchLV2_Prefix;
                     } else {
-                        lv2 = EMMatchLV2_NonPrefix;
+                        lv2 = VVMatchLV2_NonPrefix;
                     }
-                    if ((lv2 > match.lv2) || (lv2 == match.lv2 && found.location < match.range.location)) {
+                    if ((lv2 > match.lv2) || (lv2 == match.lv2 && (found.location < match.range.location || i == 1) )) {
                         match.lv2 = lv2;
                         match.range = found;
-                        match.lv3 = (i == 1) ? EMMatchLV3_Mid : EMMatchLV3_Low;
-                        //match.lv3 = ((i == 0) ^ (lv1 == EMMatchLV1_Origin)) ? EMMatchLV3_0 : EMMatchLV3_1;
+                        match.lv3 = (i == 1) ? VVMatchLV3_Mid : VVMatchLV3_Low;
+                        //match.lv3 = ((i == 0) ^ (lv1 == VVMatchLV1_Origin)) ? VVMatchLV3_0 : VVMatchLV3_1;
                     }
                 }
-                if (match.lv2 == EMMatchLV2_Full) break;
+                if (match.lv2 == VVMatchLV2_Full) break;
             }
-            if (match.lv2 == EMMatchLV2_Full) break;
+            if (match.lv2 == VVMatchLV2_Full) break;
         }
     }
 
-    if (!self.tokenMatch && match.lv2 == EMMatchLV2_None) {
+    if (!self.tokenMatch && match.lv2 == VVMatchLV2_None) {
         return nomatch;
     }
 
@@ -364,15 +370,15 @@ typedef NS_ENUM (NSUInteger, EMMatchLV3) {
         TrimAttrText(range);
         match.attrText = attrText;
         match.range = range;
-        if (match.lv2 == EMMatchLV2_None && self.tokenMatch) {
-            match.lv2 = EMMatchLV2_Other;
-            match.lv3 = EMMatchLV3_Low;
+        if (match.lv2 == VVMatchLV2_None && self.tokenMatch) {
+            match.lv2 = VVMatchLV2_Other;
+            match.lv3 = VVMatchLV3_Low;
         }
     } else {
         match.attrText = [[NSAttributedString alloc] initWithString:source attributes:self.normalAttributes];
     }
 
-    return match.lv2 == EMMatchLV2_None ? nomatch : match;
+    return match.lv2 == VVMatchLV2_None ? nomatch : match;
 }
 
 @end
