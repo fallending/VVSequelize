@@ -195,12 +195,12 @@
 
     match = [self highlight:source keyword:keyword lv1:VVMatchLV1_Origin
                       clean:clean comparison:comparison cleanText:cleanText pText:pText];
-    if (match.weight == 0 && self.fuzzyMatch) {
+    if (match.upperWeight == 0 && self.fuzzyMatch) {
         VVResultMatch *otherMatch = nil;
         if (self.keywordFullPinyin.length > 0 && ![self.keywordFullPinyin isEqualToString:self.keyword]) {
             otherMatch = [self highlight:source keyword:self.keywordFullPinyin lv1:VVMatchLV1_Fulls
                                    clean:clean comparison:comparison cleanText:cleanText pText:pText];
-            if (otherMatch.weight > 0) return otherMatch;
+            if (otherMatch.upperWeight > 0) return otherMatch;
         }
     }
     return match;
