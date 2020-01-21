@@ -11,34 +11,16 @@
 
 #define _VVMatchPinyinLen 30
 
-typedef NS_ENUM (NSUInteger, VVMatchLV1) {
-    VVMatchLV1_None = 0,
-    VVMatchLV1_Firsts,
-    VVMatchLV1_Fulls,
-    VVMatchLV1_Origin,
-};
-
-typedef NS_ENUM (NSUInteger, VVMatchLV2) {
-    VVMatchLV2_None = 0,
-    VVMatchLV2_Other,
-    VVMatchLV2_NonPrefix,
-    VVMatchLV2_Prefix,
-    VVMatchLV2_Full,
-};
-
-typedef NS_ENUM (NSUInteger, VVMatchLV3) {
-    VVMatchLV3_Low = 0,
-    VVMatchLV3_Mid,
-    VVMatchLV3_High,
-};
-
 @interface VVResultMatch ()
-@property (nonatomic, assign) NSUInteger lv1; ///< VVMatchLV1
-@property (nonatomic, assign) NSUInteger lv2; ///< VVMatchLV2
-@property (nonatomic, assign) NSUInteger lv3; ///< VVMatchLV3
+@property (nonatomic, assign) VVMatchLV1 lv1;
+@property (nonatomic, assign) VVMatchLV2 lv2;
+@property (nonatomic, assign) VVMatchLV3 lv3;
 @end
 
 @implementation VVResultMatch
+@synthesize lowerWeight = _lowerWeight;
+@synthesize upperWeight = _upperWeight;
+@synthesize weight = _weight;
 
 - (instancetype)init
 {
@@ -49,15 +31,28 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
     return self;
 }
 
-- (UInt64)weight {
+- (UInt64)upperWeight
+{
+    if (_upperWeight == 0 && _range.length > 0) {
+        _upperWeight = (UInt64)(_lv1 & 0xF) << 28 | (UInt64)(_lv2 & 0xF) << 24 | (UInt64)(_lv3 & 0xF) << 20;
+    }
+    return _upperWeight;
+}
+
+- (UInt64)lowerWeight
+{
+    if (_upperWeight == 0 && _range.length > 0) {
+        UInt64 loc = ~_range.location & 0xFFFF;
+        UInt64 rate = ((UInt64)_range.length << 32) / _source.length;
+        _lowerWeight = (UInt64)(loc & 0xFFFF) << 16 | (UInt64)(rate & 0xFFFF) << 0;
+    }
+    return _upperWeight;
+}
+
+- (UInt64)weight
+{
     if (_weight == 0 && _range.length > 0) {
-        UInt64 loc = 0xFFFF - (_range.location & 0xFFFF);
-        UInt64 rate = ((UInt64)_range.length * 0xFFFF) / _source.length;
-        _weight = ((UInt64)(_lv1 & 0xF) << 56 |
-                   (UInt64)(_lv2 & 0xF) << 52 |
-                   (UInt64)(_lv3 & 0xF) << 48 |
-                   (UInt64)(loc & 0xFFFF) << 16 |
-                   (UInt64)(rate & 0xFFFF) << 0);
+        _weight = self.upperWeight << 32 | self.lowerWeight;
     }
     return _weight;
 }
@@ -270,7 +265,7 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
     }
 
     if (match.lv2 != VVMatchLV2_None) {
-        match.lv3 = lv1 == VVMatchLV1_Origin ?  VVMatchLV3_High : VVMatchLV3_Mid;
+        match.lv3 = lv1 == VVMatchLV1_Origin ? VVMatchLV3_High : VVMatchLV3_Medium;
         return match;
     }
 
@@ -300,7 +295,7 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
                     if ((lv2 > match.lv2) || (lv2 == match.lv2 && (found.location < match.range.location || i == 1) )) {
                         match.lv2 = lv2;
                         match.range = found;
-                        match.lv3 = (i == 1) ? VVMatchLV3_Mid : VVMatchLV3_Low;
+                        match.lv3 = (i == 1) ? VVMatchLV3_Medium : VVMatchLV3_Low;
                         //match.lv3 = ((i == 0) ^ (lv1 == VVMatchLV1_Origin)) ? VVMatchLV3_0 : VVMatchLV3_1;
                     }
                 }
