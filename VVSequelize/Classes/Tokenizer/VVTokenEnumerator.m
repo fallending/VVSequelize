@@ -306,37 +306,42 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 
 // MARK: - Word Tokens
 + (NSArray<VVToken *> *)wordTokensByCombine:(const char *)cSource
-                                    cursors:(NSArray<VVTokenCursor *> *)cursors
+                                    cursors:(NSArray<VVTokenCursor *> *)sourceCursors
                                    encoding:(NSStringEncoding)encoding
 {
-    if (cursors.count == 0) return @[];
+    if (sourceCursors.count == 0) return @[];
+
+    NSMutableArray *cursors = sourceCursors.mutableCopy;
+    VVTokenCursor *last = sourceCursors.lastObject;
+    VVTokenCursor *extCursor = [VVTokenCursor cursor:last.type offset:last.offset len:0];
+    NSInteger ext = last.type < VVTokenMultilingualPlaneSymbol ? 2 : 1;
+    NSString *extString = last.type < VVTokenMultilingualPlaneSymbol ? @"®" : @"圝";
+    for (NSUInteger i = 0; i < ext; i++) {
+        [cursors addObject:extCursor];
+    }
 
     NSMutableArray *results = [NSMutableArray array];
-    void (^ addToken)(u_long, u_long) = ^(u_long offset, u_long len) {
+    NSInteger extCount = cursors.count;
+    NSInteger count = extCount - ext;
+    for (NSInteger i = 0; i < count; i++) {
+        VVTokenCursor *c1 = cursors[i];
+        u_long offset = c1.offset;
+        u_long len = c1.len;
+        for (NSInteger j = 1; j <= ext; j++) {
+            VVTokenCursor *c2 = cursors[i + j];
+            len += c2.len;
+        }
         NSString *string = [[NSString alloc] initWithBytes:cSource + offset length:len encoding:encoding];
         if (string.length > 0) {
+            NSInteger append = MAX(0, ext - (count - 1 - i));
+            for (NSInteger k = 0; k < append; k++) {
+                string = [string stringByAppendingString:extString];
+            }
             VVToken *tk = [VVToken token:string len:(int)len start:(int)offset end:(int)(offset + len)];
             [results addObject:tk];
         }
-    };
-
-    void (^ addOnceToken)(VVTokenCursor *) = ^(VVTokenCursor *c) {
-        NSString *string = [[NSString alloc] initWithBytes:cSource + c.offset length:c.len encoding:encoding];
-        if (string.length > 0) {
-            //string = [string stringByAppendingString:string];
-            VVToken *tk = [VVToken token:string len:(int)c.len start:(int)c.offset end:(int)(c.offset + c.len)];
-            [results addObject:tk];
-        }
-    };
-
-    //addTwiceToken(cursors.firstObject);
-    NSUInteger count = cursors.count - 1;
-    for (NSUInteger i = 0; i < count; i++) {
-        VVTokenCursor *c1 = cursors[i];
-        VVTokenCursor *c2 = cursors[i + 1];
-        addToken(c1.offset, c1.len + c2.len);
     }
-    addOnceToken(cursors.lastObject);
+
     return results;
 }
 

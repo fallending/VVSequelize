@@ -242,7 +242,7 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 - (VVPinYinItem *)pinyinsForMatch
 {
     if (self.length == 0) {
-        return [VVPinYinItem itemWithFirsts:@[] fulls:@[]];
+        return [VVPinYinItem itemWithFirsts:@[self] fulls:@[self]];
     }
     VVPinYinItem *results = [[VVPinYin shared].cache objectForKey:self];
     if (results) return results;
