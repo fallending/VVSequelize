@@ -229,23 +229,21 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     unichar ch = [string characterAtIndex:index];
     NSString *key = [NSString stringWithFormat:@"%X", ch];
     NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
-    NSMutableSet *fulls = [NSMutableSet set];
-    NSMutableSet *firsts = [NSMutableSet set];
+    NSMutableOrderedSet *fulls = [NSMutableOrderedSet orderedSet];
+    NSMutableOrderedSet *firsts = [NSMutableOrderedSet orderedSet];
     for (NSString *pinyin in pinyins) {
         if (pinyin.length < 1) continue;
         [fulls addObject:[pinyin substringToIndex:pinyin.length - 1]];
         [firsts addObject:[pinyin substringToIndex:1]];
     }
-    return [VVPinYinItem itemWithFirsts:firsts.allObjects fulls:fulls.allObjects];
+    return [VVPinYinItem itemWithFirsts:firsts.array fulls:fulls.array];
 }
 
-- (VVPinYinItem *)pinyinsForMatch
+- (VVPinYinItem *)pinyinsForMatch:(BOOL)polyphone
 {
-    if (self.length == 0) {
+    if (self.length < 1) {
         return [VVPinYinItem itemWithFirsts:@[self] fulls:@[self]];
     }
-    VVPinYinItem *results = [[VVPinYin shared].cache objectForKey:self];
-    if (results) return results;
 
     VVPinYinItem *pinyins = [self pinyinsAtIndex:0];
     NSString *letter = [self substringToIndex:1];
@@ -256,23 +254,40 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
         return [VVPinYinItem itemWithFirsts:headFirsts fulls:headFulls];
     }
     NSString *substring = [self substringFromIndex:1];
-    VVPinYinItem *subPinyins = [substring pinyinsForMatch];
+    VVPinYinItem *subPinyins = [substring pinyinsForMatch:polyphone];
     NSArray<NSString *> *subFirsts = subPinyins.firsts;
     NSArray<NSString *> *subFulls = subPinyins.fulls;
 
     NSMutableArray<NSString *> *firsts = [NSMutableArray array];
     NSMutableArray<NSString *> *fulls = [NSMutableArray array];
-    for (NSString *headfirst in headFirsts) {
+    NSUInteger firstsCount = polyphone ? headFirsts.count : 1;
+    for (NSUInteger i = 0; i < firstsCount; i++) {
+        NSString *headfirst = headFirsts[i];
         for (NSString *subfirst in subFirsts) {
             [firsts addObject:[headfirst stringByAppendingString:subfirst]];
         }
     }
-    for (NSString *headfull in headFulls) {
+    NSUInteger fullsCount = polyphone ? headFulls.count : 1;
+    for (NSUInteger i = 0; i < fullsCount; i++) {
+        NSString *headfull = headFulls[i];
         for (NSString *subfull in subFulls) {
             [fulls addObject:[headfull stringByAppendingString:subfull]];
         }
     }
-    results = [VVPinYinItem itemWithFirsts:firsts fulls:fulls];
+    VVPinYinItem *results = [VVPinYinItem itemWithFirsts:firsts fulls:fulls];
+    return results;
+}
+
+- (VVPinYinItem *)pinyinsForMatch
+{
+    if (self.length < 1) {
+        return [VVPinYinItem itemWithFirsts:@[self] fulls:@[self]];
+    }
+    VVPinYinItem *results = [[VVPinYin shared].cache objectForKey:self];
+    if (results) return results;
+
+    BOOL polyphone = self.length < 5;
+    results = [self pinyinsForMatch:polyphone];
     [[VVPinYin shared].cache setObject:results forKey:self];
     return results;
 }
