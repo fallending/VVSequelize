@@ -18,11 +18,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface VVPinYinItem : NSObject
-@property (nonatomic, strong) NSArray<NSString *> *firsts;
+@interface VVPinYinFruit : NSObject
+@property (nonatomic, strong) NSArray<NSString *> *simps;
 @property (nonatomic, strong) NSArray<NSString *> *fulls;
 
-+ (instancetype)itemWithFirsts:(NSArray<NSString *> *)firsts fulls:(NSArray<NSString *> *)fulls;
++ (instancetype)fruitWithSimps:(NSArray<NSString *> *)firsts fulls:(NSArray<NSString *> *)fulls;
 @end
 
 @interface NSString (Tokenizer)
@@ -50,15 +50,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// get pinyin
 /// @return two-dimensional array: [ [full pinyin],  [first letter] ]
-- (VVPinYinItem *)pinyinsAtIndex:(NSUInteger)index;
+- (VVPinYinFruit *)pinyinsAtIndex:(NSUInteger)index;
 
 /// get pinyin
 /// @return two-dimensional array: [ [full pinyin],  [first letter] ]
-- (VVPinYinItem *)pinyinsForMatch;
-
-/// get pinyin
-/// @return three-dimensional array: [ [[full pinyin]],  [[first letter]] ]
-- (NSArray<NSArray<NSArray<NSString *> *> *> *)pinyinMatrix;
+- (VVPinYinFruit *)pinyinsForMatch;
 
 /// get number tokens
 - (NSArray<NSString *> *)numberStringsForTokenize;
@@ -67,7 +63,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)cleanString;
 
 /// split into pinyins
-- (NSArray<NSArray<NSString *> *> *)splitIntoPinyins;
+- (NSArray<NSArray<NSString *> *> *)splitedPinyins;
+
+@end
+
+@interface NSArray (Tokenizer)
+
+- (NSUInteger)tiledCount;
+
+- (NSArray<NSArray *> *)tiledArray;
 
 @end
 

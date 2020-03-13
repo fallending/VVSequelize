@@ -121,7 +121,7 @@
 - (NSArray<VVToken *> *)keywordTokens {
     if (!_keywordTokens) {
         NSAssert(_keyword.length > 0, @"Invalid keyword");
-        VVTokenMask mask = (_mask & (~VVTokenMaskPinyin)) | VVTokenMaskSplitPinyin | _VVMatchPinyinLen;
+        VVTokenMask mask = (_mask & (~VVTokenMaskPinyin)) | _VVMatchPinyinLen;
         _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
@@ -150,8 +150,8 @@
             if (_mask & VVTokenMaskTransform) {
                 keyword = keyword.simplifiedChineseString;
             }
-            VVPinYinItem *item = [keyword.lowercaseString pinyinsForMatch];
-            _keywordFullPinyin = item.fulls.firstObject ? : @"";
+            VVPinYinFruit *fruit = [keyword.lowercaseString pinyinsForMatch];
+            _keywordFullPinyin = fruit.fulls.firstObject ? : @"";
         }
     }
     return _keywordFullPinyin;
@@ -273,8 +273,8 @@
     if (len > 0) {
         NSArray *pinyins = @[];
         if (nText <= _VVMatchPinyinLen) {
-            VVPinYinItem *item = [comparison pinyinsForMatch];
-            pinyins = @[(lv1 == VVMatchLV1_Origin ? item.firsts : @[]), item.fulls];
+            VVPinYinFruit *fruit = [comparison pinyinsForMatch];
+            pinyins = @[(lv1 == VVMatchLV1_Origin ? fruit.simps : @[]), fruit.fulls];
         } else {
             NSString *py = [[comparison pinyin] stringByReplacingOccurrencesOfString:@" " withString:@""];
             pinyins = @[@[], @[py]];

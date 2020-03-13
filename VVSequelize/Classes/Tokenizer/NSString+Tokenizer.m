@@ -148,12 +148,12 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 
 @end
 
-@implementation VVPinYinItem
+@implementation VVPinYinFruit
 
-+ (instancetype)itemWithFirsts:(NSArray<NSString *> *)firsts fulls:(NSArray<NSString *> *)fulls
++ (instancetype)fruitWithSimps:(NSArray<NSString *> *)firsts fulls:(NSArray<NSString *> *)fulls
 {
-    VVPinYinItem *item = [VVPinYinItem new];
-    item.firsts = firsts;
+    VVPinYinFruit *item = [VVPinYinFruit new];
+    item.simps = firsts;
     item.fulls = fulls;
     return item;
 }
@@ -220,115 +220,72 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     return [result stringByReplacingOccurrencesOfString:@"'" withString:@""];
 }
 
-- (VVPinYinItem *)pinyinsAtIndex:(NSUInteger)index
+- (VVPinYinFruit *)pinyinsAtIndex:(NSUInteger)index
 {
     if (self.length <= index) {
-        return [VVPinYinItem itemWithFirsts:@[] fulls:@[]];
+        return [VVPinYinFruit fruitWithSimps:@[] fulls:@[]];
     }
+    NSArray *zcs = @[@"z", @"c", @"s"];
+    NSArray *zhchsh = @[@"zh", @"ch", @"sh"];
     NSString *string = self.simplifiedChineseString;
     unichar ch = [string characterAtIndex:index];
     NSString *key = [NSString stringWithFormat:@"%X", ch];
     NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
     NSMutableOrderedSet *fulls = [NSMutableOrderedSet orderedSet];
-    NSMutableOrderedSet *firsts = [NSMutableOrderedSet orderedSet];
+    NSMutableOrderedSet *simps = [NSMutableOrderedSet orderedSet];
     for (NSString *pinyin in pinyins) {
         if (pinyin.length < 1) continue;
         [fulls addObject:[pinyin substringToIndex:pinyin.length - 1]];
-        [firsts addObject:[pinyin substringToIndex:1]];
+        NSString *first = [pinyin substringToIndex:1];
+        [simps addObject:first];
+        if ([zcs containsObject:first]) {
+            for (NSString *prefix in zhchsh) {
+                if ([pinyin hasPrefix:prefix]) {
+                    [simps addObject:prefix];
+                    break;
+                }
+            }
+        }
     }
-    return [VVPinYinItem itemWithFirsts:firsts.array fulls:fulls.array];
+    if (fulls.count == 0) {
+        NSString *str = [self substringWithRange:NSMakeRange(index, 1)];
+        [fulls addObject:str];
+        [simps addObject:str];
+    }
+    return [VVPinYinFruit fruitWithSimps:simps.array fulls:fulls.array];
 }
 
-- (VVPinYinItem *)pinyinsForMatch:(BOOL)polyphone
+- (VVPinYinFruit *)pinyinsForMatch
 {
-    if (self.length < 1) {
-        return [VVPinYinItem itemWithFirsts:@[self] fulls:@[self]];
-    }
-
-    VVPinYinItem *pinyins = [self pinyinsAtIndex:0];
-    NSString *letter = [self substringToIndex:1];
-    NSArray<NSString *> *headFirsts = pinyins.firsts.count > 0 ? pinyins.firsts : @[letter];
-    NSArray<NSString *> *headFulls = pinyins.fulls.count > 0 ? pinyins.fulls : @[letter];
-
-    if (self.length == 1) {
-        return [VVPinYinItem itemWithFirsts:headFirsts fulls:headFulls];
-    }
-    NSString *substring = [self substringFromIndex:1];
-    VVPinYinItem *subPinyins = [substring pinyinsForMatch:polyphone];
-    NSArray<NSString *> *subFirsts = subPinyins.firsts;
-    NSArray<NSString *> *subFulls = subPinyins.fulls;
-
-    NSMutableArray<NSString *> *firsts = [NSMutableArray array];
-    NSMutableArray<NSString *> *fulls = [NSMutableArray array];
-    NSUInteger firstsCount = polyphone ? headFirsts.count : 1;
-    for (NSUInteger i = 0; i < firstsCount; i++) {
-        NSString *headfirst = headFirsts[i];
-        for (NSString *subfirst in subFirsts) {
-            [firsts addObject:[headfirst stringByAppendingString:subfirst]];
-        }
-    }
-    NSUInteger fullsCount = polyphone ? headFulls.count : 1;
-    for (NSUInteger i = 0; i < fullsCount; i++) {
-        NSString *headfull = headFulls[i];
-        for (NSString *subfull in subFulls) {
-            [fulls addObject:[headfull stringByAppendingString:subfull]];
-        }
-    }
-    VVPinYinItem *results = [VVPinYinItem itemWithFirsts:firsts fulls:fulls];
-    return results;
+    return [self pinyinsForMatch:self.length < 5];
 }
 
-- (VVPinYinItem *)pinyinsForMatch
+- (VVPinYinFruit *)pinyinsForMatch:(BOOL)polyphone
 {
-    if (self.length < 1) {
-        return [VVPinYinItem itemWithFirsts:@[self] fulls:@[self]];
+    if (self.length <= 1) {
+        return [VVPinYinFruit fruitWithSimps:@[self] fulls:@[self]];
     }
-    VVPinYinItem *results = [[VVPinYin shared].cache objectForKey:self];
-    if (results) return results;
+    NSUInteger count = self.length;
+    NSMutableArray<NSArray<NSString *> *> *fulls = [NSMutableArray arrayWithCapacity:count];
+    NSMutableArray<NSArray<NSString *> *> *simps = [NSMutableArray arrayWithCapacity:count];
 
-    BOOL polyphone = self.length < 5;
-    results = [self pinyinsForMatch:polyphone];
-    [[VVPinYin shared].cache setObject:results forKey:self];
-    return results;
-}
-
-- (NSArray<NSArray<NSArray<NSString *> *> *> *)pinyinMatrix
-{
-    VVPinYinItem *pinyins = [self pinyinsAtIndex:0];
-    NSString *letter = [self substringToIndex:1];
-    NSArray<NSString *> *_headFirsts = pinyins.firsts.count > 0 ? pinyins.firsts : @[letter];
-    NSArray<NSString *> *_headFulls = pinyins.fulls.count > 0 ? pinyins.fulls : @[letter];
-
-    NSMutableArray<NSArray<NSString *> *> *headFulls = [NSMutableArray array];
-    NSMutableArray<NSArray<NSString *> *> *headFirsts = [NSMutableArray array];
-    for (NSString *full in _headFulls) {
-        [headFulls addObject:@[full]];
+    for (NSUInteger i = 0; i < count; i++) {
+        VVPinYinFruit *fruit = [self pinyinsAtIndex:i];
+        [fulls addObject:polyphone ? fruit.fulls : @[fruit.fulls.firstObject]];
+        [simps addObject:polyphone ? fruit.simps : @[fruit.simps.firstObject]];
     }
-    for (NSString *first in _headFirsts) {
-        [headFirsts addObject:@[first]];
+    NSArray<NSArray<NSString *> *> *tiledFulls = fulls.tiledArray;
+    NSArray<NSArray<NSString *> *> *tiledSimps = simps.tiledArray;
+    NSMutableArray<NSString *> *fullPinyins = [NSMutableArray arrayWithCapacity:tiledFulls.count];
+    NSMutableArray<NSString *> *simpPinyins = [NSMutableArray arrayWithCapacity:tiledSimps.count];
+    for (NSArray<NSString *> *array in tiledFulls) {
+        [fullPinyins addObject:[array componentsJoinedByString:@""]];
+    }
+    for (NSArray<NSString *> *array in tiledSimps) {
+        [simpPinyins addObject:[array componentsJoinedByString:@""]];
     }
 
-    if (self.length == 1) {
-        return @[headFulls, headFirsts];
-    }
-    NSString *substring = [self substringFromIndex:1];
-    NSArray<NSArray<NSArray<NSString *> *> *> *subPinyins = [substring pinyinMatrix];
-    NSArray<NSArray<NSString *> *> *subFulls = subPinyins.firstObject;
-    NSArray<NSArray<NSString *> *> *subFirsts = subPinyins.lastObject;
-
-    NSMutableArray<NSArray<NSString *> *> *fulls = [NSMutableArray array];
-    NSMutableArray<NSArray<NSString *> *> *firsts = [NSMutableArray array];
-    for (NSArray<NSString *> *headfull in headFulls) {
-        for (NSArray<NSString *> *subfull in subFulls) {
-            [fulls addObject:[headfull arrayByAddingObjectsFromArray:subfull]];
-        }
-    }
-    for (NSArray<NSString *> *headfirst in headFirsts) {
-        for (NSArray<NSString *> *subfirst in subFirsts) {
-            [firsts addObject:[headfirst arrayByAddingObjectsFromArray:subfirst]];
-        }
-    }
-    return @[fulls, firsts];
+    return [VVPinYinFruit fruitWithSimps:simpPinyins fulls:fullPinyins];
 }
 
 - (NSArray<NSString *> *)numberStringsForTokenize {
@@ -349,44 +306,87 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 }
 
 //MARK: - pinyin
-- (NSArray<NSString *> *)headPinyins
+- (NSArray<NSString *> *)legalFirstPinyins
 {
-    const char *str = self.cString;
-    if (strlen(str) <= 0) return @[];
+    const char *str = self.UTF8String;
+    u_long length = strlen(str);
+    if (length <= 0) return @[];
+
     NSString *firstLetter = [self substringToIndex:1];
     NSArray *array = [[VVPinYin shared].pinyins objectForKey:firstLetter];
-    if (array.count == 0) return @[];
-    array = [array arrayByAddingObject:firstLetter];
+
     NSMutableArray *results = [NSMutableArray array];
     for (NSString *pinyin in array) {
         const char *py = pinyin.cString;
-        int len = (int)strlen(py);
-        if (strncmp(py, str, len) == 0) {
+        u_long len = strlen(py);
+        if (len < length && strncmp(py, str, len) == 0) {
             [results addObject:pinyin];
         }
     }
     return results;
 }
 
-- (NSArray<NSArray<NSString *> *> *)splitIntoPinyins
+- (NSArray<NSArray<NSString *> *> *)splitedPinyins
 {
-    return [self.lowercaseString _splitIntoPinyins];
+    return [self.lowercaseString _splitedPinyins];
 }
 
-- (NSArray<NSArray<NSString *> *> *)_splitIntoPinyins
+- (NSArray<NSArray<NSString *> *> *)_splitedPinyins
 {
     NSMutableArray<NSArray<NSString *> *> *results = [NSMutableArray array];
     @autoreleasepool {
-        NSArray<NSString *> *array = [self headPinyins];
+        NSArray<NSString *> *array = [self legalFirstPinyins];
         if (array.count == 0) return @[@[self]];
         for (NSString *first in array) {
             NSString *tail = [self substringFromIndex:first.length];
-            NSArray<NSArray<NSString *> *> *components = [tail _splitIntoPinyins];
+            NSArray<NSArray<NSString *> *> *components = [tail _splitedPinyins];
             for (NSArray<NSString *> *pinyins in components) {
                 NSArray<NSString *> *result = [@[first] arrayByAddingObjectsFromArray:pinyins];
                 [results addObject:result];
             }
         }
+    }
+    return results;
+}
+
+@end
+
+@implementation NSArray (Tokenizer)
+
+- (NSUInteger)tiledCount
+{
+    NSUInteger total = 1;
+    for (NSArray *sub in self) {
+        NSAssert([sub isKindOfClass:[NSArray class]], @"Invalid source array");
+        total = total * sub.count;
+    }
+    return total;
+}
+
+- (NSArray<NSArray *> *)tiledArray
+{
+    NSUInteger tiledCount = self.tiledCount;
+    NSMutableArray<NSMutableArray *> *results = [NSMutableArray arrayWithCapacity:tiledCount];
+    for (NSUInteger i = 0; i < tiledCount; i++) {
+        [results addObject:[NSMutableArray arrayWithCapacity:self.count]];
+    }
+    NSUInteger rowRepeat = tiledCount;
+    NSUInteger sectionRepeat = 1;
+    for (uint64_t col = 0; col < self.count; col++) {
+        NSArray *sub = [self objectAtIndex:col];
+        rowRepeat = rowRepeat / sub.count;
+        NSUInteger section = tiledCount / sectionRepeat;
+        for (NSUInteger j = 0; j < sub.count; j++) {
+            id obj = [sub objectAtIndex:j];
+            for (NSUInteger k = 0; k < sectionRepeat; k++) {
+                for (NSUInteger l = 0; l < rowRepeat; l++) {
+                    NSUInteger row =  k * section + j * rowRepeat + l;
+                    NSMutableArray *result = results[row];
+                    result[col] = obj;
+                }
+            }
+        }
+        sectionRepeat = sectionRepeat * sub.count;
     }
     return results;
 }

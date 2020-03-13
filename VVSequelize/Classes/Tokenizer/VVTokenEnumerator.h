@@ -33,10 +33,9 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskFirstLetter = 1 << 16,
     VVTokenMaskCharacter   = 1 << 17,
     VVTokenMaskNumber      = 1 << 18,
-    VVTokenMaskSplitPinyin = 1 << 19,
-    VVTokenMaskTransform   = 1 << 20,
+    VVTokenMaskTransform   = 1 << 19,
 
-    VVTokenMaskDeault      = 0xFFFFFFFF & (~(VVTokenMaskPinyin | VVTokenMaskSplitPinyin)),
+    VVTokenMaskDeault      = 0xFFFFFFFF & (~VVTokenMaskPinyin),
     VVTokenMaskManual      = VVTokenMaskNumber | VVTokenMaskTransform,
     VVTokenMaskExtra       = VVTokenMaskPinyin | VVTokenMaskFirstLetter | VVTokenMaskNumber,
     VVTokenMaskAll         = 0xFFFFFFFF,

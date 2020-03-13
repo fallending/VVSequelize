@@ -212,10 +212,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 {
     NSMutableArray *results = [NSMutableArray array];
     NSArray *pinyinTokens = [self pinyinTokensWithCString:source cursors:cursors mask:mask];
-    NSArray *splitedPinyinTokens = [self splitedPinyinTokensWithCString:source cursors:cursors mask:mask];
     NSArray *numberTokens = [self numberTokensWithCString:source start:0 mask:mask];
     [results addObjectsFromArray:pinyinTokens];
-    [results addObjectsFromArray:splitedPinyinTokens];
     [results addObjectsFromArray:numberTokens];
     return results;
 }
@@ -411,66 +409,17 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         NSString *string = [[NSString alloc] initWithBytes:cSource + cursor.offset length:cursor.len encoding:NSUTF8StringEncoding];
         if (string.length == 0) continue;
 
-        VVPinYinItem *item = [string pinyinsAtIndex:0];
+        VVPinYinFruit *item = [string pinyinsAtIndex:0];
         for (NSString *pinyin in item.fulls) {
             VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
             [results addObject:pytk];
         }
         if (mask & VVTokenMaskFirstLetter) {
-            for (NSString *pinyin in item.firsts) {
+            for (NSString *pinyin in item.simps) {
                 VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
                 [results addObject:pytk];
             }
         }
-    }
-    return results;
-}
-
-// MARK: - VVTokenMaskSplitPinyin
-+ (NSArray<VVToken *> *)pinyinTokensBySplit:(NSString *)fragment start:(int)start
-{
-    NSArray<NSArray<NSString *> *> *splited = [fragment splitIntoPinyins];
-    NSMutableSet *results = [NSMutableSet set];
-    for (NSArray<NSString *> *pinyins in splited) {
-        int offset = 0;
-        for (int i = 0; i < pinyins.count - 1; i++) {
-            NSString *pinyin = pinyins[i];
-            int len = (int)pinyin.length;
-            VVToken *tk = [VVToken token:pinyin len:len start:(start + offset) end:(start + offset + len)];
-            [results addObject:tk];
-            offset += len;
-        }
-    }
-    return results.allObjects;
-}
-
-+ (NSArray<VVToken *> *)splitedPinyinTokensWithCString:(const char *)cSource
-                                               cursors:(NSArray<VVTokenCursor *> *)cursors
-                                                  mask:(VVTokenMask)mask
-{
-    BOOL flag = (mask & VVTokenMaskPinyin) && (mask & VVTokenMaskSplitPinyin);
-    if (!flag) return @[];
-
-    NSMutableArray *results = [NSMutableArray array];
-    VVTokenType lastType = VVTokenTypeNone;
-    u_long offset = 0;
-    u_long len = 0;
-
-    for (VVTokenCursor *cursor in cursors) {
-        BOOL change = cursor.type != lastType;
-        if (change) {
-            if (lastType == VVTokenMultilingualPlaneLetter) {
-                NSString *string = [[NSString alloc] initWithBytes:cSource + offset length:len encoding:NSASCIIStringEncoding];
-                if (string.length > 0) {
-                    NSArray<VVToken *> *tks = [self pinyinTokensBySplit:string start:(int)offset];
-                    [results addObjectsFromArray:tks];
-                }
-            }
-            offset = (int)cursor.offset;
-            len = 0;
-            lastType = cursor.type;
-        }
-        len += cursor.len;
     }
     return results;
 }

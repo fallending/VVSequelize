@@ -62,7 +62,7 @@
     //复制数据到fts表
     NSUInteger count = [self.ftsModel count:nil];
     if (count == 0) {
-        for (NSUInteger i = 3; ; i ++) {
+        for (NSUInteger i = 3; ; i++) {
             VVTestMobile *mobile = [self.mobileModel findAll:nil orderBy:nil limit:1 offset:i].firstObject;
             if (!mobile) break;
             [self.ftsModel insertOne:mobile];
@@ -405,7 +405,7 @@
 
 - (void)testTokenizer
 {
-    VVTokenMask mask = VVTokenMaskManual | VVTokenMaskExtra | VVTokenMaskSplitPinyin;
+    VVTokenMask mask = VVTokenMaskManual | VVTokenMaskExtra;
     NSArray *texts = @[
         @"音乐舞蹈",
         @"音乐123舞蹈",
@@ -421,7 +421,7 @@
 
 - (void)testTokenizer1
 {
-    VVTokenMask mask = VVTokenMaskManual | VVTokenMaskExtra | VVTokenMaskSplitPinyin;
+    VVTokenMask mask = VVTokenMaskManual | VVTokenMaskExtra;
     NSArray *texts = @[
         @"陕西",
         @"西安",
@@ -481,7 +481,8 @@
     ];
     for (NSString *text in texts) {
         NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
-        if(tokens){}
+        if (tokens) {
+        }
         //NSLog(@"%@:\n%@", text, tokens);
     }
 }
@@ -499,9 +500,56 @@
 
 - (void)testPinyin
 {
-    NSArray *array = [@"成都曾经" pinyinsForMatch];
-    NSArray *array1 = [@"成都曾经" pinyinMatrix];
-    NSLog(@"array: %@\narray1: %@", array, array1);
+    VVPinYinFruit *fruit = [@"成都曾经" pinyinsForMatch];
+    NSLog(@"fruit:\n%@\n%@", fruit.fulls, fruit.simps);
+}
+
+- (void)testSplit
+{
+    NSString *pinyin = @"jintiantianqizhenhaoa";
+    NSArray *splited = pinyin.splitedPinyins;
+    NSMutableString *string = [NSMutableString string];
+    for (NSArray *sub in splited) {
+        for (NSString *obj in sub) {
+            [string appendFormat:@"%@ ", obj];
+        }
+        [string appendFormat:@"\n"];
+    }
+    NSLog(@"\n%@", string);
+}
+
+- (void)testTiledArray
+{
+    [self measureBlock:^{
+        /*
+         NSArray *array = @[
+         @[@"11", @"12", @"13"],
+         @[@"21", @"22", @"23"],
+         @[@"31", @"32", @"33"],
+         ];
+         */
+        NSArray *array = @[
+            @[@"11", @"12", @"13", @"14", @"15", @"16", @"17"],
+            @[@"21", @"22", @"23", @"24", @"25", @"26", @"27"],
+            @[@"31", @"32", @"33", @"34", @"35", @"36", @"37"],
+            @[@"41", @"42", @"43", @"44", @"45", @"46", @"47"],
+            @[@"51", @"52", @"53", @"54", @"55", @"56", @"57"],
+            @[@"61", @"62", @"63", @"64", @"65", @"66", @"67"],
+            @[@"71", @"72", @"73", @"74", @"75", @"76", @"77"],
+        ];
+        [array tiledArray];
+        /*
+        NSArray *tiled = array.tiledArray;
+        NSMutableString *string = [NSMutableString string];
+        for (NSArray *sub in tiled) {
+            for (NSString *obj in sub) {
+                [string appendFormat:@"%@ ", obj];
+            }
+            [string appendFormat:@"\n"];
+        }
+        NSLog(@"\n%@", string);
+         */
+    }];
 }
 
 @end
