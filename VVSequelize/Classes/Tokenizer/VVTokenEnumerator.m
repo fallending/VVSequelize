@@ -414,8 +414,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
             [results addObject:pytk];
         }
-        if (mask & VVTokenMaskFirstLetter) {
-            for (NSString *pinyin in item.simps) {
+        if (mask & VVTokenMaskInitial) {
+            for (NSString *pinyin in item.abbrs) {
                 VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
                 [results addObject:pytk];
             }

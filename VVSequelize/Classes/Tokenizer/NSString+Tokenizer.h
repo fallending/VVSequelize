@@ -18,11 +18,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface VVPinYinFruit : NSObject
-@property (nonatomic, strong) NSArray<NSString *> *simps;
-@property (nonatomic, strong) NSArray<NSString *> *fulls;
+@interface VVPinYinFruit<__covariant Element> : NSObject
+@property (nonatomic, strong) NSArray<Element> *abbrs;
+@property (nonatomic, strong) NSArray<Element> *fulls;
 
-+ (instancetype)fruitWithSimps:(NSArray<NSString *> *)firsts fulls:(NSArray<NSString *> *)fulls;
++ (instancetype)fruitWithAbbrs:(NSArray<Element> *)abbrs fulls:(NSArray<Element> *)fulls;
 @end
 
 @interface NSString (Tokenizer)
@@ -49,12 +49,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)pinyin;
 
 /// get pinyin
-/// @return two-dimensional array: [ [full pinyin],  [first letter] ]
-- (VVPinYinFruit *)pinyinsAtIndex:(NSUInteger)index;
+/// @return abbrs:[abbreviation], fulls:[full pinyin],
+- (VVPinYinFruit<NSString *> *)pinyinsAtIndex:(NSUInteger)index;
 
 /// get pinyin
-/// @return two-dimensional array: [ [full pinyin],  [first letter] ]
-- (VVPinYinFruit *)pinyinsForMatch;
+/// @return abbrs:[[abbreviation]], fulls:[[full pinyin]],
+- (VVPinYinFruit<NSArray<NSString *> *> *)pinyinMatrix;
 
 /// get number tokens
 - (NSArray<NSString *> *)numberStringsForTokenize;
@@ -69,9 +69,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface NSArray (Tokenizer)
 
-- (NSUInteger)tiledCount;
+- (NSUInteger)maxTiledCount;
 
 - (NSArray<NSArray *> *)tiledArray;
+
+- (NSArray<NSArray *> *)tiledArray:(NSUInteger)limit;
 
 @end
 

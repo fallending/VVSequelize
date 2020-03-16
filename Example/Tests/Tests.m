@@ -396,7 +396,7 @@
     NSArray *array1 = [self.ftsModel match:@"industry".match(keyword) orderBy:nil limit:0 offset:0];
     NSArray *array2 = [self.ftsModel match:@"industry".match(keyword) groupBy:nil limit:0 offset:0];
     NSUInteger count = [self.ftsModel matchCount:@"industry".match(keyword)];
-    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithOrm:self.ftsModel keyword:keyword];
+    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword orm:self.ftsModel];
     highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
     NSArray *highlighted = [highlighter highlight:array1 field:@"industry"];
     if (array1 && array2 && count && highlighted) {
@@ -489,19 +489,20 @@
 
 - (void)testHighlight
 {
-    NSString *keyword = @"yinyue";
-    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithMethod:VVTokenMethodSequelize keyword:keyword];
+    NSString *keyword = @"zhk";
+    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword];
+    highlighter.options = VVMatchOptionsAll;
     highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
-    highlighter.mask = VVTokenMaskAll;
-    VVResultMatch *match = [highlighter highlight:@"音乐舞蹈"];
+    VVResultMatch *match = [highlighter highlight:@"却迎来了一名不速之客"];
     if (match) {
     }
 }
 
 - (void)testPinyin
 {
-    VVPinYinFruit *fruit = [@"成都曾经" pinyinsForMatch];
-    NSLog(@"fruit:\n%@\n%@", fruit.fulls, fruit.simps);
+    VVPinYinFruit *fruit = [@"广里给雨六只还尾" pinyinMatrix];
+    if(fruit){}
+    //NSLog(@"fruit:\n%@\n%@", fruit.fulls, fruit.abbrs);
 }
 
 - (void)testSplit

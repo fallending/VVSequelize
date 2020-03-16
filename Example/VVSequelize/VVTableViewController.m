@@ -302,7 +302,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     NSString *text = self.keywordTextField.text;
     NSString *keyword = text;
     if (keyword.length == 0) return;
-    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithOrm:item.ftsOrm keyword:keyword];
+    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword orm:item.ftsOrm];
     highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: UIColor.redColor };
     [self updateUIWithAction:NO isSearch:YES logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{

@@ -29,16 +29,16 @@ typedef NS_ENUM (NSUInteger, VVTokenMethod) {
 };
 
 typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
-    VVTokenMaskPinyin      = 0xFFFF, ///< placeholder, it will be executed without setting
-    VVTokenMaskFirstLetter = 1 << 16,
-    VVTokenMaskCharacter   = 1 << 17,
-    VVTokenMaskNumber      = 1 << 18,
-    VVTokenMaskTransform   = 1 << 19,
+    VVTokenMaskPinyin    = 0xFFFF,   ///< placeholder, it will be executed without setting
+    VVTokenMaskInitial   = 1 << 16,  ///< the initial of pinyin
+    VVTokenMaskCharacter = 1 << 17,
+    VVTokenMaskNumber    = 1 << 18,
+    VVTokenMaskTransform = 1 << 19,
 
-    VVTokenMaskDeault      = 0xFFFFFFFF & (~VVTokenMaskPinyin),
-    VVTokenMaskManual      = VVTokenMaskNumber | VVTokenMaskTransform,
-    VVTokenMaskExtra       = VVTokenMaskPinyin | VVTokenMaskFirstLetter | VVTokenMaskNumber,
-    VVTokenMaskAll         = 0xFFFFFFFF,
+    VVTokenMaskAll       = 0xFFFFFFFF,
+    VVTokenMaskManual    = VVTokenMaskNumber | VVTokenMaskTransform,
+    VVTokenMaskExtra     = VVTokenMaskPinyin | VVTokenMaskInitial | VVTokenMaskNumber,
+    VVTokenMaskDeault    = VVTokenMaskAll & (~(VVTokenMaskExtra | VVTokenMaskCharacter)),
 };
 
 @interface VVTokenEnumerator : NSObject
