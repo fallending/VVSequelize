@@ -84,11 +84,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         default:
             break;
     }
-    NSSet *set = [NSSet setWithArray:array];
-    NSArray *results = [set.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
-        return tk1.start == tk1.start ?
-        (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) :
-        (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
+    NSArray *results = [array sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
+        return tk1.start == tk2.start ? (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
     }];
     return results;
 }

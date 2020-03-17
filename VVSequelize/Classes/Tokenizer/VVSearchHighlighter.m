@@ -284,28 +284,33 @@
                         lv2 = VVMatchLV2_NonPrefix;
                     }
                     if ((lv2 > match.lv2) || (lv2 == match.lv2 && (found.location < match.range.location || i == 1) )) {
-                        match.lv2 = lv2;
-                        match.range = found;
-                        match.lv3 = (i == 1) ? VVMatchLV3_Medium : VVMatchLV3_Low;
-                        //match.lv3 = ((i == 0) ^ (lv1 == VVMatchLV1_Origin)) ? VVMatchLV3_0 : VVMatchLV3_1;
-
-                        NSUInteger k = 0, l = 0, m = 0;
-                        while (k < found.location) {
-                            NSString *p = pinyins[m];
-                            k += p.length;
-                            m++;
+                        NSUInteger offset = 0, idx = 0;
+                        while (offset < found.location && idx < pinyins.count) {
+                            NSString *s = pinyins[idx];
+                            offset += s.length;
+                            idx++;
                         }
-                        NSUInteger hlLoc = m;
-                        NSUInteger hlLen = 0;
-                        while (l < found.length) {
-                            NSString *p = pinyins[m];
-                            l += p.length;
-                            m++;
-                        }
-                        hlLen = m - hlLoc;
-                        NSRange hlRange = NSMakeRange(hlLoc, hlLen);
+                        BOOL valid = offset == found.location;
 
-                        match.attrText = [self highlightText:clean WithRange:hlRange];
+                        if (valid) {
+                            idx = idx >= pinyins.count ? pinyins.count - 1 : idx;
+                            NSUInteger hloc = idx, mlen = 0;
+                            while (mlen < found.length && idx < pinyins.count) {
+                                NSString *s = pinyins[idx];
+                                mlen += s.length;
+                                idx++;
+                            }
+                            valid = mlen == found.length;
+                            if (valid) {
+                                NSUInteger hlen = idx - hloc;
+                                NSRange hlRange = NSMakeRange(hloc, hlen);
+
+                                match.lv2 = lv2;
+                                match.range = found;
+                                match.lv3 = (i == 1) ? VVMatchLV3_Medium : VVMatchLV3_Low;
+                                match.attrText = [self highlightText:clean WithRange:hlRange];
+                            }
+                        }
                     }
                 }
                 if (match.lv2 == VVMatchLV2_Full) break;
