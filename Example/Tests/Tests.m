@@ -405,13 +405,17 @@
 
 - (void)testTokenizer
 {
-    VVTokenMask mask = VVTokenMaskManual | VVTokenMaskExtra;
+    VVTokenMask mask = VVTokenMaskManual | 10;
     NSArray *texts = @[
-        @"音乐舞蹈",
-        @"音乐123舞蹈",
-        @"18180684312",
-        @"jintiantianqizhenhao",
-        @"hello world",
+//        @"音乐舞蹈",
+//        @"音乐123舞蹈",
+//        @"13188886666",
+//        @"jintiantianqizhenhao",
+//        @"hello world",
+//        @"饿了没",
+//        @"chengke",
+        @"猛",
+        @"me",
     ];
     for (NSString *text in texts) {
         NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];

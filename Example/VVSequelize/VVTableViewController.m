@@ -113,8 +113,8 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
             return 0;
         }];
 
-        NSUInteger ftsTokenParm = VVTokenMaskNumber | VVTokenMaskTransform | 10;
-        NSString *tokenizer = [NSString stringWithFormat:@"sequelize zh_CN %@", @(ftsTokenParm)];
+        NSUInteger ftsTokenParm = VVTokenMaskManual | 10;
+        NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
         VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
         ftsConfig.fts = YES;
         ftsConfig.ftsModule = @"fts5";
@@ -304,6 +304,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     if (keyword.length == 0) return;
     VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword orm:item.ftsOrm];
     highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: UIColor.redColor };
+    highlighter.options = VVMatchOptionToken;
     [self updateUIWithAction:NO isSearch:YES logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
