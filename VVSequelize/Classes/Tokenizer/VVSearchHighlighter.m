@@ -122,7 +122,9 @@
 - (NSArray<VVToken *> *)keywordTokens {
     if (!_keywordTokens) {
         NSAssert(_keyword.length > 0, @"Invalid keyword");
-        VVTokenMask mask = _mask | _VVMatchPinyinLen;
+        NSUInteger pylen = _mask & VVTokenMaskPinyin;
+        pylen = MAX(pylen, _VVMatchPinyinLen);
+        VVTokenMask mask = _mask | pylen;
         _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
@@ -249,18 +251,15 @@
     BOOL hasSpace = [keyword rangeOfString:@" "].length > 0;
     NSString *exp = hasSpace ? [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:NSRegularExpressionSearch range:NSMakeRange(0, keyword.length)] : keyword;
     NSRange found = hasSpace ? [comparison rangeOfString:exp options:NSRegularExpressionSearch] : [comparison rangeOfString:keyword];
-    if (found.location == 0 && found.length == source.length) {
-        match.lv2 = VVMatchLV2_Full;
+    if (found.location != NSNotFound && found.length > 0) {
+        if (found.location == 0 && found.length == source.length) {
+            match.lv2 = VVMatchLV2_Full;
+        } else if (found.location == 0 && found.length < source.length) {
+            match.lv2 = VVMatchLV2_Prefix;
+        } else {
+            match.lv2 = VVMatchLV2_NonPrefix;
+        }
         match.range = found;
-    } else if (found.location == 0 && found.length < source.length) {
-        match.lv2 = VVMatchLV2_Prefix;
-        match.range = found;
-    } else if (found.location != NSNotFound && found.length > 0) {
-        match.lv2 = VVMatchLV2_NonPrefix;
-        match.range = found;
-    }
-
-    if (match.lv2 != VVMatchLV2_None) {
         match.lv3 = lv1 == VVMatchLV1_Origin ? VVMatchLV3_High : VVMatchLV3_Medium;
         match.attrText = [self highlightText:clean WithRange:found];
         return match;
@@ -355,26 +354,24 @@
         }
     }
 
-    int pos = 0, spos = 0, matchflag = -1;
+    int start = 0, end = 0, flag = -1;
     NSRange range = NSMakeRange(NSNotFound, 0);
     NSUInteger textLoc = 0;
-    while (pos < nText + 1) {
-        int curflag = tokenized[pos] == 0x0 ? 0 : 1;
-        if (matchflag != curflag || pos == nText) {
-            int len = pos - spos;
-            if (len > 0) {
-                uint8_t *bytes = (matchflag ? tokenized : remained) + spos;
-                NSString *str = [[NSString alloc] initWithBytes:bytes length:len encoding:NSUTF8StringEncoding] ? : @"";
-                if (matchflag == 1 && range.location == NSNotFound) {
-                    range = NSMakeRange(textLoc, str.length);
-                    break;
-                }
-                textLoc += str.length;
+    while (end <= nText) {
+        int curflag = end == count ? -1 : (tokenized[end] == 0x0 ? 0 : 1);
+        int len = end - start;
+        if (flag != curflag || len > 0) {
+            uint8_t *bytes = (flag ? tokenized : remained) + start;
+            NSString *str = [[NSString alloc] initWithBytes:bytes length:len encoding:NSUTF8StringEncoding] ? : @"";
+            if (flag == 1 && range.location == NSNotFound) {
+                range = NSMakeRange(textLoc, str.length);
+                break;
             }
-            spos = pos;
-            matchflag = curflag;
+            textLoc += str.length;
+            start = end;
+            flag = curflag;
         }
-        pos++;
+        end++;
     }
     free(remained);
     free(tokenized);

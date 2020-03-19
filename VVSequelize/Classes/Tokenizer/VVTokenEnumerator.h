@@ -38,7 +38,7 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskAll       = 0xFFFFFFFF,
     VVTokenMaskManual    = VVTokenMaskNumber | VVTokenMaskTransform,
     VVTokenMaskExtra     = VVTokenMaskPinyin | VVTokenMaskInitial | VVTokenMaskNumber,
-    VVTokenMaskDeault    = VVTokenMaskAll & (~(VVTokenMaskExtra | VVTokenMaskCharacter)),
+    VVTokenMaskDeault    = 0xFFF00000,
 };
 
 @interface VVTokenEnumerator : NSObject

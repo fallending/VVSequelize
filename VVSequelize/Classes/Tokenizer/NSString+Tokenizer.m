@@ -226,7 +226,6 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
         return [VVPinYinFruit fruitWithAbbrs:@[] fulls:@[]];
     }
     NSArray *zcs = @[@"z", @"c", @"s"];
-    NSArray *zhchsh = @[@"zh", @"ch", @"sh"];
     NSString *string = self.simplifiedChineseString;
     unichar ch = [string characterAtIndex:index];
     NSString *key = [NSString stringWithFormat:@"%X", ch];
@@ -239,12 +238,8 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
         NSString *first = [pinyin substringToIndex:1];
         [abbrs addObject:first];
         if ([zcs containsObject:first]) {
-            for (NSString *prefix in zhchsh) {
-                if ([pinyin hasPrefix:prefix]) {
-                    [abbrs addObject:prefix];
-                    break;
-                }
-            }
+            NSString *abbr = [first stringByAppendingString:@"h"];
+            [abbrs addObject:abbr];
         }
     }
     if (fulls.count == 0) {
@@ -253,6 +248,20 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
         [abbrs addObject:str];
     }
     return [VVPinYinFruit fruitWithAbbrs:abbrs.array fulls:fulls.array];
+}
+
+- (VVPinYinFruit<NSString *> *)pinyins
+{
+    VVPinYinFruit *matrix = self.pinyinMatrix;
+    NSMutableArray<NSString *> *fulls = [NSMutableArray array];
+    NSMutableArray<NSString *> *abbrs = [NSMutableArray array];
+    for (NSArray<NSString *> *full in matrix.fulls) {
+        [fulls addObject:[full componentsJoinedByString:@""]];
+    }
+    for (NSArray<NSString *> *abbr in matrix.abbrs) {
+        [abbrs addObject:[abbr componentsJoinedByString:@""]];
+    }
+    return [VVPinYinFruit fruitWithAbbrs:abbrs fulls:fulls];
 }
 
 - (VVPinYinFruit *)pinyinMatrix

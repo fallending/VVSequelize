@@ -50,6 +50,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// get pinyin
 /// @return abbrs:[abbreviation], fulls:[full pinyin],
+- (VVPinYinFruit<NSString *> *)pinyins;
+
+/// get pinyin
+/// @return abbrs:[abbreviation], fulls:[full pinyin],
 - (VVPinYinFruit<NSString *> *)pinyinsAtIndex:(NSUInteger)index;
 
 /// get pinyin
