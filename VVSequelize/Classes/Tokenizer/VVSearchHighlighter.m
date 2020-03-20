@@ -248,9 +248,10 @@
     match.source = source;
     int nText = (int)strlen(pText);
 
-    BOOL hasSpace = [keyword rangeOfString:@" "].length > 0;
-    NSString *exp = hasSpace ? [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:NSRegularExpressionSearch range:NSMakeRange(0, keyword.length)] : keyword;
-    NSRange found = hasSpace ? [comparison rangeOfString:exp options:NSRegularExpressionSearch] : [comparison rangeOfString:keyword];
+    BOOL hasSpace = [keyword rangeOfString:@" " options:NSLiteralSearch].length > 0;
+    NSStringCompareOptions options = (hasSpace ? NSRegularExpressionSearch : 0x0) | NSLiteralSearch;
+    NSString *exp = hasSpace ? [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:options range:NSMakeRange(0, keyword.length)] : keyword;
+    NSRange found = [comparison rangeOfString:exp options:options];
     if (found.location != NSNotFound && found.length > 0) {
         if (found.location == 0 && found.length == source.length) {
             match.lv2 = VVMatchLV2_Full;
@@ -272,7 +273,7 @@
             NSArray *matrix = matrixes[i];
             for (NSArray *pinyins in matrix) {
                 NSString *py = [pinyins componentsJoinedByString:@""];
-                found = hasSpace ? [py rangeOfString:exp options:NSRegularExpressionSearch] : [py rangeOfString:keyword];
+                found = [py rangeOfString:exp options:options];
                 if (found.length > 0) {
                     VVMatchLV2 lv2 = VVMatchLV2_None;
                     if (found.location == 0 && found.length == py.length) {
