@@ -143,7 +143,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     if (tokenizer) CFRelease(tokenizer);
 
     // other tokens
-    if (mask & VVTokenMaskExtra) {
+    if (mask > 0) {
         NSArray *cursors = [self cursorsWithCString:cSource];
         [results addObjectsFromArray:[self allOtherTokens:cSource cursors:cursors mask:mask]];
     }
@@ -176,7 +176,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     }
 
     // other tokens
-    if (mask & VVTokenMaskExtra) {
+    if (mask > 0) {
         NSArray *cursors = [self cursorsWithCString:cSource];
         [results addObjectsFromArray:[self allOtherTokens:cSource cursors:cursors mask:mask]];
     }
@@ -197,7 +197,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     [results addObjectsFromArray:tokens];
 
     // other tokens
-    if (mask & VVTokenMaskExtra) {
+    if (mask > 0) {
         [results addObjectsFromArray:[self allOtherTokens:cSource cursors:cursors mask:mask]];
     }
 

@@ -62,7 +62,7 @@ typedef NS_OPTIONS (NSUInteger, VVMatchOptions) {
 @property (nonatomic, copy) NSString *keyword;
 @property (nonatomic, assign) VVMatchOptions options;
 @property (nonatomic, assign) VVTokenMethod method;         ///< default is VVTokenMethodSequelize
-@property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDeault
+@property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDefault
 @property (nonatomic, assign) NSUInteger attrTextMaxLength; ///< default is 17
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *normalAttributes;

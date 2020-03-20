@@ -111,7 +111,7 @@
 - (void)setup {
     _options = VVMatchOptionPinyin;
     _method = VVTokenMethodSequelize;
-    _mask = VVTokenMaskDeault;
+    _mask = VVTokenMaskDefault;
     _attrTextMaxLength = 17;
 }
 
@@ -124,7 +124,7 @@
         NSAssert(_keyword.length > 0, @"Invalid keyword");
         NSUInteger pylen = _mask & VVTokenMaskPinyin;
         pylen = MAX(pylen, _VVMatchPinyinLen);
-        VVTokenMask mask = _mask | pylen;
+        VVTokenMask mask = (_mask & ~VVTokenMaskPinyin) | pylen;
         _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
