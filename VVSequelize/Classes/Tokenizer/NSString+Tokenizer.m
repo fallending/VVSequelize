@@ -85,16 +85,16 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 }
 
 - (NSDictionary *)big52gbMap {
-    if (!_gb2big5Map) {
+    if (!_big52gbMap) {
         NSMutableDictionary *dic = [NSMutableDictionary dictionary];
         for (NSUInteger i = 0; i < VVSimplifiedCodes.length; i++) {
             NSString *gb = [VVSimplifiedCodes substringWithRange:NSMakeRange(i, 1)];
             NSString *big5 = [VVTraditionalCodes substringWithRange:NSMakeRange(i, 1)];
             dic[big5] = gb;
         }
-        _gb2big5Map = dic;
+        _big52gbMap = dic;
     }
-    return _gb2big5Map;
+    return _big52gbMap;
 }
 
 - (NSCharacterSet *)trimmingSet
@@ -185,23 +185,32 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     return "";
 }
 
-- (NSString *)simplifiedChineseString {
-    NSMutableString *string = [NSMutableString string];
-    for (NSUInteger i = 0; i < self.length; i++) {
-        NSString *ch = [self substringWithRange:NSMakeRange(i, 1)];
-        NSString *trans = [VVPinYin shared].big52gbMap[ch] ? : ch;
-        [string appendString:trans];
-    }
-    return string;
+- (NSString *)simplifiedChineseString
+{
+    return [self transformStringWith:[VVPinYin shared].big52gbMap];
 }
 
-- (NSString *)traditionalChineseString {
-    NSMutableString *string = [NSMutableString string];
-    for (NSUInteger i = 0; i < self.length; i++) {
-        NSString *ch = [self substringWithRange:NSMakeRange(i, 1)];
-        NSString *trans = [VVPinYin shared].gb2big5Map[ch] ? : ch;
-        [string appendString:trans];
-    }
+- (NSString *)traditionalChineseString
+{
+    return [self transformStringWith:[VVPinYin shared].gb2big5Map];
+}
+
+- (NSString *)transformStringWith:(NSDictionary *)map
+{
+    NSMutableString *string = [NSMutableString stringWithString:self];
+    NSString *pattern = @"[\u4e00-\u9fa5]+";
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+    [regex enumerateMatchesInString:self options:NSMatchingReportCompletion range:NSMakeRange(0, self.length) usingBlock:^(NSTextCheckingResult *_Nullable result, NSMatchingFlags flags, BOOL *_Nonnull stop) {
+        if (result.resultType != NSTextCheckingTypeRegularExpression) { return; }
+        NSString *subString = [self substringWithRange:result.range];
+        NSMutableString *fragment = [NSMutableString stringWithCapacity:result.range.length];
+        for (NSUInteger i = 0; i < subString.length; i++) {
+            NSString *ch = [subString substringWithRange:NSMakeRange(i, 1)];
+            NSString *trans = map[ch] ? : ch;
+            [fragment appendString:trans];
+        }
+        [string replaceCharactersInRange:result.range withString:fragment];
+    }];
     return string;
 }
 
@@ -225,9 +234,14 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     if (self.length <= index) {
         return [VVPinYinFruit fruitWithAbbrs:@[] fulls:@[]];
     }
+    unichar ch = [self characterAtIndex:index];
+    NSString *single = [self substringWithRange:NSMakeRange(index, 1)];
+    if (ch < 0x4e00 || ch > 0x9fa5) {
+        return [VVPinYinFruit fruitWithAbbrs:@[single] fulls:@[single]];
+    }
+    NSString *trans = [VVPinYin shared].big52gbMap[single] ? : single;
+    ch = [trans characterAtIndex:0];
     NSArray *zcs = @[@"z", @"c", @"s"];
-    NSString *string = self.simplifiedChineseString;
-    unichar ch = [string characterAtIndex:index];
     NSString *key = [NSString stringWithFormat:@"%X", ch];
     NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
     NSMutableOrderedSet *fulls = [NSMutableOrderedSet orderedSet];
