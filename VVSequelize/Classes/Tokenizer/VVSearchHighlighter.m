@@ -63,7 +63,7 @@
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"[%@|%@|%@|%@]: 0x%llX", @(_lv1), @(_lv2), @(_lv3), NSStringFromRange(_range), self.weight];
+    return [NSString stringWithFormat:@"[%@|%@|%@|%@|0x%llx]: %@", @(_lv1), @(_lv2), @(_lv3), NSStringFromRange(_range), self.weight, [_attrText.description stringByReplacingOccurrencesOfString:@"\n" withString:@""]];
 }
 
 @end
@@ -187,7 +187,7 @@
     }
     const char *cleanText = clean.cString;
     const char *pText = comparison.cString;
-    int nText = (int)strlen(pText);
+    long nText = (long)strlen(pText);
     if (nText == 0) return match;
 
     NSString *keyword = _keyword.lowercaseString;
@@ -246,7 +246,7 @@
     VVResultMatch *match = [[VVResultMatch alloc] init];
     match.lv1 = lv1;
     match.source = source;
-    int nText = (int)strlen(pText);
+    long nText = (long)strlen(pText);
 
     BOOL hasSpace = [keyword rangeOfString:@" " options:NSLiteralSearch].length > 0;
     NSStringCompareOptions options = (hasSpace ? NSRegularExpressionSearch : 0x0) | NSLiteralSearch;
@@ -346,40 +346,19 @@
         }
     }
 
-    uint8_t *remained = (uint8_t *)malloc(nText + 1);
-    memcpy(remained, cleanText, nText);
-    remained[nText] = 0x0;
-    for (int i = 0; i < nText + 1; i++) {
-        if (tokenized[i] != 0) {
-            memset(remained + i, 0x0, 1);
-        }
+    long start = -1, end = 0;
+    for (long i = 0; i <= nText; i ++) {
+        int flag = tokenized[i] == 0x0 ? 0 : 1;
+        if(start < 0 && flag == 1){ start = i; }
+        else if(start >= 0 && flag == 0){ end = i; break;}
     }
-
-    int start = 0, end = 0, flag = -1;
-    NSRange range = NSMakeRange(NSNotFound, 0);
-    NSUInteger textLoc = 0;
-    while (end <= nText) {
-        int curflag = end == count ? -1 : (tokenized[end] == 0x0 ? 0 : 1);
-        int len = end - start;
-        if (flag != curflag || len > 0) {
-            uint8_t *bytes = (flag ? tokenized : remained) + start;
-            NSString *str = [[NSString alloc] initWithBytes:bytes length:len encoding:NSUTF8StringEncoding] ? : @"";
-            if (flag == 1 && range.location == NSNotFound) {
-                range = NSMakeRange(textLoc, str.length);
-                break;
-            }
-            textLoc += str.length;
-            start = end;
-            flag = curflag;
-        }
-        end++;
-    }
-    free(remained);
     free(tokenized);
 
-    if (range.length > 0) {
-        match.range = range;
-        match.attrText = [self highlightText:clean WithRange:range];
+    if (end > 0) {
+        NSString *s1 = [[NSString alloc] initWithBytes:cleanText length:start encoding:NSUTF8StringEncoding] ? : @"";
+        NSString *sk = [[NSString alloc] initWithBytes:cleanText + start length:end - start encoding:NSUTF8StringEncoding] ? : @"";
+        match.range = NSMakeRange(start, end);
+        match.attrText = [self highlightText:clean WithRange:NSMakeRange(s1.length, sk.length)];
         if (match.lv2 == VVMatchLV2_None) {
             match.lv2 = VVMatchLV2_Other;
             match.lv3 = VVMatchLV3_Low;
