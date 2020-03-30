@@ -208,9 +208,9 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 + (NSArray<VVToken *> *)allOtherTokens:(const char *)source cursors:(NSArray<VVTokenCursor *> *)cursors mask:(VVTokenMask)mask
 {
     NSMutableArray *results = [NSMutableArray array];
-    NSArray *pinyinTokens = [self pinyinTokensWithCString:source cursors:cursors mask:mask];
+    //NSArray *pinyinTokens = [self pinyinTokensWithCString:source cursors:cursors mask:mask];
     NSArray *numberTokens = [self numberTokensWithCString:source start:0 mask:mask];
-    [results addObjectsFromArray:pinyinTokens];
+    //[results addObjectsFromArray:pinyinTokens];
     [results addObjectsFromArray:numberTokens];
     return results;
 }
