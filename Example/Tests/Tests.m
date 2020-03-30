@@ -407,13 +407,13 @@
 {
     VVTokenMask mask = VVTokenMaskDefault | 10;
     NSArray *texts = @[
-//        @"音乐舞蹈",
-//        @"音乐123舞蹈",
-//        @"13188886666",
-//        @"jintiantianqizhenhao",
-//        @"hello world",
-//        @"饿了没",
-//        @"chengke",
+        @"音乐舞蹈",
+        @"音乐123舞蹈",
+        @"13188886666",
+        @"jintiantianqizhenhao",
+        @"hello world",
+        @"饿了没",
+        @"chengke",
         @"猛",
         @"me",
     ];
