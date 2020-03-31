@@ -185,8 +185,8 @@
     if (self.mask & VVTokenMaskTransform) {
         comparison = comparison.simplifiedChineseString;
     }
-    const char *cleanText = clean.cString;
-    const char *pText = comparison.cString;
+    const char *cleanText = clean.cLangString;
+    const char *pText = comparison.cLangString;
     long nText = (long)strlen(pText);
     if (nText == 0) return match;
 
@@ -288,6 +288,7 @@
                         while (offset < found.location && idx < pinyins.count) {
                             NSString *s = pinyins[idx];
                             offset += s.length;
+                            if(offset > NSMaxRange(found)) break;
                             idx++;
                         }
                         BOOL valid = offset == found.location;
@@ -339,7 +340,7 @@
         VVToken *kwToken = self.keywordTokens[j];
         for (unsigned long i = k; i < count; i++) {
             VVToken *token = tokens[i];
-            if (strcmp(token.token.cString, kwToken.token.cString) != 0) continue;
+            if (strcmp(token.token.cLangString, kwToken.token.cLangString) != 0) continue;
             memcpy(tokenized + token.start, cleanText + token.start, token.end - token.start);
             k = i + 1;
             break;

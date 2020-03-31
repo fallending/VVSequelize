@@ -176,7 +176,7 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     return @"";
 }
 
-- (const char *)cString
+- (const char *)cLangString
 {
     const char *str = self.UTF8String;
     if (str) return str;
@@ -302,15 +302,10 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     return [VVPinYinFruit fruitWithAbbrs:tiledAbbrs fulls:tiledFulls];
 }
 
-- (NSArray<NSString *> *)numberStringsForTokenize {
+- (NSString *)numberWithoutSeparator
+{
     NSNumberFormatter *formatter = [VVPinYin shared].numberFormatter;
-    NSNumber *number = [formatter numberFromString:self];
-    if (number != nil) {
-        NSString *unformatted = number.stringValue;
-        NSString *formatted = [formatter stringFromNumber:number];
-        return @[unformatted, formatted];
-    }
-    return @[self];
+    return [[formatter numberFromString:self] stringValue];
 }
 
 - (NSString *)cleanString

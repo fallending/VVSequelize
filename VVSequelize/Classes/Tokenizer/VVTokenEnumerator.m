@@ -53,7 +53,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"[%@-%@](%@) '%@' %@", @(_start), @(_end), @(_len), _token, @(self.hash)];
+    return [NSString stringWithFormat:@"[%2i-%2i|%2i|0x%09lx]: %@ ", _start, _end, _len, self.hash, _token];
 }
 
 @end
@@ -66,7 +66,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     if (input.length <= 0) return @[];
     NSString *source = input.lowercaseString;
     if (mask & VVTokenMaskTransform) source = source.simplifiedChineseString;
-    const char *cSource = source.cString;
+    const char *cSource = source.cLangString;
     NSArray *array = @[];
     switch (method) {
         case VVTokenMethodApple:
@@ -84,7 +84,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         default:
             break;
     }
-    NSArray *results = [array sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
+    NSSet *set = [NSSet setWithArray:array];
+    NSArray *results = [set.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
         return tk1.start == tk2.start ? (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
     }];
     return results;
@@ -116,8 +117,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             // get current range
             range = CFStringTokenizerGetCurrentTokenRange(tokenizer);
             NSString *sub = [source substringWithRange:NSMakeRange(range.location, range.length)];
-            const char *pre = [source substringWithRange:NSMakeRange(0, range.location)].cString;
-            const char *token = sub.cString;
+            const char *pre = [source substringWithRange:NSMakeRange(0, range.location)].cLangString;
+            const char *token = sub.cLangString;
             int start = (int)strlen(pre);
             int len = (int)strlen(token);
             int end = start + len;
@@ -164,8 +165,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         [tokenizer enumerateTokensInRange:range usingBlock:^(NSRange tokenRange, NLTokenizerAttributes flags, BOOL *stop) {
             @autoreleasepool {
                 NSString *tk = [tokenizer.string substringWithRange:tokenRange];
-                const char *pre = [tokenizer.string substringToIndex:tokenRange.location].cString;
-                const char *token = tk.cString;
+                const char *pre = [tokenizer.string substringToIndex:tokenRange.location].cLangString;
+                const char *token = tk.cLangString;
                 int start = (int)strlen(pre);
                 int len   = (int)strlen(token);
                 int end   = (int)(start + len);
@@ -371,7 +372,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             if (encoding != NSUIntegerMax) {
                 NSString *string = [[NSString alloc] initWithBytes:cSource + cursor.offset length:cursor.len encoding:encoding];
                 if (string.length > 0) {
-                    VVToken *token = [VVToken token:string len:(int)strlen(string.cString) start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
+                    VVToken *token = [VVToken token:string len:(int)strlen(string.cLangString) start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
                     [results addObject:token];
                 }
             }
@@ -418,54 +419,69 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 {
     BOOL flag = (mask & VVTokenMaskNumber);
     if (!flag) return @[];
-
+    
     unsigned long len = strlen(cString);
-    if (len == 0) return @[];
-
+    if (len <= 3) return @[];
+    char *copied = (char *)malloc(len + 1);
+    strncpy(copied, cString, len);
+    copied[len] = 0x0;
+    
     NSMutableArray *array = [NSMutableArray array];
-    NSMutableString *s_num = [NSMutableString string];
-    int offset = -1;
-
-    for (int i = 0; i < len; i++) {
-        char ch = cString[i];
-        if (ch >= '0' && ch <= '9') {
-            if (ch > '0' && offset < 0) {
-                offset = i;
+    char *container = (char *)malloc(len + 1);
+    memset(container, 0x0, len);
+    
+    int offset = 0;
+    for (int i = 0; i <= len; i++) {
+        char ch = copied[i];
+        BOOL flag = (ch >= '0' && ch <= '9') || ch == ',';
+        if (flag) {
+            container[offset] = ch;
+            offset++;
+        } else {
+            if (offset > 0) {
+                NSString *numberString = [[NSString alloc] initWithBytes:container length:offset encoding:NSASCIIStringEncoding];
+                [array addObject:@[numberString, @(i - offset)]];
             }
-            if (offset >= 0) {
-                [s_num appendFormat:@"%i", ch - '0'];
-            }
-        } else if (offset >= 0) {
-            switch (ch) {
-                case ',':
-                    [s_num appendString:@","];
-                    break;
-                default:
-                    [array addObject:@[s_num, @(offset)]];
-                    s_num = [NSMutableString string];
-                    offset = -1;
-                    break;
-            }
+            memset(container, 0x0, len);
+            offset = 0;
         }
     }
-    if (offset >= 0) {
-        [array addObject:@[s_num, @(offset)]];
-    }
-
+    free(container);
+    free(copied);
+    
     NSMutableArray *results = [NSMutableArray array];
     for (int i = 0; i < array.count; i++) {
         NSArray *sub = array[i];
-        NSString *numstr = sub.firstObject;
+        NSString *origin = sub.firstObject;
+        NSString *number = [origin numberWithoutSeparator];
+        if (number.length < 3 || number.length >= origin.length) continue;
         int offset = (int)[sub.lastObject unsignedIntegerValue];
-        NSArray<NSString *> *numbers = [numstr numberStringsForTokenize];
-        if (numbers.count >= 2) {
-            for (NSString *num in numbers) {
-                const char *token = num.cString;
-                int len = (int)strlen(token);
-                if (len <= 0) continue;
-                [results addObject:[VVToken token:num len:len start:start + offset end:start + offset + (int)numstr.length]];
+        const char *subSource = number.cLangString;
+        NSArray *subCursors = [self cursorsWithCString:subSource];
+        NSArray *tmpTokens = [self wordTokensByCombine:subSource cursors:subCursors encoding:NSASCIIStringEncoding];
+        NSInteger count = tmpTokens.count;
+        NSInteger fill = 3 - count % 3;
+        if (fill == 3) fill = 0;
+        
+        NSMutableArray *subTokens = [NSMutableArray arrayWithCapacity:number.length];
+        for (NSInteger i = 0; i < count - 2; i++) {
+            VVToken *token = tmpTokens[i];
+            int comma1 = (int)(i + fill) / 3;
+            int comma2 =  i >= count - 3 ? 0 : (i + fill) % 3 == 0 ? 0 : 1;
+            int pre = offset + comma1;
+            token.start += pre;
+            token.end += pre + comma2;
+            [subTokens addObject:token];
+            if ((i + fill) % 3 == 2 && token.token.length == 3) {
+                VVToken *tk = [VVToken new];
+                tk.start = token.start;
+                tk.end = token.end - 1;
+                tk.len = token.len - 1;
+                tk.token = [token.token substringToIndex:2];
+                [subTokens addObject:tk];
             }
         }
+        [results addObjectsFromArray:subTokens];
     }
     return results;
 }

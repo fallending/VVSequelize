@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)ocStringWithCString:(const char *)cString;
 
 /// using utf8 or ascii encoding to generate c string
-- (const char *)cString;
+- (const char *)cLangString;
 
 /// convert to simplified chinese string
 - (NSString *)simplifiedChineseString;
@@ -60,8 +60,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// @return abbrs:[[abbreviation]], fulls:[[full pinyin]],
 - (VVPinYinFruit<NSArray<NSString *> *> *)pinyinMatrix;
 
-/// get number tokens
-- (NSArray<NSString *> *)numberStringsForTokenize;
+/// get number without separator
+- (NSString *)numberWithoutSeparator;
 
 /// clean string after removing special characters
 - (NSString *)cleanString;

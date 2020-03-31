@@ -35,7 +35,7 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskNumber    = 1 << 18,
     VVTokenMaskTransform = 1 << 19,
 
-    VVTokenMaskDefault   = 0x0,
+    VVTokenMaskDefault   = VVTokenMaskNumber | VVTokenMaskTransform,
     VVTokenMaskAll       = 0xFFFFFFFF,
     VVTokenMaskAllPinYin = VVTokenMaskPinyin | VVTokenMaskInitial,
 };

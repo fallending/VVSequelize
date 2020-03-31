@@ -54,7 +54,7 @@
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
     self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
-    NSUInteger ftsTokenParm = VVTokenMaskNumber | VVTokenMaskTransform | VVTokenMaskCharacter | 15;
+    NSUInteger ftsTokenParm = VVTokenMaskDefault | 15;
     NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
     VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"industry"]];
 
@@ -405,21 +405,25 @@
 
 - (void)testTokenizer
 {
-    VVTokenMask mask = VVTokenMaskDefault | 10;
+    VVTokenMask mask = VVTokenMaskAll;
     NSArray *texts = @[
-        @"音乐舞蹈",
-        @"音乐123舞蹈",
-        @"13188886666",
-        @"jintiantianqizhenhao",
-        @"hello world",
-        @"饿了没",
-        @"chengke",
-        @"猛",
-        @"me",
+//        @"音乐舞蹈",
+//        @"音乐123舞蹈",
+//        @"13188886666",
+        @"234",
+//        @"1,234,567,890",
+        @"12,345,678,901",
+//        @"123,456,789,123",
+//        @"jintiantianqizhenhao",
+//        @"hello world",
+//        @"饿了没",
+//        @"chengke",
+//        @"猛",
+//        @"me",
     ];
     for (NSString *text in texts) {
         NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
-        NSLog(@"%@:\n%@", text, tokens);
+        NSLog(@"\n%@:\n%@", text, tokens);
     }
 }
 
