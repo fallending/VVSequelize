@@ -454,7 +454,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         NSArray *sub = array[i];
         NSString *origin = sub.firstObject;
         NSString *number = [origin numberWithoutSeparator];
-        if (number.length < 3 || number.length >= origin.length) continue;
+        if (number.length <= 3 || number.length >= origin.length) continue;
         int offset = (int)[sub.lastObject unsignedIntegerValue];
         const char *subSource = number.cLangString;
         NSArray *subCursors = [self cursorsWithCString:subSource];
