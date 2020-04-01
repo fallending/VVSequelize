@@ -270,7 +270,10 @@ static int vv_fts5_xTokenize(
     VVTokenMethod method = tok->method;
     uint64_t mask = tok->mask;
     if (!(iUnused & FTS5_TOKENIZE_DOCUMENT)) {
-        mask = mask & ~VVTokenMaskPinyin;
+        mask = mask & ~VVTokenMaskAllPinYin;
+    }
+    if (!(iUnused & FTS5_TOKENIZE_QUERY)) {
+        mask = mask & ~VVTokenMaskSyllable;
     }
     NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:mask];
 

@@ -66,8 +66,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// clean string after removing special characters
 - (NSString *)cleanString;
 
-/// split into pinyins
-- (NSArray<NSArray<NSString *> *> *)splitedPinyins;
+/// pinyin segmentation
+- (NSArray<NSArray<NSString *> *> *)pinyinSegmentation;
 
 @end
 

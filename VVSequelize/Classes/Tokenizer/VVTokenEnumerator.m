@@ -209,9 +209,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 + (NSArray<VVToken *> *)allOtherTokens:(const char *)source cursors:(NSArray<VVTokenCursor *> *)cursors mask:(VVTokenMask)mask
 {
     NSMutableArray *results = [NSMutableArray array];
-    //NSArray *pinyinTokens = [self pinyinTokensWithCString:source cursors:cursors mask:mask];
-    NSArray *numberTokens = [self numberTokensWithCString:source start:0 mask:mask];
-    //[results addObjectsFromArray:pinyinTokens];
+    NSArray *numberTokens = [self numberTokensWithCString:source mask:mask];
     [results addObjectsFromArray:numberTokens];
     return results;
 }
@@ -302,13 +300,12 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 
 // MARK: - Word Tokens
 + (NSArray<VVToken *> *)wordTokensByCombine:(const char *)cSource
-                                    cursors:(NSArray<VVTokenCursor *> *)sourceCursors
+                                    cursors:(NSArray<VVTokenCursor *> *)cursors
                                    encoding:(NSStringEncoding)encoding
 {
-    if (sourceCursors.count == 0) return @[];
+    if (cursors.count == 0) return @[];
 
-    NSMutableArray *cursors = sourceCursors.mutableCopy;
-    VVTokenCursor *last = sourceCursors.lastObject;
+    VVTokenCursor *last = cursors.lastObject;
     NSInteger ext = last.type < VVTokenMultilingualPlaneSymbol ? 2 : 1;
 
     NSMutableArray *results = [NSMutableArray array];
@@ -337,7 +334,6 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 {
     NSMutableArray *results = [NSMutableArray array];
     VVTokenType lastType = VVTokenTypeNone;
-    BOOL flag = (mask & VVTokenMaskCharacter);
 
     NSMutableArray<VVTokenCursor *> *subCursors = [NSMutableArray array];
     for (VVTokenCursor *cursor in cursors) {
@@ -347,65 +343,65 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             switch (lastType) {
                 case VVTokenMultilingualPlaneLetter: encoding = NSASCIIStringEncoding; break;
                 case VVTokenMultilingualPlaneDigit: encoding = NSASCIIStringEncoding; break;
-                case VVTokenMultilingualPlaneSymbol: encoding = flag ? NSUIntegerMax : NSUTF8StringEncoding; break;
-                case VVTokenMultilingualPlaneOther: encoding =  flag ? NSUIntegerMax : NSUTF8StringEncoding; break;
-                case VVTokenAuxiliaryPlaneOther:  encoding =  flag ? NSUIntegerMax : NSUTF8StringEncoding; break;
-                default: break;
-            }
-            if (encoding != NSUIntegerMax) {
-                NSArray *tokens = [self wordTokensByCombine:cSource cursors:subCursors encoding:encoding];
-                [results addObjectsFromArray:tokens];
-            }
-            lastType = cursor.type;
-            [subCursors removeAllObjects];
-        }
-
-        if (flag) {
-            encoding = NSUIntegerMax;
-            switch (cursor.type) {
                 case VVTokenMultilingualPlaneSymbol: encoding = NSUTF8StringEncoding; break;
                 case VVTokenMultilingualPlaneOther: encoding = NSUTF8StringEncoding; break;
                 case VVTokenAuxiliaryPlaneOther:  encoding = NSUTF8StringEncoding; break;
                 default: break;
             }
-
             if (encoding != NSUIntegerMax) {
-                NSString *string = [[NSString alloc] initWithBytes:cSource + cursor.offset length:cursor.len encoding:encoding];
-                if (string.length > 0) {
-                    VVToken *token = [VVToken token:string len:(int)strlen(string.cLangString) start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
-                    [results addObject:token];
+                NSArray *tokens = [self wordTokensByCombine:cSource cursors:subCursors encoding:encoding];
+                [results addObjectsFromArray:tokens];
+                if (lastType == VVTokenMultilingualPlaneOther && (mask & VVTokenMaskPinyin)) {
+                    NSArray *pytokens = [self pinyinTokensWithCString:cSource cursors:subCursors mask:mask];
+                    [results addObjectsFromArray:pytokens];
                 }
             }
+            lastType = cursor.type;
+            [subCursors removeAllObjects];
         }
         [subCursors addObject:cursor];
     }
     return results;
 }
 
-// MARK: - VVTokenMaskPinyin, VVTokenMaskFirstLetter
+// MARK: - VVTokenMaskPinyin, VVTokenMaskInitial
 + (NSArray<VVToken *> *)pinyinTokensWithCString:(const char *)cSource
                                         cursors:(NSArray<VVTokenCursor *> *)cursors
                                            mask:(VVTokenMask)mask
 {
     BOOL flag = strlen(cSource ? : "") < (mask & VVTokenMaskPinyin);
-    if (!flag) return @[];
+    VVTokenCursor *last = cursors.lastObject;
+    if (!flag || cursors.count == 0 || last.type != VVTokenMultilingualPlaneOther) return @[];
 
     NSMutableArray *results = [NSMutableArray array];
-    for (VVTokenCursor *cursor in cursors) {
-        if (cursor.type != VVTokenMultilingualPlaneOther) continue;
-
-        NSString *string = [[NSString alloc] initWithBytes:cSource + cursor.offset length:cursor.len encoding:NSUTF8StringEncoding];
-        if (string.length == 0) continue;
-
-        VVPinYinFruit *item = [string pinyinsAtIndex:0];
-        for (NSString *pinyin in item.fulls) {
-            VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
-            [results addObject:pytk];
-        }
-        if (mask & VVTokenMaskInitial) {
-            for (NSString *pinyin in item.abbrs) {
-                VVToken *pytk = [VVToken token:pinyin len:(int)pinyin.length start:(int)cursor.offset end:(int)(cursor.offset + cursor.len)];
-                [results addObject:pytk];
+    NSArray *fills = @[@(1), @(2)];
+    for (NSNumber *f in fills) {
+        NSInteger fill = [f integerValue];
+        NSInteger count = cursors.count;
+        for (NSInteger i = 0; i < count; i++) {
+            VVTokenCursor *c1 = cursors[i];
+            u_long offset = c1.offset;
+            u_long len = c1.len;
+            for (NSInteger j = 1; j <= fill && i + j < count; j++) {
+                VVTokenCursor *c2 = cursors[i + j];
+                len += c2.len;
+            }
+            NSString *string = [[NSString alloc] initWithBytes:cSource + offset length:len encoding:NSUTF8StringEncoding];
+            if (string.length > 0) {
+                VVPinYinFruit *fruit = string.pinyins;
+                if (fill == 1) {
+                    // full pinyin of two charactors
+                    for (NSString *tkString in fruit.fulls) {
+                        VVToken *tk = [VVToken token:tkString len:(int)len start:(int)offset end:(int)(offset + len)];
+                        [results addObject:tk];
+                    }
+                } else {
+                    // abbreviated pinyin of three charactors
+                    for (NSString *tkString in fruit.abbrs) {
+                        VVToken *tk = [VVToken token:tkString len:(int)len start:(int)offset end:(int)(offset + len)];
+                        [results addObject:tk];
+                    }
+                }
             }
         }
     }
@@ -414,22 +410,21 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 
 // MARK: - VVTokenMaskNumber
 + (NSArray<VVToken *> *)numberTokensWithCString:(const char *)cString
-                                          start:(int)start
                                            mask:(VVTokenMask)mask
 {
     BOOL flag = (mask & VVTokenMaskNumber);
     if (!flag) return @[];
-    
+
     unsigned long len = strlen(cString);
     if (len <= 3) return @[];
     char *copied = (char *)malloc(len + 1);
     strncpy(copied, cString, len);
     copied[len] = 0x0;
-    
+
     NSMutableArray *array = [NSMutableArray array];
     char *container = (char *)malloc(len + 1);
     memset(container, 0x0, len);
-    
+
     int offset = 0;
     for (int i = 0; i <= len; i++) {
         char ch = copied[i];
@@ -448,7 +443,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     }
     free(container);
     free(copied);
-    
+
     NSMutableArray *results = [NSMutableArray array];
     for (int i = 0; i < array.count; i++) {
         NSArray *sub = array[i];
@@ -462,7 +457,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         NSInteger count = tmpTokens.count;
         NSInteger fill = 3 - count % 3;
         if (fill == 3) fill = 0;
-        
+
         NSMutableArray *subTokens = [NSMutableArray arrayWithCapacity:number.length];
         for (NSInteger i = 0; i < count - 2; i++) {
             VVToken *token = tmpTokens[i];

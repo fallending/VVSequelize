@@ -345,12 +345,12 @@ static NSString *const kVVPinYinTransformFile = @"transform.txt";
     return results;
 }
 
-- (NSArray<NSArray<NSString *> *> *)splitedPinyins
+- (NSArray<NSArray<NSString *> *> *)pinyinSegmentation
 {
-    return [self.lowercaseString _splitedPinyins];
+    return [self.lowercaseString _pinyinSegmentation];
 }
 
-- (NSArray<NSArray<NSString *> *> *)_splitedPinyins
+- (NSArray<NSArray<NSString *> *> *)_pinyinSegmentation  __deprecated_msg("need improvement")
 {
     NSMutableArray<NSArray<NSString *> *> *results = [NSMutableArray array];
     @autoreleasepool {
@@ -358,7 +358,7 @@ static NSString *const kVVPinYinTransformFile = @"transform.txt";
         if (array.count == 0) return @[@[self]];
         for (NSString *first in array) {
             NSString *tail = [self substringFromIndex:first.length];
-            NSArray<NSArray<NSString *> *> *components = [tail _splitedPinyins];
+            NSArray<NSArray<NSString *> *> *components = [tail _pinyinSegmentation];
             for (NSArray<NSString *> *pinyins in components) {
                 NSArray<NSString *> *result = [@[first] arrayByAddingObjectsFromArray:pinyins];
                 [results addObject:result];
