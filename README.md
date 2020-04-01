@@ -4,11 +4,11 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.1-beta3)
+## 改动(0.3.1-beta4)
 1. 优化分词方法
 2. 优化高亮方式
-3. 修改分词器参数传递
-4. 写操作放入同步队列
+3. 修复一些bug
+4. 拼音分词考虑新的方案(暂时停用)
 
 ## 功能
 * [x] 根据Class生成数据表
@@ -27,7 +27,7 @@
 * [x] OrmModel查询缓存
 * [x] FTS全文搜索
 * [x] 自定义FTS分词器
-* [x] 支持拼音分词,简繁互搜
+* [ ] 支持拼音分词,简繁互搜
 
 ## 结构
 ![](VVSequelize.png)

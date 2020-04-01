@@ -28,7 +28,6 @@
 #import "NSObject+VVOrm.h"
 #import "VVSearchHighlighter.h"
 #import "VVTokenEnumerator.h"
-#import "VVTransformConst.h"
 #import "NSString+Tokenizer.h"
 #import "VVDBCipher.h"
 #import "VVDBUpgrader.h"

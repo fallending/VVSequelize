@@ -1,6 +1,6 @@
 //
 //  VVOrm.h
-//  VVDB
+//  VVSequelize
 //
 //  Created by Valo on 2018/6/6.
 //

@@ -1,6 +1,6 @@
 //
 //  VVDBUpgrader.m
-//  VVDB
+//  VVSequelize
 //
 //  Created by Valo on 2018/8/11.
 //
@@ -95,6 +95,20 @@ NSString *const VVDBUpgraderLastVersionKey = @"VVDBUpgraderLastVersionKey";
     _items = [NSMutableArray array];
     _progress = [NSProgress progressWithTotalUnitCount:100];
     _versionKey = _versionKey ? : VVDBUpgraderLastVersionKey;
+}
+
+- (BOOL)isUpgrading
+{
+    return _pretreated && _stageItems.count > 0 && _progress.completedUnitCount < _progress.totalUnitCount;
+}
+
+- (void)reset
+{
+    _pretreated = NO;
+    _progress.completedUnitCount = 0;
+    for (VVDBUpgradeItem *item in _items) {
+        item.progress.completedUnitCount = 0;
+    }
 }
 
 - (void)addTarget:(id)target

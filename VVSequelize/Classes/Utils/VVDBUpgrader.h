@@ -1,6 +1,6 @@
 //
 //  VVDBUpgrader.h
-//  VVDB
+//  VVSequelize
 //
 //  Created by Valo on 2018/8/11.
 //
@@ -19,6 +19,10 @@
  */
 @property (nonatomic, strong) NSProgress *progress;
 
+/**
+ upgrading or not
+ */
+@property (nonatomic, assign, readonly) BOOL isUpgrading;
 
 /**
  init with last version key
@@ -53,12 +57,16 @@
                    handler:(void (^)(NSProgress *))handler;
 
 /**
+ reset upgrader
+ */
+- (void)reset;
+
+/**
  if need to upgrade
 
  @return if need to upgrade
  */
 - (BOOL)needUpgrade;
-
 
 /**
  upgrade all stages

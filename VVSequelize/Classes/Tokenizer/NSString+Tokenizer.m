@@ -6,11 +6,11 @@
 //
 
 #import "NSString+Tokenizer.h"
-#import "VVTransformConst.h"
 
 static NSString *const kVVPinYinResourceBundle = @"VVPinYin.bundle";
 static NSString *const kVVPinYinResourceFile = @"pinyin.plist";
 static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
+static NSString *const kVVPinYinTransformFile = @"transform.txt";
 
 @interface VVPinYin ()
 @property (nonatomic, strong) NSCache *cache;
@@ -46,19 +46,40 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
     return self;
 }
 
-+ (NSDictionary *)dictionaryWithResource:(NSString *)resource
++ (NSString *)pathWithResource:(NSString *)resource
 {
     NSBundle *parentBundle = [NSBundle bundleForClass:self];
     NSString *bundlePath = [parentBundle pathForResource:kVVPinYinResourceBundle ofType:nil];
     NSBundle *bundle = [NSBundle bundleWithPath:bundlePath];
     NSString *path = [bundle pathForResource:resource ofType:nil];
-    return [NSDictionary dictionaryWithContentsOfFile:path];
+    return path;
+}
+
+- (void)setupTransformMap
+{
+    NSString *path = [[self class] pathWithResource:kVVPinYinTransformFile];
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+    NSArray<NSString *> *array = [text componentsSeparatedByString:@"\n"];
+    NSAssert(array.count >= 2 && array[0].length == array[1].length && array[0].length > 0, @"Invalid transform file");
+    NSString *simplified = array[0];
+    NSString *traditional = array[1];
+    NSMutableDictionary *gb2big5Map = [NSMutableDictionary dictionary];
+    NSMutableDictionary *big52gbMap = [NSMutableDictionary dictionary];
+    for (NSUInteger i = 0; i < simplified.length; i++) {
+        NSString *simp = [simplified substringWithRange:NSMakeRange(i, 1)];
+        NSString *trad = [traditional substringWithRange:NSMakeRange(i, 1)];
+        gb2big5Map[simp] = trad;
+        big52gbMap[trad] = simp;
+    }
+    _gb2big5Map = gb2big5Map;
+    _big52gbMap = big52gbMap;
 }
 
 - (NSDictionary *)pinyins
 {
     if (!_pinyins) {
-        _pinyins = [[self class] dictionaryWithResource:kVVPinYinResourceFile];
+        NSString *path = [[self class] pathWithResource:kVVPinYinResourceFile];
+        _pinyins = [NSDictionary dictionaryWithContentsOfFile:path];
     }
     return _pinyins;
 }
@@ -66,33 +87,22 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 - (NSDictionary *)hanzi2pinyins
 {
     if (!_hanzi2pinyins) {
-        _hanzi2pinyins = [[self class] dictionaryWithResource:kVVPinYinHanzi2PinyinFile];
+        NSString *path = [[self class] pathWithResource:kVVPinYinHanzi2PinyinFile];
+        _hanzi2pinyins = [NSDictionary dictionaryWithContentsOfFile:path];
     }
     return _hanzi2pinyins;
 }
 
 - (NSDictionary *)gb2big5Map {
     if (!_gb2big5Map) {
-        NSMutableDictionary *dic = [NSMutableDictionary dictionary];
-        for (NSUInteger i = 0; i < VVSimplifiedCodes.length; i++) {
-            NSString *gb = [VVSimplifiedCodes substringWithRange:NSMakeRange(i, 1)];
-            NSString *big5 = [VVTraditionalCodes substringWithRange:NSMakeRange(i, 1)];
-            dic[gb] = big5;
-        }
-        _gb2big5Map = dic;
+        [self setupTransformMap];
     }
     return _gb2big5Map;
 }
 
 - (NSDictionary *)big52gbMap {
     if (!_big52gbMap) {
-        NSMutableDictionary *dic = [NSMutableDictionary dictionary];
-        for (NSUInteger i = 0; i < VVSimplifiedCodes.length; i++) {
-            NSString *gb = [VVSimplifiedCodes substringWithRange:NSMakeRange(i, 1)];
-            NSString *big5 = [VVTraditionalCodes substringWithRange:NSMakeRange(i, 1)];
-            dic[big5] = gb;
-        }
-        _big52gbMap = dic;
+        [self setupTransformMap];
     }
     return _big52gbMap;
 }
@@ -326,7 +336,7 @@ static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 
     NSMutableArray *results = [NSMutableArray array];
     for (NSString *pinyin in array) {
-        const char *py = pinyin.cString;
+        const char *py = pinyin.cLangString;
         u_long len = strlen(py);
         if (len < length && strncmp(py, str, len) == 0) {
             [results addObject:pinyin];

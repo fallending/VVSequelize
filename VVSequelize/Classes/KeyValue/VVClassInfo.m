@@ -1,6 +1,6 @@
 //
 //  VVClassInfo.m
-//  VVDB
+//  VVSequelize
 //
 //  Created by Valo on 2018/7/17.
 //

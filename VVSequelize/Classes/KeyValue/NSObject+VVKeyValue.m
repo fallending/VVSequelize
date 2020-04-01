@@ -1,6 +1,6 @@
 //
 //  NSObject+VVKeyValue.m
-//  VVDB
+//  VVSequelize
 //
 //  Created by Valo on 2018/7/13.
 //
