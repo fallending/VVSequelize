@@ -256,16 +256,16 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
                 startId += 1000;
 
                 CGFloat progress = MIN(1.0, (startId * 1.0) / item.maxCount);
-                DDLogVerbose(@"id: %@ - %@, progress: %.2f%%, mock: %@, normal: %@, fts: %@",
-                             @(startId), @(startId + 1000), progress * 100.0, @(mock), @(normal), @(fts));
+                DDLogVerbose(@"[%6llu-%6llu]:%6.2f%%,mock: %.6f,normal:%.6f,fts:%.6f",
+                             startId - 1000, startId, progress * 100.0, mock, normal, fts);
                 dispatch_async(dispatch_get_main_queue(), ^{
                     self.generateProgressView.progress = progress;
                     self.generateProgressLabel.text = [NSString stringWithFormat:@"%.2f%%", progress * 100.0];
                 });
             }
         }
-        NSString *string = [NSString stringWithFormat:@"[insert] %@, mock: %@, normal: %@, fts: %@",
-                            @(thousands * 1000), @(mockTime), @(normalTime), @(ftsTime)];
+        NSString *string = [NSString stringWithFormat:@"[insert]: %@, mock:%.6f, normal:%.6f, fts:%.6f",
+                            @(thousands * 1000), mockTime, normalTime, ftsTime];
         DDLogInfo(@"%@", string);
         dispatch_async(dispatch_get_main_queue(), ^{
             [self loadDetailsForRow:self.selectedIndex];

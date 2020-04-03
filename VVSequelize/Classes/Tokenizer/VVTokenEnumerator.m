@@ -191,18 +191,17 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     // generate cursors
     NSArray *cursors = [self cursorsWithCString:cSource];
 
-    NSMutableArray *results = [NSMutableArray array];
+    // pinyin segmentation
+    NSArray *syllableTokens = [self syllableTokensWithCString:cSource mask:mask];
+    if (syllableTokens.count > 0) return syllableTokens;
 
     // essential
     NSArray *tokens = [self sequelizeTokensWithCString:cSource cursors:cursors mask:mask];
-    [results addObjectsFromArray:tokens];
 
-    // other tokens
-    if (mask > 0) {
-        [results addObjectsFromArray:[self allOtherTokens:cSource cursors:cursors mask:mask]];
-    }
+    // number
+    NSArray *numberTokens = [self numberTokensWithCString:cSource mask:mask];
 
-    return results;
+    return [tokens arrayByAddingObjectsFromArray:numberTokens];
 }
 
 // MARK: - all the other tokens
@@ -376,7 +375,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     if (!flag || cursors.count == 0 || last.type != VVTokenMultilingualPlaneOther) return @[];
 
     NSMutableArray *results = [NSMutableArray array];
-    NSArray *fills = @[@(1), @(2)];
+    NSArray *fills = @[@(1)]; // @[@(1), @(2)]; // Now only full pinyin is supported.
     for (NSNumber *f in fills) {
         NSInteger fill = [f integerValue];
         NSInteger count = cursors.count;
@@ -389,7 +388,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
                 len += c2.len;
             }
             NSString *string = [[NSString alloc] initWithBytes:cSource + offset length:len encoding:NSUTF8StringEncoding];
-            if (string.length > 0) {
+            BOOL valid = (fill == 1 && ((cursors.count >= 2 && string.length == 2) || (cursors.count < 2 && string.length == cursors.count))) || (fill == 2 && ((cursors.count >= 3 && string.length == 3) || (cursors.count < 3 && string.length == cursors.count)));
+            if (valid) {
                 VVPinYinFruit *fruit = string.pinyins;
                 if (fill == 1) {
                     // full pinyin of two charactors
@@ -419,7 +419,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 
     NSString *string = [NSString stringWithUTF8String:cString];
     NSArray<NSString *> *pinyins = string.pinyinSegmentation;
-    
+
     if (pinyins.count == 0) return @[];
     if (pinyins.count == 1) {
         NSString *pinyin = pinyins.firstObject;
@@ -431,7 +431,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
         token.token = pinyin;
         return @[token];
     }
-    
+
     NSMutableArray *results = [NSMutableArray array];
     int loc = 0;
     for (NSInteger i = 0; i < pinyins.count - 1; i++) {
