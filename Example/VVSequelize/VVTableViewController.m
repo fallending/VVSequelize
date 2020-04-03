@@ -305,6 +305,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword orm:item.ftsOrm];
     highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: UIColor.redColor };
     highlighter.options = VVMatchOptionToken;
+    highlighter.mask = VVTokenMaskDefault | 10;
     [self updateUIWithAction:NO isSearch:YES logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();

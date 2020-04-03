@@ -122,9 +122,10 @@
 - (NSArray<VVToken *> *)keywordTokens {
     if (!_keywordTokens) {
         NSAssert(_keyword.length > 0, @"Invalid keyword");
-        NSUInteger pylen = _mask & VVTokenMaskPinyin;
-        pylen = MAX(pylen, _VVMatchPinyinLen);
-        VVTokenMask mask = (_mask & ~VVTokenMaskPinyin) | pylen;
+        VVTokenMask mask = _mask;
+        if ((mask & VVTokenMaskPinyin) > 0) {
+            mask = (mask & ~VVTokenMaskAllPinYin) | VVTokenMaskSyllable;
+        }
         _keywordTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     }
     return _keywordTokens;
@@ -288,7 +289,7 @@
                         while (offset < found.location && idx < pinyins.count) {
                             NSString *s = pinyins[idx];
                             offset += s.length;
-                            if(offset > NSMaxRange(found)) break;
+                            if (offset > NSMaxRange(found)) break;
                             idx++;
                         }
                         BOOL valid = offset == found.location;
@@ -330,7 +331,12 @@
     __block uint8_t *tokenized = (uint8_t *)malloc(nText + 1);
     memset(tokenized, 0x0, nText + 1);
 
-    NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:pText method:self.method mask:self.mask];
+    VVTokenMask mask = self.mask;
+    if ((mask & VVTokenMaskPinyin) > 0) {
+        mask = mask & ~VVTokenMaskSyllable;
+    }
+
+    NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:pText method:self.method mask:mask];
 
     unsigned long count = tokens.count;
     unsigned long kwcount = self.keywordTokens.count;
@@ -348,10 +354,13 @@
     }
 
     long start = -1, end = 0;
-    for (long i = 0; i <= nText; i ++) {
+    for (long i = 0; i <= nText; i++) {
         int flag = tokenized[i] == 0x0 ? 0 : 1;
-        if(start < 0 && flag == 1){ start = i; }
-        else if(start >= 0 && flag == 0){ end = i; break;}
+        if (start < 0 && flag == 1) {
+            start = i;
+        } else if (start >= 0 && flag == 0) {
+            end = i; break;
+        }
     }
     free(tokenized);
 
