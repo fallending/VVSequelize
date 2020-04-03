@@ -13,6 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) NSCharacterSet *trimmingSet;
 @property (nonatomic, strong, readonly) NSCharacterSet *cleanSet;
 @property (nonatomic, strong, readonly) NSCharacterSet *symbolSet;
+@property (nonatomic, strong, readonly) NSDictionary *pinyins;
+@property (nonatomic, strong, readonly) NSDictionary *syllables;
 
 + (instancetype)shared;
 
@@ -67,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)cleanString;
 
 /// pinyin segmentation
-- (NSArray<NSArray<NSString *> *> *)pinyinSegmentation;
+- (NSArray<NSString *> *)pinyinSegmentation;
 
 @end
 

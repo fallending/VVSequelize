@@ -18,10 +18,10 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
 #define kFtsTblName @"ftsMessage"
 
 @interface VVTableViewController ()
-@property (weak, nonatomic) IBOutlet UILabel *hundredThousandLabel;
-@property (weak, nonatomic) IBOutlet UILabel *millionLabel;
-@property (weak, nonatomic) IBOutlet UILabel *tenMillionLabel;
-@property (weak, nonatomic) IBOutlet UILabel *hundredMillionLabel;
+@property (weak, nonatomic) IBOutlet UILabel *v100kLabel;
+@property (weak, nonatomic) IBOutlet UILabel *v1mLabel;
+@property (weak, nonatomic) IBOutlet UILabel *v10mLabel;
+@property (weak, nonatomic) IBOutlet UILabel *v100mLabel;
 
 @property (weak, nonatomic) IBOutlet UIButton *generateButton;
 @property (weak, nonatomic) IBOutlet UILabel *generateResultLabel;
@@ -79,10 +79,10 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     NSMutableArray *items = [NSMutableArray arrayWithCapacity:4];
 
     NSString *tableName = @"message";
-    NSArray *configs = @[@[@"hundredThousand.db", @"hundredThousandFTS.db", self.hundredThousandLabel, @(100000)],
-                         @[@"million.db",         @"millionFTS.db",         self.millionLabel,         @(1000000)],
-                         @[@"tenMillion.db",      @"tenMillionFTS.db",      self.tenMillionLabel,      @(10000000)],
-                         @[@"hundredMillion.db",  @"hundredMillionFTS.db",  self.hundredMillionLabel,  @(100000000)]];
+    NSArray *configs = @[@[@"100k.db", @"f-100k.db", self.v100kLabel, @(100000)],
+                         @[@"1m.db",   @"f-1m.db",   self.v1mLabel,   @(1000000)],
+                         @[@"10m.db",  @"f-10m.db",  self.v10mLabel,  @(10000000)],
+                         @[@"100m.db", @"f-100m.db", self.v100mLabel, @(100000000)]];
 
     for (NSArray *sub in configs) {
         NSString *normal = sub[0];

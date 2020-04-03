@@ -31,10 +31,7 @@ typedef NS_ENUM (NSUInteger, VVTokenMethod) {
 typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskPinyin       = 0xFFFF,  ///< placeholder, it will be executed without setting
     VVTokenMaskAbbreviation = 1 << 16, ///< pinyin abbreviation
-    
-    VVTokenMaskSyllable __deprecated_msg("not supported now")
-                            = 1 << 17, ///< pinyin segmentation
-
+    VVTokenMaskSyllable     = 1 << 17, ///< pinyin segmentation
     VVTokenMaskNumber       = 1 << 18,
     VVTokenMaskTransform    = 1 << 19,
 

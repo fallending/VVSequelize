@@ -210,7 +210,9 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 {
     NSMutableArray *results = [NSMutableArray array];
     NSArray *numberTokens = [self numberTokensWithCString:source mask:mask];
+    NSArray *syllableTokens = [self syllableTokensWithCString:source mask:mask];
     [results addObjectsFromArray:numberTokens];
+    [results addObjectsFromArray:syllableTokens];
     return results;
 }
 
@@ -392,18 +394,57 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
                 if (fill == 1) {
                     // full pinyin of two charactors
                     for (NSString *tkString in fruit.fulls) {
-                        VVToken *tk = [VVToken token:tkString len:(int)len start:(int)offset end:(int)(offset + len)];
+                        VVToken *tk = [VVToken token:tkString len:(int)(tkString.length) start:(int)offset end:(int)(offset + len)];
                         [results addObject:tk];
                     }
                 } else {
                     // abbreviated pinyin of three charactors
                     for (NSString *tkString in fruit.abbrs) {
-                        VVToken *tk = [VVToken token:tkString len:(int)len start:(int)offset end:(int)(offset + len)];
+                        VVToken *tk = [VVToken token:tkString len:(int)(tkString.length) start:(int)offset end:(int)(offset + len)];
                         [results addObject:tk];
                     }
                 }
             }
         }
+    }
+    return results;
+}
+
+//MARK: - VVTokenMaskSyllable
++ (NSArray<VVToken *> *)syllableTokensWithCString:(const char *)cString
+                                             mask:(VVTokenMask)mask
+{
+    BOOL flag = (mask & VVTokenMaskSyllable);
+    if (!flag) return @[];
+
+    NSString *string = [NSString stringWithUTF8String:cString];
+    NSArray<NSString *> *pinyins = string.pinyinSegmentation;
+    
+    if (pinyins.count == 0) return @[];
+    if (pinyins.count == 1) {
+        NSString *pinyin = pinyins.firstObject;
+        int len = (int)(pinyin.length);
+        VVToken *token = [VVToken new];
+        token.start = 0;
+        token.end = len;
+        token.len = len;
+        token.token = pinyin;
+        return @[token];
+    }
+    
+    NSMutableArray *results = [NSMutableArray array];
+    int loc = 0;
+    for (NSInteger i = 0; i < pinyins.count - 1; i++) {
+        NSString *first = pinyins[i];
+        NSString *second = pinyins[i + 1];
+        int len = (int)(first.length + second.length);
+        VVToken *token = [VVToken new];
+        token.start = loc;
+        token.end = loc + len;
+        token.len = len;
+        token.token = [first stringByAppendingString:second];
+        [results addObject:token];
+        loc += first.length;
     }
     return results;
 }

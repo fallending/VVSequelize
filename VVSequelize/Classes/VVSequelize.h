@@ -29,6 +29,7 @@
 #import "VVSearchHighlighter.h"
 #import "VVTokenEnumerator.h"
 #import "NSString+Tokenizer.h"
+#import "VVPinYinSegmentor.h"
 #import "VVDBCipher.h"
 #import "VVDBUpgrader.h"
 #import "VVOrmRoute.h"

@@ -6,11 +6,13 @@
 //
 
 #import "NSString+Tokenizer.h"
+#import "VVPinYinSegmentor.h"
 
 static NSString *const kVVPinYinResourceBundle = @"VVPinYin.bundle";
 static NSString *const kVVPinYinResourceFile = @"pinyin.plist";
 static NSString *const kVVPinYinHanzi2PinyinFile = @"hanzi2pinyin.plist";
 static NSString *const kVVPinYinTransformFile = @"transform.txt";
+static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 
 @interface VVPinYin ()
 @property (nonatomic, strong) NSCache *cache;
@@ -21,6 +23,7 @@ static NSString *const kVVPinYinTransformFile = @"transform.txt";
 @property (nonatomic, strong) NSCharacterSet *trimmingSet;
 @property (nonatomic, strong) NSCharacterSet *cleanSet;
 @property (nonatomic, strong) NSCharacterSet *symbolSet;
+@property (nonatomic, strong) NSDictionary *syllables;
 @property (nonatomic, strong) NSNumberFormatter *numberFormatter;
 @end
 
@@ -145,6 +148,22 @@ static NSString *const kVVPinYinTransformFile = @"transform.txt";
         _symbolSet = set;
     }
     return _symbolSet;
+}
+
+- (NSDictionary *)syllables {
+    if (!_syllables) {
+        NSString *path = [[self class] pathWithResource:kVVPinYinSyllablesFile];
+        NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+        NSArray<NSString *> *array = [text componentsSeparatedByString:@"\n"];
+        NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:array.count];
+        for (NSString *line in array) {
+            NSArray<NSString *> *kv = [line componentsSeparatedByString:@","];
+            if (kv.count < 2) continue;
+            dic[kv[0]] = @([kv[1] longLongValue]);
+        }
+        _syllables = dic;
+    }
+    return _syllables;
 }
 
 - (NSNumberFormatter *)numberFormatter
@@ -325,47 +344,9 @@ static NSString *const kVVPinYinTransformFile = @"transform.txt";
 }
 
 //MARK: - pinyin
-- (NSArray<NSString *> *)legalFirstPinyins
+- (NSArray<NSString *> *)pinyinSegmentation
 {
-    const char *str = self.UTF8String;
-    u_long length = strlen(str);
-    if (length <= 0) return @[];
-
-    NSString *firstLetter = [self substringToIndex:1];
-    NSArray *array = [[VVPinYin shared].pinyins objectForKey:firstLetter];
-
-    NSMutableArray *results = [NSMutableArray array];
-    for (NSString *pinyin in array) {
-        const char *py = pinyin.cLangString;
-        u_long len = strlen(py);
-        if (len < length && strncmp(py, str, len) == 0) {
-            [results addObject:pinyin];
-        }
-    }
-    return results;
-}
-
-- (NSArray<NSArray<NSString *> *> *)pinyinSegmentation
-{
-    return [self.lowercaseString _pinyinSegmentation];
-}
-
-- (NSArray<NSArray<NSString *> *> *)_pinyinSegmentation  __deprecated_msg("need improvement")
-{
-    NSMutableArray<NSArray<NSString *> *> *results = [NSMutableArray array];
-    @autoreleasepool {
-        NSArray<NSString *> *array = [self legalFirstPinyins];
-        if (array.count == 0) return @[@[self]];
-        for (NSString *first in array) {
-            NSString *tail = [self substringFromIndex:first.length];
-            NSArray<NSArray<NSString *> *> *components = [tail _pinyinSegmentation];
-            for (NSArray<NSString *> *pinyins in components) {
-                NSArray<NSString *> *result = [@[first] arrayByAddingObjectsFromArray:pinyins];
-                [results addObject:result];
-            }
-        }
-    }
-    return results;
+    return [VVPinYinSegmentor segment:self];
 }
 
 @end
