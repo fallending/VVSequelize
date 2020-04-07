@@ -113,7 +113,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
             return 0;
         }];
 
-        NSUInteger ftsTokenParm = VVTokenMaskDefault | 10;
+        NSUInteger ftsTokenParm = VVTokenMaskDefault | VVTokenMaskAbbreviation | 10;
         NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
         VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
         ftsConfig.fts = YES;

@@ -371,11 +371,12 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
                                            mask:(VVTokenMask)mask
 {
     BOOL flag = strlen(cSource ? : "") < (mask & VVTokenMaskPinyin);
+    BOOL abbr = mask & VVTokenMaskAbbreviation;
     VVTokenCursor *last = cursors.lastObject;
     if (!flag || cursors.count == 0 || last.type != VVTokenMultilingualPlaneOther) return @[];
 
     NSMutableArray *results = [NSMutableArray array];
-    NSArray *fills = @[@(1)]; // @[@(1), @(2)]; // Now only full pinyin is supported.
+    NSArray *fills = abbr ? @[@(1), @(2)] : @[@(1)];
     for (NSNumber *f in fills) {
         NSInteger fill = [f integerValue];
         NSInteger count = cursors.count;
