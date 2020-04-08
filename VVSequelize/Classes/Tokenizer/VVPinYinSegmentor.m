@@ -18,8 +18,6 @@ typedef struct CG_BOXABLE VVPinYinTrie {
 @interface VVPinYinPhone : NSObject
 @property (nonatomic, copy) NSString *pinyin;
 @property (nonatomic, assign) long frequency;
-@property (nonatomic, assign) BOOL full;
-@property (nonatomic, assign) BOOL end;
 @end
 
 @implementation VVPinYinPhone
@@ -84,28 +82,21 @@ typedef struct CG_BOXABLE VVPinYinTrie {
     VVPinYinTrie *root = [self rootPinYinTrie];
     VVPinYinTrie *node = root;
     u_long len = strlen(pinyin);
-    u_long i = 0;
-    char ch = pinyin[i];
-    while (ch && node) {
+    u_long last = len - 1;
+    for (u_long i = 0; i < len; i++) {
+        char ch = pinyin[i];
         if (ch < 'a' || ch > 'z') break;
         VVPinYinTrie *child = node->childs[ch - 97];
-        BOOL full = child && child->freq > 0;
-        BOOL end = child && i == len - 1;
-        if (full || end) {
+        if (!child) break;
+        if (child->freq > 0 || i == last) {
             VVPinYinPhone *phone = [VVPinYinPhone new];
             phone.pinyin = [[NSString alloc] initWithBytes:pinyin length:i + 1 encoding:NSASCIIStringEncoding];
-            phone.frequency = child->freq;
-            phone.full = full;
-            phone.end = end;
+            phone.frequency = i == last ? 65535 : child->freq;
             [results addObject:phone];
         }
-        ch = pinyin[++i];
         node = child;
     }
     [results sortUsingComparator:^NSComparisonResult (VVPinYinPhone *phone1, VVPinYinPhone *phone2) {
-        if (phone1.full && phone2.full && phone1.end != phone2.end) {
-            return phone1.end > phone2.end ? NSOrderedAscending : NSOrderedDescending;
-        }
         return phone1.frequency > phone2.frequency ? NSOrderedAscending : NSOrderedDescending;
     }];
     return results;
