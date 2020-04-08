@@ -145,8 +145,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 
     // other tokens
     if (mask > 0) {
-        NSArray *cursors = [self cursorsWithCString:cSource];
-        [results addObjectsFromArray:[self allOtherTokens:cSource cursors:cursors mask:mask]];
+        [results addObjectsFromArray:[self allOtherTokens:cSource mask:mask]];
     }
 
     return results;
@@ -178,8 +177,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 
     // other tokens
     if (mask > 0) {
-        NSArray *cursors = [self cursorsWithCString:cSource];
-        [results addObjectsFromArray:[self allOtherTokens:cSource cursors:cursors mask:mask]];
+        [results addObjectsFromArray:[self allOtherTokens:cSource mask:mask]];
     }
 
     return results;
@@ -205,7 +203,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 }
 
 // MARK: - all the other tokens
-+ (NSArray<VVToken *> *)allOtherTokens:(const char *)source cursors:(NSArray<VVTokenCursor *> *)cursors mask:(VVTokenMask)mask
++ (NSArray<VVToken *> *)allOtherTokens:(const char *)source mask:(VVTokenMask)mask
 {
     NSMutableArray *results = [NSMutableArray array];
     NSArray *numberTokens = [self numberTokensWithCString:source mask:mask];
@@ -365,7 +363,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     return results;
 }
 
-// MARK: - VVTokenMaskPinyin, VVTokenMaskInitial
+// MARK: - VVTokenMaskPinyin, VVTokenMaskAbbreviation
 + (NSArray<VVToken *> *)pinyinTokensWithCString:(const char *)cSource
                                         cursors:(NSArray<VVTokenCursor *> *)cursors
                                            mask:(VVTokenMask)mask
@@ -392,18 +390,10 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             BOOL valid = (fill == 1 && ((cursors.count >= 2 && string.length == 2) || (cursors.count < 2 && string.length == cursors.count))) || (fill == 2 && ((cursors.count >= 3 && string.length == 3) || (cursors.count < 3 && string.length == cursors.count)));
             if (valid) {
                 VVPinYinFruit *fruit = string.pinyins;
-                if (fill == 1) {
-                    // full pinyin of two charactors
-                    for (NSString *tkString in fruit.fulls) {
-                        VVToken *tk = [VVToken token:tkString len:(int)(tkString.length) start:(int)offset end:(int)(offset + len)];
-                        [results addObject:tk];
-                    }
-                } else {
-                    // abbreviated pinyin of three charactors
-                    for (NSString *tkString in fruit.abbrs) {
-                        VVToken *tk = [VVToken token:tkString len:(int)(tkString.length) start:(int)offset end:(int)(offset + len)];
-                        [results addObject:tk];
-                    }
+                NSArray *pinyins = fill == 1 ? fruit.fulls : fruit.abbrs;
+                for (NSString *tkString in pinyins) {
+                    VVToken *tk = [VVToken token:tkString len:(int)(tkString.length) start:(int)offset end:(int)(offset + len)];
+                    [results addObject:tk];
                 }
             }
         }

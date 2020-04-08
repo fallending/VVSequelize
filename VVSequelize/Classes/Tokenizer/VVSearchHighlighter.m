@@ -100,10 +100,19 @@
     if (self) {
         NSAssert(orm.config.fts && orm.config.ftsTokenizer.length > 0, @"Invalid fts orm!");
         [self setup];
-        NSString *tokenizer = [orm.config.ftsTokenizer componentsSeparatedByString:@" "].firstObject;
-        _method = [orm.vvdb methodForTokenizer:tokenizer];
+
         _options = VVMatchOptionPinyin | VVMatchOptionToken;
         _keyword = [keyword stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+        NSArray *components = [orm.config.ftsTokenizer componentsSeparatedByString:@" "];
+        if (components.count > 0) {
+            NSString *tokenizer = components[0];
+            _method = [orm.vvdb methodForTokenizer:tokenizer];
+        }
+        if (components.count > 1) {
+            NSString *mask = components[1];
+            _mask = mask.longLongValue;
+        }
     }
     return self;
 }

@@ -407,7 +407,8 @@
 {
     VVTokenMask mask = VVTokenMaskAll;
     NSArray *texts = @[
-        @"噗嗤一笑",
+        @"第二章",
+        @"dez",
 //        @"音乐123舞蹈",
 //        @"13188886666",
 //        @"234",

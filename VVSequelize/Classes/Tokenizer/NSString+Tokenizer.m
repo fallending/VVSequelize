@@ -270,7 +270,6 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     }
     NSString *trans = [VVPinYin shared].big52gbMap[single] ? : single;
     ch = [trans characterAtIndex:0];
-    NSArray *zcs = @[@"z", @"c", @"s"];
     NSString *key = [NSString stringWithFormat:@"%X", ch];
     NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
     NSMutableOrderedSet *fulls = [NSMutableOrderedSet orderedSet];
@@ -280,10 +279,6 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
         [fulls addObject:[pinyin substringToIndex:pinyin.length - 1]];
         NSString *first = [pinyin substringToIndex:1];
         [abbrs addObject:first];
-        if ([zcs containsObject:first]) {
-            NSString *abbr = [first stringByAppendingString:@"h"];
-            [abbrs addObject:abbr];
-        }
     }
     if (fulls.count == 0) {
         NSString *str = [self substringWithRange:NSMakeRange(index, 1)];

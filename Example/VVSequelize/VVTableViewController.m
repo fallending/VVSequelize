@@ -304,8 +304,6 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     if (keyword.length == 0) return;
     VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword orm:item.ftsOrm];
     highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: UIColor.redColor };
-    highlighter.options = VVMatchOptionToken;
-    highlighter.mask = VVTokenMaskDefault | 10;
     [self updateUIWithAction:NO isSearch:YES logString:@""];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
@@ -315,9 +313,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
                             text, @(messages.count), @(end - begin)];
         DDLogInfo(@"%@", string);
         NSArray *highlights = [highlighter highlight:messages field:@"info"];
-        if (highlights) {
-            // no warning
-        }
+        if (highlights) {}
         dispatch_async(dispatch_get_main_queue(), ^{
             [self updateUIWithAction:YES isSearch:YES logString:string];
         });
