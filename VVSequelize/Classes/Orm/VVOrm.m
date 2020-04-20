@@ -107,7 +107,6 @@
     }
 }
 
-//MARK: - Private
 - (void)createTable
 {
     NSString *sql = nil;
@@ -133,6 +132,7 @@
     NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
 }
 
+//MARK: - Private
 - (void)migrationDataFormTempTable:(NSString *)tempTableName
 {
     NSString *allFields = [_config.columns sqlJoin];

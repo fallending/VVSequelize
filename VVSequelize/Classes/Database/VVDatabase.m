@@ -123,9 +123,6 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
         [self key:self.encryptKey db:nil];
     }
 #endif
-    // default options
-    [self setOptions:@[@"PRAGMA synchronous='NORMAL'",
-                       @"PRAGMA journal_mode=wal"]];
     // hook
     sqlite3_update_hook(_db, vvdb_update_hook, (__bridge void *)self);
     sqlite3_commit_hook(_db, vvdb_commit_hook, (__bridge void *)self);
@@ -146,6 +143,12 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     for (NSString *sql in options) {
         [self query:sql];
     }
+}
+
+- (void)setDefaultOptions
+{
+    [self setOptions:@[@"pragma synchronous='NORMAL';",
+                       @"pragma journal_mode=wal;"]];
 }
 
 //MARK: - lazy loading

@@ -4,8 +4,8 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.1-beta5)
-1. 修改拼音分词和匹配
+## 改动(0.3.1-beta6)
+1. [可打开WCDB加密数据库](##打开WCDB加密数据库)
 
 ## 功能
 * [x] 根据Class生成数据表
@@ -150,6 +150,21 @@ Fts表配置
     select.distinct(YES);
     NSLog(@"%@", select.sql);
 }
+```
+
+## 打开WCDB加密数据库
+```objc
+    VVDatabase *database = [VVDatabase databaseWithPath:path flags:0 encrypt:@"XXXXX"];
+    NSArray *options = @[
+        @"pragma cipher_page_size = 4096;",
+        @"pragma kdf_iter = 64000;",
+        @"pragma cipher_hmac_algorithm = HMAC_SHA1;",
+        @"pragma cipher_kdf_algorithm = PBKDF2_HMAC_SHA1;",
+        @"pragma synchronous='NORMAL'",
+        @"pragma journal_mode=wal",
+    ];
+    [database setOptions:options];
+
 ```
 
 ## Author

@@ -128,6 +128,14 @@ typedef void (^VVDBRollbackHook)(void);
 /// @note `pragma` is not packaged, please execute native statement
 - (void)setOptions:(NSArray<NSString *> *)options;
 
+/// set default configuration
+///
+/// "PRAGMA synchronous='NORMAL'"
+///
+/// "PRAGMA journal_mode=wal"
+///
+- (void)setDefaultOptions;
+
 // MARK: - queue
 /// synchronous operation,  in writeQueue
 /// @param block operation

@@ -57,6 +57,9 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 /// create/modify table and indexes with inspect results
 - (void)setupTableWith:(VVOrmInspection)inspection;
 
+/// create table manually
+- (void)createTable;
+
 /// get unique condition, use to update/delete
 - (nullable NSDictionary *)uniqueConditionForObject:(id)object;
 @end
