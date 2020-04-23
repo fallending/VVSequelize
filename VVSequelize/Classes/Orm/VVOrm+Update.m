@@ -8,11 +8,13 @@
 #import "VVOrm+Update.h"
 #import "NSObject+VVKeyValue.h"
 #import "NSObject+VVOrm.h"
+#import "VVOrmView.h"
 
 @implementation VVOrm (Update)
 
 - (BOOL)_update:(nullable VVExpr *)condition keyValues:(NSDictionary<NSString *, id> *)keyValues
 {
+    VVORMVIEW_CUD_CHECK(self);
     NSString *where = [condition sqlWhere];
     if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
 
@@ -43,6 +45,7 @@
 
 - (BOOL)_updateOne:(id)object fields:(nullable NSArray<NSString *> *)fields
 {
+    VVORMVIEW_CUD_CHECK(self);
     NSDictionary *condition = [self uniqueConditionForObject:object];
     if (condition.count == 0) return NO;
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
@@ -81,6 +84,7 @@
 
 - (NSUInteger)updateMulti:(NSArray *)objects fields:(nullable NSArray<NSString *> *)fields
 {
+    VVORMVIEW_CUD_CHECK(self);
     __block NSUInteger count = 0;
     [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         for (id object in objects) {
@@ -95,6 +99,7 @@
            field:(NSString *)field
            value:(NSInteger)value
 {
+    VVORMVIEW_CUD_CHECK(self);
     if (value == 0) {
         return YES;
     }

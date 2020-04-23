@@ -8,11 +8,13 @@
 #import "VVOrm+Create.h"
 #import "NSObject+VVKeyValue.h"
 #import "NSObject+VVOrm.h"
+#import "VVOrmView.h"
 
 @implementation VVOrm (Create)
 
 - (BOOL)_insertOne:(nonnull id)object upsert:(BOOL)upsert
 {
+    VVORMVIEW_CUD_CHECK(self);
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     if (!upsert && self.config.primaries.count == 1 && self.config.pkAutoIncrement) {
         dic = [dic vv_removeObjectsForKeys:self.config.primaries];
@@ -58,6 +60,7 @@
 
 - (NSUInteger)insertMulti:(nullable NSArray *)objects
 {
+    VVORMVIEW_CUD_CHECK(self);
     __block NSUInteger count = 0;
     [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         for (id obj in objects) {
@@ -75,6 +78,7 @@
 
 - (NSUInteger)upsertMulti:(NSArray *)objects
 {
+    VVORMVIEW_CUD_CHECK(self);
     __block NSUInteger count = 0;
     [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         for (id obj in objects) {

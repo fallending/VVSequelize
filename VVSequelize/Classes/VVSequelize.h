@@ -24,6 +24,7 @@
 #import "VVOrm.h"
 #import "VVOrmConfig.h"
 #import "VVOrmDefs.h"
+#import "VVOrmView.h"
 #import "VVSelect.h"
 #import "NSObject+VVOrm.h"
 #import "VVSearchHighlighter.h"

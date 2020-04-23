@@ -15,6 +15,7 @@
 @property (nonatomic, strong) VVDatabase *vvdb;
 @property (nonatomic, strong) VVOrm *mobileModel;
 @property (nonatomic, strong) VVOrm *ftsModel;
+@property (nonatomic, strong) VVOrmView *mobileView;
 @end
 
 @implementation Tests
@@ -69,6 +70,7 @@
         }
         //[self.vvdb excute:@"INSERT INTO fts_mobiles (mobile, province, city, carrier, industry, relative, times) SELECT mobile, province, city, carrier, industry, relative, times FROM mobiles"];
     }
+    self.mobileView = [[VVOrmView alloc] initWithName:@"xian_mobiles" orm:self.mobileModel condition:@{ @"city": @"西安" } temporary:NO columns:nil];
 }
 
 - (void)tearDown
@@ -237,6 +239,16 @@
     NSDictionary *dic = person.vv_keyValues;
     NSLog(@"%@", dic);
 //    XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
+}
+
+- (void)testView {
+    BOOL exist = self.mobileView.exist;
+    if (!exist) {
+        BOOL ret = [self.mobileView createView];
+        XCTAssert(ret == YES);
+    }
+    NSArray *array = [self.mobileView findAll:@{ @"industry": @"木材" }];
+    XCTAssert(array.count > 0);
 }
 
 - (void)testObjEmbed

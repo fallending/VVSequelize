@@ -43,7 +43,8 @@
     NSAssert(_orm, @"set orm first!");
     NSArray *keyValuesArray = [_orm.vvdb query:self.sql];
     if (useObjects) {
-        return [_orm.config.cls vv_objectsWithKeyValuesArray:keyValuesArray];
+        Class cls = _orm.metaClass ? : _orm.config.cls;
+        return [cls vv_objectsWithKeyValuesArray:keyValuesArray];
     }
     return keyValuesArray;
 }

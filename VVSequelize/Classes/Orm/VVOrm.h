@@ -26,6 +26,8 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 @property (nonatomic, strong, readonly) VVDatabase *vvdb;
 /// table name
 @property (nonatomic, copy, readonly) NSString *tableName;
+/// class of queried objects
+@property (nonatomic) Class metaClass;
 
 - (instancetype)init __attribute__((unavailable("use initWithConfig:tableName:dataBase: instead.")));
 + (instancetype)new __attribute__((unavailable("use initWithConfig:tableName:dataBase: instead.")));
