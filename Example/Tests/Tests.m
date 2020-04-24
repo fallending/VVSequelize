@@ -54,12 +54,12 @@
 
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
-    self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
+    self.mobileModel = [VVOrm ormWithConfig:config name:@"mobiles" database:self.vvdb];
     NSUInteger ftsTokenParm = VVTokenMaskDefault | 15;
     NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
     VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"industry"]];
 
-    self.ftsModel = [VVOrm ormWithConfig:ftsConfig tableName:@"fts_mobiles" dataBase:self.vvdb];
+    self.ftsModel = [VVOrm ormWithConfig:ftsConfig name:@"fts_mobiles" database:self.vvdb];
     //复制数据到fts表
     NSUInteger count = [self.ftsModel count:nil];
     if (count == 0) {
@@ -183,7 +183,7 @@
     config.whiteList = @[@"idcard", @"name", @"mobile", @"age"];
     [config treate];
 
-    VVOrm *personModel1 = [VVOrm ormWithConfig:config tableName:@"persons" dataBase:self.vvdb];
+    VVOrm *personModel1 = [VVOrm ormWithConfig:config name:@"persons" database:self.vvdb];
     NSUInteger maxrowid = [personModel1 maxRowid];
 //    NSLog(@"%@", personModel);
     NSLog(@"maxrowid: %@", @(maxrowid));

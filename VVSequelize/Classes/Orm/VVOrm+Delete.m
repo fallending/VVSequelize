@@ -13,7 +13,7 @@
 - (BOOL)drop
 {
     VVORMVIEW_CUD_CHECK(self);
-    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", self.tableName.quoted];
+    NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", self.name.quoted];
     return [self.vvdb run:sql];
 }
 
@@ -45,7 +45,7 @@
     NSString *where = [condition sqlWhere];
     where = where.length == 0 ? @"" : [NSString stringWithFormat:@" WHERE %@", where];
 
-    NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.tableName.quoted, where];
+    NSString *sql = [NSString stringWithFormat:@"DELETE FROM %@ %@", self.name.quoted, where];
     return [self.vvdb run:sql];
 }
 

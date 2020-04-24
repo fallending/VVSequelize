@@ -49,7 +49,7 @@
     NSString *placeholderString = [placeholders componentsJoinedByString:@","];
     NSString *sql = [NSString stringWithFormat:@"%@ INTO %@ (%@) VALUES (%@)",
                      (upsert ? @"INSERT OR REPLACE" : @"INSERT"),
-                     self.tableName.quoted, keyString, placeholderString];
+                     self.name.quoted, keyString, placeholderString];
     return [self.vvdb run:sql bind:values];
 }
 

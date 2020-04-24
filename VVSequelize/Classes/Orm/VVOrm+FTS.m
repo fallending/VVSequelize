@@ -50,9 +50,9 @@ NSString *const VVOrmFtsCount = @"vvdb_fts_count";
     NSString *rspan = @"</span>";
     NSString *highlight = nil;
     if (self.config.ftsVersion >= 5) {
-        highlight = [NSString stringWithFormat:@"highlight(%@,%@,'%@','%@') AS %@", self.tableName, @(idx), lspan, rspan, field];
+        highlight = [NSString stringWithFormat:@"highlight(%@,%@,'%@','%@') AS %@", self.name, @(idx), lspan, rspan, field];
     } else {
-        highlight = [NSString stringWithFormat:@"snippet(%@,'%@','%@','...',%@) AS %@", self.tableName, lspan, rspan, @(idx), field];
+        highlight = [NSString stringWithFormat:@"snippet(%@,'%@','%@','...',%@) AS %@", self.name, lspan, rspan, @(idx), field];
     }
     [columns replaceObjectAtIndex:idx withObject:highlight];
     NSString *fields = [columns componentsJoinedByString:@","];

@@ -9,12 +9,13 @@
 #import "NSObject+VVOrm.h"
 
 @interface VVOrmView ()
+/// source table name
 @property (nonatomic, copy) NSString *sourceTable;
 @end
 
 @implementation VVOrmView
 
-@synthesize tableName = _tableName;
+@synthesize name = _name;
 
 + (nullable instancetype)ormWithConfig:(VVOrmConfig *)config {
     return [self ormWithConfig:config tableName:nil dataBase:nil];
@@ -24,7 +25,7 @@
                              tableName:(nullable NSString *)tableName
                               dataBase:(nullable VVDatabase *)vvdb
 {
-    return [[VVOrmView alloc] initWithConfig:config tableName:tableName dataBase:vvdb];
+    return [[VVOrmView alloc] initWithConfig:config name:tableName database:vvdb];
 }
 
 - (instancetype)initWithName:(NSString *)name
@@ -33,10 +34,10 @@
                    temporary:(BOOL)temporary
                      columns:(nullable NSArray<NSString *> *)columns
 {
-    self = [super initWithConfig:orm.config tableName:orm.tableName dataBase:orm.vvdb];
+    self = [super initWithConfig:orm.config name:orm.name database:orm.vvdb];
     if (self) {
-        _sourceTable = orm.tableName;
-        _tableName = name;
+        _sourceTable = orm.name;
+        _name = name;
         _condition = condition;
         _temporary = temporary;
         _columns = columns;
@@ -44,12 +45,12 @@
     return self;
 }
 
-- (instancetype)initWithConfig:(VVOrmConfig *)config tableName:(NSString *)tableName dataBase:(VVDatabase *)vvdb
+- (instancetype)initWithConfig:(VVOrmConfig *)config name:(NSString *)name database:(VVDatabase *)database
 {
-    self = [super initWithConfig:config tableName:tableName dataBase:vvdb];
+    self = [super initWithConfig:config name:name database:database];
     if (self) {
-        _sourceTable = tableName;
-        _tableName = nil;
+        _sourceTable = name;
+        _name = nil;
     }
     return self;
 }
@@ -57,14 +58,15 @@
 //MARK: - public
 - (BOOL)exist
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='view' and tbl_name = %@", _tableName.quoted];
+    NSAssert(_name.length > 0, @"Please set view name first!");
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='view' and tbl_name = %@", _name.quoted];
     return [[self.vvdb scalar:sql bind:nil] boolValue];
 }
 
 - (BOOL)createView
 {
     NSString *where = [_condition sqlWhere];
-    NSAssert(_tableName.length > 0 && where.length > 0, @"Please set viewName and condition first!");
+    NSAssert(_name.length > 0 && where.length > 0, @"Please set view name and condition first!");
 
     NSArray *cols = nil;
     if (_columns.count > 0) {
@@ -79,7 +81,7 @@
                      "SELECT %@ "
                      "FROM %@"
                      "WHERE %@",
-                     (_temporary ? @"TEMP" : @""), _tableName.quoted,
+                     (_temporary ? @"TEMP" : @""), _name.quoted,
                      (cols.count > 0 ? cols.sqlJoin : @"*"),
                      _sourceTable.quoted,
                      where];
@@ -89,7 +91,7 @@
 
 - (BOOL)dropView
 {
-    NSString *sql = [NSString stringWithFormat:@"DROP VIEW %@", _tableName.quoted];
+    NSString *sql = [NSString stringWithFormat:@"DROP VIEW %@", _name.quoted];
     return [self.vvdb run:sql];
 }
 

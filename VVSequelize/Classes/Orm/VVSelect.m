@@ -61,7 +61,7 @@
 {
     return ^(VVOrm *orm) {
         self->_orm = orm;
-        self->_table = orm.tableName;
+        self->_table = orm.name;
         return self;
     };
 }

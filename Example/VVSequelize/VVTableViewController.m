@@ -101,7 +101,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         VVOrmConfig *config = [VVOrmConfig configWithClass:VVMessage.class];
         config.primaries = @[@"message_id"];
         config.pkAutoIncrement = YES;
-        item.orm = [VVOrm ormWithConfig:config tableName:item.tableName dataBase:item.db];
+        item.orm = [VVOrm ormWithConfig:config name:item.tableName database:item.db];
 
         item.ftsDbName = fts;
         item.ftsDbPath = [dir stringByAppendingPathComponent:item.ftsDbName];
@@ -120,7 +120,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         ftsConfig.ftsModule = @"fts5";
         ftsConfig.ftsTokenizer = tokenizer;
         ftsConfig.indexes = @[@"info"];
-        item.ftsOrm = [VVOrm ormWithConfig:ftsConfig tableName:item.tableName dataBase:item.ftsDb];
+        item.ftsOrm = [VVOrm ormWithConfig:ftsConfig name:item.tableName database:item.ftsDb];
 
         [items addObject:item];
     }

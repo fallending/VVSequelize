@@ -24,13 +24,13 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 @property (nonatomic, strong, readonly) VVOrmConfig *config;
 /// databse
 @property (nonatomic, strong, readonly) VVDatabase *vvdb;
-/// table name
-@property (nonatomic, copy, readonly) NSString *tableName;
+/// table name in VVOrm , view name in VVOrmView
+@property (nonatomic, copy, readonly) NSString *name;
 /// class of queried objects
 @property (nonatomic) Class metaClass;
 
-- (instancetype)init __attribute__((unavailable("use initWithConfig:tableName:dataBase: instead.")));
-+ (instancetype)new __attribute__((unavailable("use initWithConfig:tableName:dataBase: instead.")));
+- (instancetype)init __attribute__((unavailable("use initWithConfig:name:database: instead.")));
++ (instancetype)new __attribute__((unavailable("use initWithConfig:name:database: instead.")));
 
 /// Initialize orm, auto create/modify defalut table, use temporary db.
 /// @param config orm configuration
@@ -38,20 +38,20 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 
 /// Initialize orm, auto create/modify table and indexes
 /// @param config orm configuration
-/// @param tableName table name, nil means to use class name
+/// @param name table name, nil means to use class name
 /// @param vvdb db, nil means to use temporary db
 + (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
-                             tableName:(nullable NSString *)tableName
-                              dataBase:(nullable VVDatabase *)vvdb;
+                                  name:(nullable NSString *)name
+                              database:(nullable VVDatabase *)vvdb;
 
 /// Initialize orm, do not create/modify table and indexes
 /// @param config orm configuration
-/// @param tableName table name, nil means to use class name
+/// @param name table name, nil means to use class name
 /// @param vvdb db, nil means to use temporary db
 /// @attention call `inspectExistingTable` and `setupTableWith:` in turns to create/modify table and indexes.
 - (nullable instancetype)initWithConfig:(VVOrmConfig *)config
-                              tableName:(nullable NSString *)tableName
-                               dataBase:(nullable VVDatabase *)vvdb NS_DESIGNATED_INITIALIZER;
+                                   name:(nullable NSString *)name
+                               database:(nullable VVDatabase *)vvdb NS_DESIGNATED_INITIALIZER;
 
 /// inspect table
 - (VVOrmInspection)inspectExistingTable;

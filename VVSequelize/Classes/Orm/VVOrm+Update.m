@@ -39,7 +39,7 @@
     }
 
     NSString *setString = [sets componentsJoinedByString:@","];
-    NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
+    NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.name.quoted, setString, where];
     return [self.vvdb run:sql bind:vals];
 }
 
@@ -113,7 +113,7 @@
     NSString *where = [condition sqlWhere];
     if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
 
-    NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.tableName.quoted, setString, where];
+    NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.name.quoted, setString, where];
     return [self.vvdb run:sql];
 }
 
