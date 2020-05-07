@@ -317,7 +317,7 @@
                                 NSRange hlRange = NSMakeRange(hloc, hlen);
 
                                 match.lv2 = lv2;
-                                match.range = found;
+                                match.range = hlRange;
                                 match.lv3 = (i == 1) ? VVMatchLV3_Medium : VVMatchLV3_Low;
                                 match.attrText = [self highlightText:clean WithRange:hlRange];
                             }
@@ -376,7 +376,7 @@
     if (end > 0) {
         NSString *s1 = [[NSString alloc] initWithBytes:cleanText length:start encoding:NSUTF8StringEncoding] ? : @"";
         NSString *sk = [[NSString alloc] initWithBytes:cleanText + start length:end - start encoding:NSUTF8StringEncoding] ? : @"";
-        match.range = NSMakeRange(start, end);
+        match.range = NSMakeRange(s1.length, sk.length);
         match.attrText = [self highlightText:clean WithRange:NSMakeRange(s1.length, sk.length)];
         if (match.lv2 == VVMatchLV2_None) {
             match.lv2 = VVMatchLV2_Other;
