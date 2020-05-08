@@ -37,7 +37,7 @@
         _vvdb = vvdb;
         _sql = sql;
         int rc = sqlite3_prepare_v2(vvdb.db, sql.UTF8String, -1, &_stmt, nil);
-        NSAssert([self.vvdb check:rc sql:sql], @"prepare sqlite3_stmt failure: %@, vvdb : %@", sql, vvdb);
+        NSAssert([self.vvdb check:rc sql:sql] && _stmt != NULL, @"prepare sqlite3_stmt failure: %@, vvdb : %@", sql, vvdb);
     }
     return self;
 }
@@ -45,6 +45,7 @@
 - (void)dealloc
 {
     sqlite3_finalize(_stmt);
+    _stmt = NULL;
 }
 
 //MARK: -
@@ -137,7 +138,7 @@
 
 - (BOOL)step
 {
-    return sqlite3_step(self->_stmt) == SQLITE_ROW;
+    return sqlite3_step(_stmt) == SQLITE_ROW;
 }
 
 - (void)reset
