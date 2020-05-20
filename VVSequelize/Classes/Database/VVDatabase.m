@@ -70,7 +70,6 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 @property (nonatomic, copy) NSString *path;
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, assign) sqlite3 *db;
-@property (nonatomic, strong) NSMutableArray<NSArray *> *updates;
 @end
 
 @implementation VVDatabase
@@ -81,7 +80,6 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 {
     self = [super init];
     if (self) {
-        _updates = [NSMutableArray array];
         _path = path;
     }
     return self;
@@ -108,7 +106,6 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     vvdb.path = path;
     vvdb.flags = flags;
     vvdb.encryptKey = key;
-    [vvdb open];
     return vvdb;
 }
 
@@ -122,7 +119,10 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     if (self.encryptKey.length > 0) {
         [self key:self.encryptKey db:nil];
     }
+    [self query:self.cipherOptions inTransaction:NO];
 #endif
+    [self query:self.normalOptions inTransaction:NO];
+
     // hook
     sqlite3_update_hook(_db, vvdb_update_hook, (__bridge void *)self);
     sqlite3_commit_hook(_db, vvdb_commit_hook, (__bridge void *)self);
@@ -136,19 +136,6 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
         _db = NULL;
     }
     return ret;
-}
-
-- (void)setOptions:(NSArray<NSString *> *)options
-{
-    for (NSString *sql in options) {
-        [self query:sql];
-    }
-}
-
-- (void)setDefaultOptions
-{
-    [self setOptions:@[@"pragma synchronous='NORMAL';",
-                       @"pragma journal_mode=wal;"]];
 }
 
 //MARK: - lazy loading
@@ -193,6 +180,15 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
         _path = VVDBPathTemporary;
     }
     return _path;
+}
+
+- (NSArray<NSString *> *)normalOptions
+{
+    if (!_normalOptions) {
+        _normalOptions = @[@"pragma synchronous = NORMAL;",
+                           @"pragma journal_mode = WAL;"];
+    }
+    return _normalOptions;
 }
 
 - (dispatch_queue_t)writeQueue
@@ -270,6 +266,22 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 - (NSArray *)query:(NSString *)sql
 {
     return [[self prepare:sql] query];
+}
+
+- (NSArray<NSArray *> *)query:(NSArray<NSString *> *)sqls inTransaction:(BOOL)inTransaction
+{
+    if (inTransaction) {
+        [self begin:VVDBTransactionImmediate];
+    }
+    NSMutableArray *results = [NSMutableArray arrayWithCapacity:sqls.count];
+    for (NSString *sql in sqls) {
+        NSArray *sub = [[self prepare:sql] query];
+        [results addObject:(sub ? : @[])];
+    }
+    if (inTransaction) {
+        [self commit];
+    }
+    return results;
 }
 
 - (BOOL)isExist:(NSString *)table

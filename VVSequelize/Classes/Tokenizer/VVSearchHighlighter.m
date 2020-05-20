@@ -188,7 +188,7 @@
 {
     VVResultMatch *match = [[VVResultMatch alloc] init];
     match.source = source;
-    if (source.length == 0) return match;
+    if (source.length == 0 || self.keyword.length == 0) return match;
 
     NSString *clean = [source stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
     NSString *comparison = clean.lowercaseString;

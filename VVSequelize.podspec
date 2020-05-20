@@ -25,14 +25,14 @@ Pod::Spec.new do |s|
       ss.dependency 'SQLCipher'
       ss.pod_target_xcconfig = {
           'OTHER_CFLAGS' => '$(inherited) -DSQLITE_HAS_CODEC -DHAVE_USLEEP=1',
-          'HEADER_SEARCH_PATHS' => 'SQLCipher'
+          'HEADER_SEARCH_PATHS' => "{PODS_ROOT}/SQLCipher"
       }
   end
 
   s.subspec 'common' do |ss|
       ss.source_files = 'VVSequelize/Classes/**/*'
       ss.public_header_files = 'VVSequelize/Classes/**/*.h'
-      ss.resource = ['VVSequelize/Assets/VVJieba.bundle','VVSequelize/Assets/VVPinYin.bundle']
+      ss.resource = ['VVSequelize/Assets/VVPinYin.bundle']
   end
 
 end

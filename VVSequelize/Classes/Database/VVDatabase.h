@@ -68,6 +68,28 @@ typedef void (^VVDBRollbackHook)(void);
 ///third parameter of sqlite3_open_v2(), (flags | VVDBEssentialFlags)
 @property (nonatomic, assign) int flags;
 
+/// execute after sqlite3_key_v2()
+///
+/// example: open 3.x ciphered database
+///
+/// "pragma kdf_iter = 64000;"
+///
+/// "pragma cipher_hmac_algorithm = HMAC_SHA1;"
+///
+/// "pragma cipher_kdf_algorithm = PBKDF2_HMAC_SHA1;"
+///
+@property (nonatomic, strong) NSArray<NSString *> *cipherOptions;
+
+/// execute after cipherOptions
+///
+/// example:
+///
+/// "PRAGMA synchronous = NORMAL"
+///
+/// "PRAGMA journal_mode = WAL"
+///
+@property (nonatomic, strong) NSArray<NSString *> *normalOptions;
+
 ///serial write queue
 @property (nonatomic, strong, readonly) dispatch_queue_t writeQueue;
 
@@ -116,26 +138,6 @@ typedef void (^VVDBRollbackHook)(void);
 /// close db
 - (BOOL)close;
 
-/// set db configuration
-/// @param options configurations,
-///
-/// example:
-///
-/// "PRAGMA synchronous='NORMAL'"
-///
-/// "PRAGMA journal_mode=wal"
-///
-/// @note `pragma` is not packaged, please execute native statement
-- (void)setOptions:(NSArray<NSString *> *)options;
-
-/// set default configuration
-///
-/// "PRAGMA synchronous='NORMAL'"
-///
-/// "PRAGMA journal_mode=wal"
-///
-- (void)setDefaultOptions;
-
 // MARK: - queue
 /// synchronous operation,  in writeQueue
 /// @param block operation
@@ -159,6 +161,13 @@ typedef void (^VVDBRollbackHook)(void);
 /// @return query results
 /// @attention cache results.  clear cache after update/insert/delete/commit.
 - (NSArray *)query:(NSString *)sql;
+
+/// execute native sql query
+/// @param sqls native sqls
+/// @param inTransaction use transaction or not
+/// @return query results
+/// @attention cache results.  clear cache after update/insert/delete/commit.
+- (NSArray<NSArray *> *)query:(NSArray<NSString *> *)sqls inTransaction:(BOOL)inTransaction;
 
 /// check if table exists
 /// @param table name
