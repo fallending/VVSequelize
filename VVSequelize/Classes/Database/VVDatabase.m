@@ -118,8 +118,8 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 #ifdef SQLITE_HAS_CODEC
     if (self.encryptKey.length > 0) {
         [self key:self.encryptKey db:nil];
+        [self query:self.cipherOptions inTransaction:NO];
     }
-    [self query:self.cipherOptions inTransaction:NO];
 #endif
     [self query:self.normalOptions inTransaction:NO];
 
