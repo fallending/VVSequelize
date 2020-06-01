@@ -7,23 +7,24 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <VVSequelize/VVSequelize.h>
 
 @interface VVTestMobile : NSObject
-@property (nonatomic, copy  ) NSString *mobile;
-@property (nonatomic, copy  ) NSString *province;
-@property (nonatomic, copy  ) NSString *city;
-@property (nonatomic, copy  ) NSString *carrier;
-@property (nonatomic, copy  ) NSString *industry;
+@property (nonatomic, copy) NSString *mobile;
+@property (nonatomic, copy) NSString *province;
+@property (nonatomic, copy) NSString *city;
+@property (nonatomic, copy) NSString *carrier;
+@property (nonatomic, copy) NSString *industry;
 @property (nonatomic, assign) CGFloat relative;
 @property (nonatomic, assign) NSInteger times;
 @end
 
 @interface VVTestPerson : NSObject
-@property (nonatomic, copy  ) NSString *idcard;
-@property (nonatomic, copy  ) NSString *name;
+@property (nonatomic, copy) NSString *idcard;
+@property (nonatomic, copy) NSString *name;
 @property (nonatomic, assign) NSInteger age;
 @property (nonatomic, assign) NSDate *birth;
-@property (nonatomic, copy  ) NSString *mobile;
+@property (nonatomic, copy) NSString *mobile;
 
 /*
 @property (nonatomic, assign) BOOL male;
@@ -45,20 +46,20 @@
 @property (nonatomic, strong) VVTestPerson *person; ///< person
 @property (nonatomic, strong) NSArray *mobiles;     ///< mobile
 @property (nonatomic, strong) NSSet *friends;       ///< friends
-@property (nonatomic, copy  ) NSString *flag;       ///< flag
+@property (nonatomic, copy) NSString *flag;         ///< flag
 @property (nonatomic, strong) NSDictionary *dic;    ///< flag
 @property (nonatomic, strong) NSArray *arr;         ///< flag
 
 @end
 
-typedef union TestUnion{
+typedef union TestUnion {
     uint32_t num;
-    char    ch;
+    char ch;
 } VVTestUnion;
 
 typedef struct TestStruct {
     uint8_t num;
-    char    ch;
+    char ch;
 } VVTestStruct;
 
 @interface VVTestMix : NSObject
@@ -74,5 +75,10 @@ typedef struct TestStruct {
 @property (nonatomic, assign) char *str;
 @property (nonatomic, assign) void *unknown;
 @property (nonatomic, assign) char sa;
+
+@end
+
+#define VVTokenMethodTest 0x3
+@interface VVTestEnumerator : NSObject<VVTokenEnumeratorProtocol>
 
 @end

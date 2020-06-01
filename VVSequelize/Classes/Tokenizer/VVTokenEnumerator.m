@@ -61,6 +61,17 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 @implementation VVTokenEnumerator
 
 // MARK: - public
+
+static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_emumerators;
+
++ (void)registerEnumerator:(Class<VVTokenEnumeratorProtocol>)cls forMethod:(VVTokenMethod)method {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _vv_emumerators = [NSMutableDictionary dictionary];
+    });
+    _vv_emumerators[@(method)] = cls;
+}
+
 + (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask
 {
     if (input.length <= 0) return @[];
@@ -81,8 +92,10 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
             array = [self enumerateWithNatual:cSource mask:mask];
             break;
 
-        default:
-            break;
+        default: {
+            Class<VVTokenEnumeratorProtocol> cls = _vv_emumerators[@(method)];
+            if (cls) array = [cls enumerate:input method:method mask:mask];
+        } break;
     }
     NSSet *set = [NSSet setWithArray:array];
     NSArray *results = [set.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {

@@ -508,6 +508,22 @@
     }
 }
 
+- (void)testTokenizer2
+{
+    [VVTokenEnumerator registerEnumerator:VVTestEnumerator.class forMethod:VVTokenMethodTest];
+    VVTokenMask mask = VVTokenMaskAll;
+    NSArray *texts = @[
+        @"第二章",
+        @"dez",
+        @"音乐123舞蹈",
+        @"13188886666",
+    ];
+    for (NSString *text in texts) {
+        NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodTest mask:mask];
+        NSLog(@"\n%@:\n%@", text, tokens);
+    }
+}
+
 - (void)testHighlight
 {
     NSString *keyword = @"zhk";

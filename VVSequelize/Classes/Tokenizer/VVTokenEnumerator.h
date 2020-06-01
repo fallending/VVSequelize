@@ -40,7 +40,15 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskAllPinYin    = (VVTokenMaskPinyin | VVTokenMaskAbbreviation),
 };
 
+@protocol VVTokenEnumeratorProtocol <NSObject>
+
++ (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
+
+@end
+
 @interface VVTokenEnumerator : NSObject
+
++ (void)registerEnumerator:(Class<VVTokenEnumeratorProtocol>)cls forMethod:(VVTokenMethod)method;
 
 + (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
 
