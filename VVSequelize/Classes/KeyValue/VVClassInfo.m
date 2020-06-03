@@ -275,16 +275,19 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
 
 - (void)updateInfos
 {
-    NSMutableDictionary *propertyInfos = [NSMutableDictionary dictionaryWithCapacity:0];
     unsigned int propertyCount = 0;
     objc_property_t *properties = class_copyPropertyList(self.cls, &propertyCount);
+    NSMutableArray *infos = [NSMutableArray arrayWithCapacity:propertyCount];
+    NSMutableDictionary *propertyInfos = [NSMutableDictionary dictionaryWithCapacity:propertyCount];
     for (unsigned int i = 0; i < propertyCount; i++) {
         VVPropertyInfo *info = [[VVPropertyInfo alloc] initWithProperty:properties[i]];
         if (info.name) propertyInfos[info.name] = info;
+        [infos addObject:info];
     }
     if (properties) {
         free(properties);
     }
+    _properties = infos;
     _propertyInfos = propertyInfos;
 }
 

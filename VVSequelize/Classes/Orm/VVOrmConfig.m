@@ -232,12 +232,14 @@ NSString *const VVSqlTypeReal = @"REAL";
     VVOrmConfig *config = [[VVOrmConfig alloc] init];
     config.cls = cls;
 
-    NSMutableDictionary *types = [NSMutableDictionary dictionaryWithCapacity:0];
     VVClassInfo *classInfo = [VVClassInfo classInfoWithClass:cls];
-    [classInfo.propertyInfos enumerateKeysAndObjectsUsingBlock:^(NSString *name, VVPropertyInfo *propertyInfo, BOOL *stop) {
-        types[name] = [propertyInfo sqlType];
-    }];
-    config.columns = classInfo.propertyInfos.allKeys.copy;
+    NSMutableDictionary *types = [NSMutableDictionary dictionaryWithCapacity:classInfo.properties.count];
+    NSMutableArray *columns = [NSMutableArray arrayWithCapacity:classInfo.properties.count];
+    for (VVPropertyInfo *propertyInfo in classInfo.properties) {
+        types[propertyInfo.name] = [propertyInfo sqlType];
+        [columns addObject:propertyInfo.name];
+    }
+    config.columns = columns.copy;
     config.types = types;
     return config;
 }
@@ -277,43 +279,52 @@ NSString *const VVSqlTypeReal = @"REAL";
 //MAKR: - public
 - (void)treate
 {
-    NSMutableSet *columnsSet = [NSMutableSet setWithArray:(_columns ? : @[])];
-    NSMutableSet *indexesSet = [NSMutableSet setWithArray:(_indexes ? : @[])];
-    NSMutableSet *uniquesSet = [NSMutableSet setWithArray:(_uniques ? : @[])];
-    NSMutableSet *notnullsSet = [NSMutableSet setWithArray:(_notnulls ? : @[])];
-    NSMutableSet *primariesSet = [NSMutableSet setWithArray:(_primaries ? : @[])];
+    NSMutableOrderedSet *columnsSet = [NSMutableOrderedSet orderedSetWithArray:(_columns ? : @[])];
     NSMutableSet *whitesSet = [NSMutableSet setWithArray:(_whiteList ? : @[])];
     NSMutableSet *blacksSet = [NSMutableSet setWithArray:(_blackList ? : @[])];
-
     if (whitesSet.count > 0) {
         [columnsSet intersectSet:whitesSet];
     } else if (blacksSet.count > 0) {
         [columnsSet minusSet:blacksSet];
     }
-    [indexesSet intersectSet:columnsSet];
-    [uniquesSet intersectSet:columnsSet];
-    [notnullsSet intersectSet:columnsSet];
-    [primariesSet intersectSet:columnsSet];
+    _columns = columnsSet.array.copy;
+
+    NSSet *rowsSet = [NSSet setWithArray:_columns];
+    NSMutableSet *indexesSet = [NSMutableSet setWithArray:(_indexes ? : @[])];
+    NSMutableSet *uniquesSet = [NSMutableSet setWithArray:(_uniques ? : @[])];
+    NSMutableSet *notnullsSet = [NSMutableSet setWithArray:(_notnulls ? : @[])];
+    NSMutableSet *primariesSet = [NSMutableSet setWithArray:(_primaries ? : @[])];
+    NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_types.allKeys ? : @[])];
+    NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_defaultValues.allKeys ? : @[])];
+
+    [indexesSet intersectSet:rowsSet];
+    [uniquesSet intersectSet:rowsSet];
+    [notnullsSet intersectSet:rowsSet];
+    [primariesSet intersectSet:rowsSet];
 
     [indexesSet minusSet:uniquesSet];
     [notnullsSet minusSet:primariesSet];
     [uniquesSet minusSet:primariesSet];
 
-    NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_types.allKeys ? : @[])];
-    NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_defaultValues.allKeys ? : @[])];
+    [typeTrashKeysSet minusSet:rowsSet];
+    [defValTrashKeysSet minusSet:rowsSet];
 
-    [typeTrashKeysSet minusSet:columnsSet];
-    [defValTrashKeysSet minusSet:columnsSet];
+    NSMutableOrderedSet *tempSet = [NSMutableOrderedSet orderedSetWithArray:_columns];
+    [tempSet intersectSet:primariesSet];
+    _primaries = tempSet.array.copy;
 
-    NSComparator comparator = ^NSComparisonResult (NSString *str1, NSString *str2) {
-        return str1 < str2 ? NSOrderedAscending : NSOrderedDescending;
-    };
+    tempSet = [NSMutableOrderedSet orderedSetWithArray:_columns];
+    [tempSet intersectSet:indexesSet];
+    _indexes = tempSet.array.copy;
 
-    _columns = [columnsSet.allObjects sortedArrayUsingComparator:comparator];
-    _indexes = [indexesSet.allObjects sortedArrayUsingComparator:comparator];
-    _uniques = [uniquesSet.allObjects sortedArrayUsingComparator:comparator];
-    _notnulls = [notnullsSet.allObjects sortedArrayUsingComparator:comparator];
-    _primaries = [primariesSet.allObjects sortedArrayUsingComparator:comparator];
+    tempSet = [NSMutableOrderedSet orderedSetWithArray:_columns];
+    [tempSet intersectSet:uniquesSet];
+    _uniques = tempSet.array.copy;
+
+    tempSet = [NSMutableOrderedSet orderedSetWithArray:_columns];
+    [tempSet intersectSet:notnullsSet];
+    _notnulls = tempSet.array.copy;
+
     _types = [_types vv_removeObjectsForKeys:typeTrashKeysSet.allObjects];
     _defaultValues = [_defaultValues vv_removeObjectsForKeys:defValTrashKeysSet.allObjects];
 }
@@ -382,6 +393,8 @@ NSString *const VVSqlTypeReal = @"REAL";
 }
 
 - (NSString *)createFtsSQLWith:(NSString *)tableName
+                 content_table:(NSString *)content_table
+                 content_rowid:(NSString *)content_rowid
 {
     [self treate];
     NSArray *notindexeds = [_columns vv_removeObjectsInArray:_indexes];
@@ -403,13 +416,22 @@ NSString *const VVSqlTypeReal = @"REAL";
         }
     }
 
-    NSString *sql = [array componentsJoinedByString:@","];
-    if (sql.length == 0) return @"";
+    if (array.count == 0) return @"";
+    if (_ftsTokenizer.length) {
+        NSString *format = self.ftsVersion < 5 ? @"tokenize=%@" : @"tokenize='%@'";
+        NSString *tokenize = [NSString stringWithFormat:format, _ftsTokenizer];
+        [array addObject:tokenize];
+    }
+    if (content_table.length) {
+        [array addObject:[NSString stringWithFormat:@"content='%@'", content_table]];
+        if (content_rowid.length) {
+            [array addObject:[NSString stringWithFormat:@"content_rowid='%@'", content_rowid]];
+        }
+    }
 
-    NSString *format = self.ftsVersion < 5 ? @", tokenize=%@" : @", tokenize='%@'";
-    NSString *tokenize = _ftsTokenizer.length > 0 ? [NSString stringWithFormat:format, _ftsTokenizer] : @"";
-    return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS %@ USING %@(%@ %@)",
-            tableName.quoted, self.ftsModule, sql, tokenize].strip;
+    NSString *sql = [array componentsJoinedByString:@","];
+    return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS %@ USING %@(%@)",
+            tableName.quoted, self.ftsModule, sql].strip;
 }
 
 // MARK: - Utils

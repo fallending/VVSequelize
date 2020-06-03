@@ -193,6 +193,53 @@
     NSLog(@"%@", @(ret));
 }
 
+- (void)testRelativeORM {
+    VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestPerson.class];
+    config.primaries = @[@"idcard"];
+
+    VVOrmConfig *ftsconfig = [VVOrmConfig configWithClass:VVTestPerson.class];
+    ftsconfig.fts = YES;
+    ftsconfig.ftsModule = @"fts5";
+    ftsconfig.ftsTokenizer = @"sequelize";
+    ftsconfig.indexes = @[@"name"];
+
+    VVOrm *orm = [VVOrm ormWithConfig:config name:@"relative_person" database:self.vvdb];
+    VVOrm *ftsorm = [VVOrm ormWithConfig:ftsconfig relative:orm content_rowid:@"idcard"];
+
+    NSDate *now = [NSDate date];
+    VVTestPerson *p1 = [VVTestPerson new];
+    p1.idcard = @"10001";
+    p1.name = @"张三";
+    p1.age = 19;
+    p1.birth = now;
+    p1.mobile = @"13112344312";
+
+    VVTestPerson *p2 = [VVTestPerson new];
+    p2.idcard = @"10002";
+    p2.name = @"李四";
+    p2.age = 22;
+    p2.birth = now;
+    p2.mobile = @"13223245678";
+
+    VVTestPerson *p3 = [VVTestPerson new];
+    p3.idcard = @"10003";
+    p3.name = @"王五";
+    p3.age = 21;
+    p3.birth = now;
+    p3.mobile = @"13365457676";
+
+    [orm deleteWhere:nil];
+    [orm insertMulti:@[p1, p2, p3]];
+    NSArray *r1 = [ftsorm findAll:nil];
+    [orm deleteOne:p2];
+    NSArray *r2 = [ftsorm findAll:nil];
+    p3.name = @"wangwu";
+    [orm updateOne:p3];
+    NSArray *r3 = [ftsorm findAll:nil];
+    if (r1 && r2 && r3) {
+    }
+}
+
 - (void)testClause
 {
     VVSelect *select =  [VVSelect new];

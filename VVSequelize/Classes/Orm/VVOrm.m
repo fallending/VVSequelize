@@ -10,6 +10,12 @@
 
 #define VV_NO_WARNING(exp) if (exp) {}
 
+@interface VVOrm ()
+@property (nonatomic, assign) BOOL created;
+@property (nonatomic, copy) NSString *content_table;
+@property (nonatomic, copy) NSString *content_rowid;
+@end
+
 @implementation VVOrm
 
 //MARK: - Public
@@ -22,9 +28,116 @@
                                   name:(nullable NSString *)name
                               database:(nullable VVDatabase *)vvdb
 {
+    return [self ormWithConfig:config name:name database:vvdb setup:YES];
+}
+
++ (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
+                                  name:(nullable NSString *)name
+                              database:(nullable VVDatabase *)vvdb
+                                 setup:(BOOL)setup
+{
     VVOrm *orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
-    VVOrmInspection comparison = [orm inspectExistingTable];
-    [orm setupTableWith:comparison];
+    if (setup) {
+        VVOrmInspection comparison = [orm inspectExistingTable];
+        [orm setupTableWith:comparison];
+    }
+    return orm;
+}
+
++ (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
+                                  name:(nullable NSString *)name
+                              database:(nullable VVDatabase *)vvdb
+                         content_table:(nullable NSString *)content_table
+                         content_rowid:(nullable NSString *)content_rowid
+                                 setup:(BOOL)setup
+{
+    VVOrm *orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
+    orm.content_table = content_table;
+    orm.content_rowid = content_rowid;
+    if (setup) {
+        VVOrmInspection comparison = [orm inspectExistingTable];
+        [orm setupTableWith:comparison];
+    }
+    return orm;
+}
+
++ (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
+                              relative:(VVOrm *)relativeORM
+                         content_rowid:(nullable NSString *)content_rowid
+{
+    config.blackList = config.blackList ? [config.blackList arrayByAddingObject:content_rowid] : @[content_rowid];
+    [config treate];
+    VVOrmConfig *cfg = relativeORM.config;
+    NSSet *cfgColsSet = [NSSet setWithArray:cfg.columns];
+    NSSet *colsSet = [NSSet setWithArray:config.columns];
+    BOOL valid = (config.fts && !cfg.fts) &&
+        ((cfg.primaries.count == 1 && [cfg.primaries.firstObject isEqualToString:content_rowid]) ||
+         [cfg.uniques containsObject:content_rowid]) &&
+        [colsSet isSubsetOfSet:cfgColsSet] &&
+        [cfg.columns containsObject:content_rowid];
+    if (!valid) {
+        NSAssert(NO, @"The following conditions must be met:\n"
+                 "1. The relative ORM is the universal ORM\n"
+                 "2. The relative ORM has uniqueness constraints\n"
+                 "3. The relative ORM contains all fields of this ORM\n"
+                 "4. The relative ORM contains the content_rowid\n");
+    }
+
+    NSString *fts_table = [NSString stringWithFormat:@"fts_%@", relativeORM.name];
+    VVOrm *orm = [[VVOrm alloc] initWithConfig:config name:fts_table database:relativeORM.vvdb];
+    orm.content_table = relativeORM.name;
+    orm.content_rowid = content_rowid;
+
+    if (!relativeORM.created) {
+        VVOrmInspection comparison1 = [relativeORM inspectExistingTable];
+        [relativeORM setupTableWith:comparison1];
+    }
+
+    VVOrmInspection comparison2 = [orm inspectExistingTable];
+    [orm setupTableWith:comparison2];
+
+    NSArray * (^ map)(NSArray<NSString *> *, NSString *) = ^(NSArray<NSString *> *array, NSString *prefix) {
+        NSMutableArray *results = [NSMutableArray arrayWithCapacity:array.count];
+        for (NSString *string in array) {
+            [results addObject:[NSString stringWithFormat:@"%@.%@", prefix, string]];
+        }
+        return results.copy;
+    };
+
+    NSString *ins_rows = [[@[@"rowid"] arrayByAddingObjectsFromArray:config.columns] componentsJoinedByString:@","];
+    NSString *ins_vals = [map([@[content_rowid] arrayByAddingObjectsFromArray:config.columns], @"new") componentsJoinedByString:@","];
+    NSString *del_rows = [[@[fts_table, @"rowid"] arrayByAddingObjectsFromArray:config.columns] componentsJoinedByString:@","];
+    NSString *del_vals = [[@[@"'delete'"] arrayByAddingObjectsFromArray:map([@[content_rowid] arrayByAddingObjectsFromArray:config.columns], @"old")] componentsJoinedByString:@","];
+
+    NSString *ins_tri_name = [fts_table stringByAppendingString:@"_insert"];
+    NSString *del_tri_name = [fts_table stringByAppendingString:@"_delete"];
+    NSString *upd_tri_name = [fts_table stringByAppendingString:@"_update"];
+
+    NSString *ins_trigger = [NSString stringWithFormat:@""
+                             "CREATE TRIGGER IF NOT EXISTS %@ AFTER INSERT ON %@ BEGIN \n"
+                             "INSERT INTO %@ (%@) VALUES (%@); \n"
+                             "END;",
+                             ins_tri_name, relativeORM.name,
+                             fts_table, ins_rows, ins_vals];
+    NSString *del_trigger = [NSString stringWithFormat:@""
+                             "CREATE TRIGGER IF NOT EXISTS %@ AFTER DELETE ON %@ BEGIN \n"
+                             "INSERT INTO %@ (%@) VALUES (%@); \n"
+                             "END;",
+                             del_tri_name, relativeORM.name,
+                             fts_table, del_rows, del_vals];
+    NSString *upd_trigger = [NSString stringWithFormat:@""
+                             "CREATE TRIGGER IF NOT EXISTS %@ AFTER UPDATE ON %@ BEGIN \n"
+                             "INSERT INTO %@ (%@) VALUES (%@); \n"
+                             "INSERT INTO %@ (%@) VALUES (%@); \n"
+                             "END;",
+                             upd_tri_name, relativeORM.name,
+                             fts_table, del_rows, del_vals,
+                             fts_table, ins_rows, ins_vals];
+
+    [relativeORM.vvdb run:ins_trigger];
+    [relativeORM.vvdb run:del_trigger];
+    [relativeORM.vvdb run:upd_trigger];
+
     return orm;
 }
 
@@ -83,6 +196,8 @@
 
 - (void)setupTableWith:(VVOrmInspection)inspection
 {
+    if (_created) return;
+
     // if table exists, check for updates. if need, rename original table
     NSString *tempTableName = [NSString stringWithFormat:@"%@_%@", _name, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
     BOOL exist = inspection & VVOrmTableExist;
@@ -105,6 +220,7 @@
     if (indexChanged || !exist) {
         [self rebuildIndex];
     }
+    _created = YES;
 }
 
 - (void)createTable
@@ -112,7 +228,7 @@
     NSString *sql = nil;
     // create fts table
     if (_config.fts) {
-        sql = [_config createFtsSQLWith:_name];
+        sql = [_config createFtsSQLWith:_name content_table:_content_table content_rowid:_content_rowid];
     }
     // create nomarl table
     else {

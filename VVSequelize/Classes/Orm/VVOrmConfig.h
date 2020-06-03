@@ -84,6 +84,8 @@ FOUNDATION_EXPORT NSString *const kVVUpdateAt;
 - (NSString *)createSQLWith:(NSString *)tableName;
 
 /// generate fts table SQL statement
-- (NSString *)createFtsSQLWith:(NSString *)tableName;
+- (NSString *)createFtsSQLWith:(NSString *)tableName
+                 content_table:(NSString *)content_table
+                 content_rowid:(NSString *)content_rowid;
 
 @end

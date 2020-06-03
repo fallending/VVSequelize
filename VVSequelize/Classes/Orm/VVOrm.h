@@ -36,13 +36,45 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 /// @param config orm configuration
 + (nullable instancetype)ormWithConfig:(VVOrmConfig *)config;
 
-/// Initialize orm, auto create/modify table and indexes
+/// Initialize orm, auto create/modify table and indexes, check and create table immediately
 /// @param config orm configuration
 /// @param name table name, nil means to use class name
 /// @param vvdb db, nil means to use temporary db
 + (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
                                   name:(nullable NSString *)name
                               database:(nullable VVDatabase *)vvdb;
+
+/// Initialize orm, auto create/modify table and indexes
+/// @param config orm configuration
+/// @param name table name, nil means to use class name
+/// @param vvdb db, nil means to use temporary db
+/// @param setup check and create table or not
++ (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
+                                  name:(nullable NSString *)name
+                              database:(nullable VVDatabase *)vvdb
+                                 setup:(BOOL)setup;
+
+/// Initialize fts orm
+/// @param config orm configuration
+/// @param name table name, nil means to use class name
+/// @param vvdb db, nil means to use temporary db
+/// @param content_table extenal content table
+/// @param content_rowid relative content_rowid
+/// @param setup check and create table or not
++ (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
+                                  name:(nullable NSString *)name
+                              database:(nullable VVDatabase *)vvdb
+                         content_table:(nullable NSString *)content_table
+                         content_rowid:(nullable NSString *)content_rowid
+                                 setup:(BOOL)setup;
+
+/// Initialize fts orm
+/// @param config orm configuration
+/// @param relativeORM  relative universal orm
+/// @param content_rowid relative content_rowid
++ (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
+                              relative:(VVOrm *)relativeORM
+                         content_rowid:(nullable NSString *)content_rowid;
 
 /// Initialize orm, do not create/modify table and indexes
 /// @param config orm configuration
