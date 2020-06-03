@@ -2,10 +2,10 @@ PODS:
   - CocoaLumberjack (3.6.1):
     - CocoaLumberjack/Core (= 3.6.1)
   - CocoaLumberjack/Core (3.6.1)
-  - SQLCipher (4.3.0):
-    - SQLCipher/standard (= 4.3.0)
-  - SQLCipher/common (4.3.0)
-  - SQLCipher/standard (4.3.0):
+  - SQLCipher (4.4.0):
+    - SQLCipher/standard (= 4.4.0)
+  - SQLCipher/common (4.4.0)
+  - SQLCipher/standard (4.4.0):
     - SQLCipher/common
   - VVSequelize (0.3.1-beta6):
     - VVSequelize/cipher (= 0.3.1-beta6)
@@ -29,7 +29,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   CocoaLumberjack: b17ae15142558d08bbacf69775fa10c4abbebcc9
-  SQLCipher: d305a7bd9af4b64f095c79bdc1a1fa50f2a15116
+  SQLCipher: e434ed542b24f38ea7b36468a13f9765e1b5c072
   VVSequelize: 290ff02a7ae7166e6a768e28879eb34cbe3aec2e
 
 PODFILE CHECKSUM: 93551fd5907f9990e8b8f19e0abcc0881f8dd7dd
