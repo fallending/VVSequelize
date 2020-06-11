@@ -401,52 +401,6 @@
     }
 }
 
-- (void)testUpdateDatabase
-{
-    VVDBUpgrader *upgrader = [[VVDBUpgrader alloc] init];
-    [[NSUserDefaults standardUserDefaults] setObject:@"0.1.0" forKey:upgrader.versionKey];
-//    [[NSUserDefaults standardUserDefaults] removeObjectForKey:upgrader.versionKey];
-    [upgrader addHandlerForStage:2 version:@"0.1.1" handler:^(NSProgress *progress) {
-        NSLog(@"update->stage2 0.1.1");
-        for (NSInteger i = 0; i < 10; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
-        }
-    }];
-    [upgrader addHandlerForStage:0 version:@"0.1.2" handler:^(NSProgress *progress) {
-        NSLog(@"update->stage0 0.1.2");
-        for (NSInteger i = 0; i < 10; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
-        }
-    }];
-    [upgrader addHandlerForStage:1 version:@"0.1.3" handler:^(NSProgress *progress) {
-        NSLog(@"update->stage1 0.1.3");
-        for (NSInteger i = 0; i < 10; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
-        }
-    }];
-    [upgrader addHandlerForStage:4 version:@"0.1.4" handler:^(NSProgress *progress) {
-        NSLog(@"update->stage4 0.1.4");
-        for (NSInteger i = 0; i < 10; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
-        }
-    }];
-    [upgrader addHandlerForStage:0 version:@"0.1.5" handler:^(NSProgress *progress) {
-        NSLog(@"update->stage0 0.1.5");
-        for (NSInteger i = 0; i < 10; i++) {
-            progress.completedUnitCount = ((i + 1) * progress.totalUnitCount) / 10;
-        }
-    }];
-
-    [upgrader.progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
-    [upgrader upgradeAll];
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
-{
-    NSProgress *progress = object;
-    NSLog(@"progress: %.2f%%", progress.fractionCompleted * 100.0);
-}
-
 //MARK: - FTS表
 - (void)testMatch
 {
@@ -655,6 +609,46 @@
         NSLog(@"\n%@", string);
          */
     }];
+}
+
+//MARK: - upgrader
+
+- (void)testUpgrader
+{
+    VVDBUpgrader *upgrader = [[VVDBUpgrader alloc] init];
+    [[NSUserDefaults standardUserDefaults] setObject:@"0.1.0" forKey:upgrader.versionKey];
+    BOOL (^ handler)(VVDBUpgradeItem *) = ^(VVDBUpgradeItem *item) {
+        NSLog(@"-> %@", item);
+        for (NSInteger i = 1; i <= 10; i++) {
+            item.progress = i * 10;
+        }
+        return YES;
+    };
+    VVDBUpgradeItem *item1 = [VVDBUpgradeItem itemWithIdentifier:@"1" version:@"0.1.1" stage:0 handler:handler];
+    item1.weight = 5.0;
+    VVDBUpgradeItem *item2 = [VVDBUpgradeItem itemWithIdentifier:@"2" version:@"0.1.4" stage:0 handler:handler];
+    item2.weight = 2.0;
+    VVDBUpgradeItem *item3 = [VVDBUpgradeItem itemWithIdentifier:@"3" version:@"0.1.1" stage:1 handler:handler];
+    item3.weight = 3.0;
+    VVDBUpgradeItem *item4 = [VVDBUpgradeItem itemWithIdentifier:@"4" version:@"0.1.3" stage:1 handler:handler];
+    item4.weight = 10.0;
+    VVDBUpgradeItem *item5 = [VVDBUpgradeItem itemWithIdentifier:@"5" version:@"0.1.2" stage:0 handler:handler];
+    item5.weight = 3.0;
+
+    [upgrader addItems:@[item1, item2, item3, item4, item5]];
+
+    [upgrader.progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
+    [upgrader upgradeAll];
+    
+    NSProgress *progress = [NSProgress progressWithTotalUnitCount:100];
+    [progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
+    [upgrader debugUpgradeItems:@[item1, item2, item3] progress:progress];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
+{
+    NSProgress *progress = object;
+    NSLog(@"progress: %.2f%%", progress.fractionCompleted * 100.0);
 }
 
 @end

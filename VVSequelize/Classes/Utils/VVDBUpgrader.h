@@ -7,86 +7,73 @@
 
 #import <Foundation/Foundation.h>
 
-@interface VVDBUpgrader : NSObject
+NS_ASSUME_NONNULL_BEGIN
 
-/**
- Key to save the last version in NSUserDefaults
- */
-@property (nonatomic, copy) NSString *versionKey;
+/// upgrade item
+@interface VVDBUpgradeItem : NSObject <NSCopying>
+@property (nonatomic, weak, nullable) id target;
+@property (nonatomic, assign, nullable) SEL action; ///< - (BOOL)dosomething:(VVDBUpgradeItem*)item;
+@property (nonatomic, copy, nullable) BOOL (^ handler)(VVDBUpgradeItem *);
 
-/**
- progress of upgrader
- */
-@property (nonatomic, strong) NSProgress *progress;
+@property (nonatomic, copy, nonnull) NSString *identifier; ///< set as unique
+@property (nonatomic, copy, nonnull) NSString *version;
+@property (nonatomic, assign) NSUInteger stage;
+@property (nonatomic, assign) CGFloat priority; ///< 0.0 ~ 1.0, default is 0.5
+@property (nonatomic, assign) CGFloat weight;   ///< 1.0 ~ ∞, default is 1.0
+@property (nonatomic, assign) CGFloat progress; ///< 0.0 ~ 100.0
 
-/**
- upgrading or not
- */
-@property (nonatomic, assign, readonly) BOOL isUpgrading;
++ (instancetype)itemWithIdentifier:(NSString *)identifier
+                           version:(NSString *)version
+                             stage:(NSUInteger)stage
+                            target:(id)target
+                            action:(SEL)action;
 
-/**
- init with last version key
++ (instancetype)itemWithIdentifier:(NSString *)identifier
+                           version:(NSString *)version
+                             stage:(NSUInteger)stage
+                           handler:(BOOL (^)(VVDBUpgradeItem *))handler;
 
- @param key last version key
- @return upgrader
- */
-- (instancetype)initWithVersionKey:(NSString *)key;
+- (instancetype)initWithIdentifier:(NSString *)identifier
+                           version:(NSString *)version
+                             stage:(NSUInteger)stage;
 
-/**
- add target-action
-
- @param target target
- @param action such as `-(void)action:(NSProgress *)progress`
- @param stage stage
- @param version version
- */
-- (void)addTarget:(id)target
-           action:(SEL)action
-         forStage:(NSUInteger)stage
-          version:(NSString *)version;
-
-/**
- add handler
-
- @param stage stage
- @param version version
- @param handler upgrade hander
- */
-- (void)addHandlerForStage:(NSUInteger)stage
-                   version:(NSString *)version
-                   handler:(void (^)(NSProgress *))handler;
-
-/**
- reset upgrader
- */
-- (void)reset;
-
-/**
- if need to upgrade
-
- @return if need to upgrade
- */
-- (BOOL)needUpgrade;
-
-/**
- upgrade all stages
- */
-- (void)upgradeAll;
-
-/**
- upgrade one stage
-
- @param stage stage
- */
-- (void)upgradeStage:(NSInteger)stage;
-
-/**
- upgrade one stage, from low version to high version
-
- @param stage stage
- @param from low version
- @param to high version
- */
-- (void)upgradeStage:(NSInteger)stage versionFrom:(NSString *)from to:(NSString *)to;
+/// compare with other item
+- (NSComparisonResult)compare:(VVDBUpgradeItem *)other;
 
 @end
+
+@interface VVDBUpgrader : NSObject
+
+/// Key to save the last upgraded version in NSUserDefaults
+@property (nonatomic, copy) NSString *versionKey;
+
+/// upgrade progress
+@property (nonatomic, strong) NSProgress *progress;
+
+/// upgrading or not
+@property (nonatomic, assign, readonly) BOOL isUpgrading;
+
+/// add upgrade item
+- (void)addItem:(VVDBUpgradeItem *)item;
+
+/// add upgrade items
+- (void)addItems:(NSArray<VVDBUpgradeItem *> *)items;
+
+/// reset upgrade progress
+- (void)reset;
+
+/// need to upgrade or not
+- (BOOL)needUpgrade;
+
+/// upgrade all stages
+- (void)upgradeAll;
+
+/// upgrade one stage
+- (void)upgradeStage:(NSUInteger)stage;
+
+/// debug upgrade items
+- (void)debugUpgradeItems:(NSArray<VVDBUpgradeItem *> *)items progress:(NSProgress *)progress;
+
+@end
+
+NS_ASSUME_NONNULL_END
