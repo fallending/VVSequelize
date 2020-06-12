@@ -241,15 +241,13 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
 
 - (void)_pretreat
 {
-    NSString *lastUpdatedVersion = self.lastUpdatedVersion;
+    NSString *fromVersion = self.lastUpdatedVersion;
     NSDictionary *completedInfo = self.completedInfo;
-
-    if (lastUpdatedVersion.length) {
-        NSString *latestVersion = [self latestVersion];
-        if (!latestVersion.length || [NSString compareVersion:lastUpdatedVersion with:latestVersion] > NSOrderedSame) {
-            _upgradeItems = @{}.mutableCopy;
-            return;
-        }
+    NSString *toVersion = [self latestVersion];
+    if (!toVersion.length || (fromVersion.length && [NSString compareVersion:fromVersion with:toVersion] >= NSOrderedSame)) {
+        _upgradeItems = @{}.mutableCopy;
+        _pretreated = YES;
+        return;
     }
 
     CGFloat totalWeight = 0;
@@ -257,9 +255,12 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
     for (NSMutableArray<VVDBUpgradeItem *> *items in self.stageItems.allValues) {
         for (VVDBUpgradeItem *item in items) {
             BOOL completed = [completedInfo[item.identifier] boolValue];
-            if (completed) continue;
-            [self addItem:item to:upgradeItems];
-            totalWeight += item.weight;
+            if (completed) {
+                item.progress = 100.0;
+            } else {
+                [self addItem:item to:upgradeItems];
+                totalWeight += item.weight;
+            }
         }
     }
 

@@ -616,7 +616,7 @@
 - (void)testUpgrader
 {
     VVDBUpgrader *upgrader = [[VVDBUpgrader alloc] init];
-    [[NSUserDefaults standardUserDefaults] setObject:@"0.1.0" forKey:upgrader.versionKey];
+//    [[NSUserDefaults standardUserDefaults] setObject:@"0.1.0" forKey:upgrader.versionKey];
     BOOL (^ handler)(VVDBUpgradeItem *) = ^(VVDBUpgradeItem *item) {
         NSLog(@"-> %@", item);
         for (NSInteger i = 1; i <= 10; i++) {
@@ -640,9 +640,11 @@
     [upgrader.progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
     [upgrader upgradeAll];
     
+    NSLog(@"=========================");
+    
     NSProgress *progress = [NSProgress progressWithTotalUnitCount:100];
     [progress addObserver:self forKeyPath:@"fractionCompleted" options:NSKeyValueObservingOptionNew context:nil];
-    [upgrader debugUpgradeItems:@[item1, item2, item3] progress:progress];
+    [upgrader debugUpgradeItems:@[item1, item2, item5] progress:progress];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
