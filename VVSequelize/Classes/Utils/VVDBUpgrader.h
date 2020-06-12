@@ -22,6 +22,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) CGFloat weight;   ///< 1.0 ~ ∞, default is 1.0
 @property (nonatomic, assign) CGFloat progress; ///< 0.0 ~ 100.0
 
+@property (nonatomic, strong) id reserved; ///< for additional data
+
 + (instancetype)itemWithIdentifier:(NSString *)identifier
                            version:(NSString *)version
                              stage:(NSUInteger)stage

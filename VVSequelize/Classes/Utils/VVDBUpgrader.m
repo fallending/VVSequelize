@@ -94,7 +94,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
 
 - (void)setProgress:(CGFloat)progress
 {
-    _progress = MAX(0.0, MIN(100.0, progress));
+    _progress = MAX(0.0, MIN(1.0, progress));
 }
 
 - (NSComparisonResult)compare:(VVDBUpgradeItem *)other
@@ -126,6 +126,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
     item.priority = self.priority;
     item.weight = self.weight;
     item.progress = 0.0;
+    item.reserved = self.reserved;
     return item;
 }
 
@@ -203,6 +204,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
     [self addItem:item to:self.stageItems];
     [self.versions addObject:item.version];
     [self.stages addObject:@(item.stage)];
+    _pretreated = NO;
 }
 
 - (void)addItems:(NSArray<VVDBUpgradeItem *> *)items
@@ -256,7 +258,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
         for (VVDBUpgradeItem *item in items) {
             BOOL completed = [completedInfo[item.identifier] boolValue];
             if (completed) {
-                item.progress = 100.0;
+                item.progress = 1.0;
             } else {
                 [self addItem:item to:upgradeItems];
                 totalWeight += item.weight;
@@ -264,7 +266,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
         }
     }
 
-    _progress.totalUnitCount = (int64_t)totalWeight * 100;
+    _progress.totalUnitCount = (int64_t)totalWeight;
     _progress.completedUnitCount = 0;
     _upgradeItems = upgradeItems;
     _pretreated = YES;
@@ -298,8 +300,10 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
 
 - (void)upgradeItems:(NSArray<VVDBUpgradeItem *> *)items
 {
-    [self pretreat];
+    if (_upgrading) return;
     _upgrading = YES;
+
+    [self pretreat];
     NSArray *sorted = [items sortedArrayUsingComparator:^NSComparisonResult (VVDBUpgradeItem *item1, VVDBUpgradeItem *item2) {
         return [item1 compare:item2];
     }];
@@ -319,14 +323,17 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
 
 - (BOOL)upgradeItem:(VVDBUpgradeItem *)item
 {
-    if (item.progress >= 100.0) return YES;
+    if (item.progress >= 1.0) return YES;
     BOOL ret = NO;
     if (item.target && item.action) {
         if ([item.target respondsToSelector:item.action]) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-            ret = [[item.target performSelector:item.action withObject:item] boolValue];
-#pragma clang diagnostic pop
+            NSMethodSignature *signature = [(NSObject *)item.target methodSignatureForSelector:item.action];
+            NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+            invocation.target = item.target;
+            invocation.selector = item.action;
+            [invocation setArgument:&item atIndex:2];
+            [invocation invoke];
+            [invocation getReturnValue:&ret];
         }
     } else if (item.handler) {
         ret = item.handler(item);
@@ -334,7 +341,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
         ret = YES;
     }
     if (ret) {
-        item.progress = 100.0;
+        item.progress = 1.0;
     }
     return ret;
 }
@@ -348,7 +355,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
     BOOL completedAll = YES;
     for (NSMutableArray<VVDBUpgradeItem *> *items in self.upgradeItems.allValues) {
         for (VVDBUpgradeItem *item in items) {
-            if (item.progress < 100.0) {
+            if (item.progress < 1.0) {
                 completedAll = NO;
                 break;
             }
@@ -366,6 +373,8 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
 
 - (void)debugUpgradeItems:(NSArray<VVDBUpgradeItem *> *)items progress:(NSProgress *)progress
 {
+    if (_upgrading) return;
+    _upgrading = YES;
     NSMutableArray *copied = [NSMutableArray arrayWithCapacity:items.count];
     for (VVDBUpgradeItem *item in items) {
         [copied addObject:item.copy];
@@ -373,14 +382,14 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
     NSArray *sorted = [copied sortedArrayUsingComparator:^NSComparisonResult (VVDBUpgradeItem *item1, VVDBUpgradeItem *item2) {
         return [item1 compare:item2];
     }];
-    int64_t totalUnitCount = 0;
-    NSArray *context = @[progress, copied];
+    CGFloat totalWeight = 0;
+    NSArray *context = @[progress, sorted];
     for (VVDBUpgradeItem *item in sorted) {
-        totalUnitCount += (int64_t)item.weight * 100;
+        totalWeight += item.weight;
         [item addObserver:self forKeyPath:@"progress" options:NSKeyValueObservingOptionNew context:(__bridge void *)(context)];
     }
 
-    progress.totalUnitCount = totalUnitCount;
+    progress.totalUnitCount = (int64_t)totalWeight;
     progress.completedUnitCount = 0;
     for (VVDBUpgradeItem *item in sorted) {
         [self upgradeItem:item];
