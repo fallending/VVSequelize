@@ -104,7 +104,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
         result = [NSString compareVersion:self.version with:other.version];
     }
     if (result == NSOrderedSame) {
-        result = self.priority < other.priority ? NSOrderedAscending : (self.priority == other.priority ? NSOrderedSame : NSOrderedDescending);
+        result = self.priority > other.priority ? NSOrderedAscending : (self.priority == other.priority ? NSOrderedSame : NSOrderedDescending);
     }
     return result;
 }
