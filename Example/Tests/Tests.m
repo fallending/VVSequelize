@@ -616,11 +616,12 @@
 - (void)testUpgrader
 {
     VVDBUpgrader *upgrader = [[VVDBUpgrader alloc] init];
-//    [[NSUserDefaults standardUserDefaults] setObject:@"0.1.0" forKey:upgrader.versionKey];
+    [[NSUserDefaults standardUserDefaults] setObject:@"0.1.0" forKey:upgrader.versionKey];
     BOOL (^ handler)(VVDBUpgradeItem *) = ^(VVDBUpgradeItem *item) {
         NSLog(@"-> %@", item);
         for (NSInteger i = 1; i <= 10; i++) {
-            item.progress = i * 10;
+            item.progress = i * 0.1;
+            [NSThread sleepForTimeInterval:0.1];
         }
         return YES;
     };

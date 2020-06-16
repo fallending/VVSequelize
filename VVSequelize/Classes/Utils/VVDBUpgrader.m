@@ -9,6 +9,7 @@
 
 NSString *const VVDBUpgraderLastVersionKey = @"VVDBUpgraderLastVersionKey";
 NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
+CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 
 @interface NSString (VVDBUpgrader)
 + (NSComparisonResult)compareVersion:(NSString *)version1 with:(NSString *)version2;
@@ -266,7 +267,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
         }
     }
 
-    _progress.totalUnitCount = (int64_t)totalWeight;
+    _progress.totalUnitCount = (int64_t)(totalWeight * VVDBUpgraderProgressAccuracy);
     _progress.completedUnitCount = 0;
     _upgradeItems = upgradeItems;
     _pretreated = YES;
@@ -389,7 +390,7 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
         [item addObserver:self forKeyPath:@"progress" options:NSKeyValueObservingOptionNew context:(__bridge void *)(context)];
     }
 
-    progress.totalUnitCount = (int64_t)totalWeight;
+    progress.totalUnitCount = (int64_t)(totalWeight * VVDBUpgraderProgressAccuracy);
     progress.completedUnitCount = 0;
     for (VVDBUpgradeItem *item in sorted) {
         [self upgradeItem:item];
@@ -403,19 +404,19 @@ NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
             NSArray *array = (__bridge NSArray *)context;
             NSProgress *progress = array.firstObject;
             NSArray<VVDBUpgradeItem *> *items = array.lastObject;
-            int64_t completedUnitCount = 0;
+            CGFloat completedWeight = 0;
             for (VVDBUpgradeItem *item in items) {
-                completedUnitCount += (int64_t)(item.weight * item.progress);
+                completedWeight += item.weight * item.progress;
             }
-            progress.completedUnitCount = completedUnitCount;
+            progress.completedUnitCount = (int64_t)(completedWeight * VVDBUpgraderProgressAccuracy);
         } else {
-            int64_t completedUnitCount = 0;
+            CGFloat completedWeight = 0;
             for (NSMutableArray<VVDBUpgradeItem *> *items in self.upgradeItems.allValues) {
                 for (VVDBUpgradeItem *item in items) {
-                    completedUnitCount += (int64_t)(item.weight * item.progress);
+                    completedWeight += item.weight * item.progress;
                 }
             }
-            self.progress.completedUnitCount = completedUnitCount;
+            self.progress.completedUnitCount = (int64_t)(completedWeight * VVDBUpgraderProgressAccuracy);
         }
     }
 }
