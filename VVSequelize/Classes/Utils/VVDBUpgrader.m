@@ -260,7 +260,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
             BOOL completed = [completedInfo[item.identifier] boolValue];
             if (completed) {
                 item.progress = 1.0;
-            } else {
+            } else if ([NSString compareVersion:fromVersion with:item.version] == NSOrderedAscending) {
                 [self addItem:item to:upgradeItems];
                 totalWeight += item.weight;
             }
