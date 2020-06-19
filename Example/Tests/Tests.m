@@ -629,6 +629,7 @@
     item1.weight = 5.0;
     VVDBUpgradeItem *item2 = [VVDBUpgradeItem itemWithIdentifier:@"2" version:@"0.1.4" stage:0 handler:handler];
     item2.weight = 2.0;
+    item2.record = YES;
     VVDBUpgradeItem *item3 = [VVDBUpgradeItem itemWithIdentifier:@"3" version:@"0.1.1" stage:1 handler:handler];
     item3.weight = 3.0;
     VVDBUpgradeItem *item4 = [VVDBUpgradeItem itemWithIdentifier:@"4" version:@"0.1.3" stage:1 handler:handler];

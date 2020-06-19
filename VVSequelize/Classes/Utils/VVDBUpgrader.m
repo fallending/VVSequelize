@@ -257,13 +257,18 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     NSMutableDictionary<NSNumber *, NSMutableArray<VVDBUpgradeItem *> *> *upgradeItems = [NSMutableDictionary dictionary];
     for (NSMutableArray<VVDBUpgradeItem *> *items in self.stageItems.allValues) {
         for (VVDBUpgradeItem *item in items) {
-            BOOL completed = [completedInfo[item.identifier] boolValue];
-            if (completed) {
-                item.progress = 1.0;
-            } else if ([NSString compareVersion:fromVersion with:item.version] == NSOrderedAscending) {
-                [self addItem:item to:upgradeItems];
-                totalWeight += item.weight;
+            if ([NSString compareVersion:fromVersion with:item.version] > NSOrderedAscending) {
+                continue;
             }
+            if (item.record) {
+                BOOL completed = [completedInfo[item.identifier] boolValue];
+                if (completed) {
+                    item.progress = 1.0;
+                    continue;
+                }
+            }
+            [self addItem:item to:upgradeItems];
+            totalWeight += item.weight;
         }
     }
 
@@ -350,8 +355,6 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 - (void)completeItem:(VVDBUpgradeItem *)item
 {
     [item removeObserver:self forKeyPath:@"progress"];
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    self.completedInfo[item.identifier] = @(YES);
 
     BOOL completedAll = YES;
     for (NSMutableArray<VVDBUpgradeItem *> *items in self.upgradeItems.allValues) {
@@ -362,14 +365,18 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
             }
         }
     }
+
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (completedAll) {
         NSString *latestVersion = [self latestVersion];
         [defaults setObject:latestVersion forKey:_versionKey];
         [defaults setObject:@{} forKey:_completedInfoKey];
-    } else {
+        [defaults synchronize];
+    } else if (item.record) {
+        self.completedInfo[item.identifier] = @(YES);
         [defaults setObject:self.completedInfo forKey:_completedInfoKey];
+        [defaults synchronize];
     }
-    [defaults synchronize];
 }
 
 - (void)debugUpgradeItems:(NSArray<VVDBUpgradeItem *> *)items progress:(NSProgress *)progress
