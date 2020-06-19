@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) CGFloat priority; ///< 0.0 ~ 1.0, default is 0.5
 @property (nonatomic, assign) CGFloat weight;   ///< 1.0 ~ ∞, default is 1.0
 @property (nonatomic, assign) CGFloat progress; ///< 0.0 ~ 100.0
-@property (nonatomic, assign) BOOL record; ///<  record complete or not
+@property (nonatomic, assign) BOOL record; ///<  record complete or not, default is YES
 
 @property (nonatomic, strong) id reserved; ///< for additional data
 

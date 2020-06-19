@@ -74,6 +74,18 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
         _stage = stage;
         _priority = 0.5;
         _weight = 1.0;
+        _record = YES;
+    }
+    return self;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _priority = 0.5;
+        _weight = 1.0;
+        _record = YES;
     }
     return self;
 }
@@ -127,6 +139,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     item.priority = self.priority;
     item.weight = self.weight;
     item.progress = 0.0;
+    item.record = self.record;
     item.reserved = self.reserved;
     return item;
 }
