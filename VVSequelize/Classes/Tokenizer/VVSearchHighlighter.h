@@ -42,9 +42,9 @@ typedef NS_OPTIONS (NSUInteger, VVMatchOptions) {
 };
 
 @interface VVResultMatch : NSObject
-@property (nonatomic, assign) NSRange range;
 @property (nonatomic, copy) NSString *source;
 @property (nonatomic, copy) NSAttributedString *attrText;
+@property (nonatomic, strong, readonly) NSArray *ranges;
 @property (nonatomic, assign, readonly) UInt64 lowerWeight;
 @property (nonatomic, assign, readonly) UInt64 upperWeight;
 @property (nonatomic, assign, readonly) UInt64 weight;

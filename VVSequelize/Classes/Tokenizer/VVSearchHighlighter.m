@@ -15,6 +15,7 @@
 @property (nonatomic, assign) VVMatchLV1 lv1;
 @property (nonatomic, assign) VVMatchLV2 lv2;
 @property (nonatomic, assign) VVMatchLV3 lv3;
+@property (nonatomic, strong) NSArray *ranges;
 @end
 
 @implementation VVResultMatch
@@ -22,18 +23,9 @@
 @synthesize upperWeight = _upperWeight;
 @synthesize weight = _weight;
 
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        _range = NSMakeRange(NSNotFound, 0);
-    }
-    return self;
-}
-
 - (UInt64)upperWeight
 {
-    if (_upperWeight == 0 && _range.length > 0) {
+    if (_upperWeight == 0 && _ranges.count > 0) {
         _upperWeight = (UInt64)(_lv1 & 0xF) << 28 | (UInt64)(_lv2 & 0xF) << 24 | (UInt64)(_lv3 & 0xF) << 20;
     }
     return _upperWeight;
@@ -41,9 +33,10 @@
 
 - (UInt64)lowerWeight
 {
-    if (_upperWeight == 0 && _range.length > 0) {
-        UInt64 loc = ~_range.location & 0xFFFF;
-        UInt64 rate = ((UInt64)_range.length << 32) / _source.length;
+    if (_upperWeight == 0 && _ranges.count > 0) {
+        NSRange range = [_ranges.firstObject rangeValue];
+        UInt64 loc = ~range.location & 0xFFFF;
+        UInt64 rate = ((UInt64)range.length << 32) / _source.length;
         _lowerWeight = (UInt64)(loc & 0xFFFF) << 16 | (UInt64)(rate & 0xFFFF) << 0;
     }
     return _upperWeight;
@@ -51,7 +44,7 @@
 
 - (UInt64)weight
 {
-    if (_weight == 0 && _range.length > 0) {
+    if (_weight == 0 && _ranges.count > 0) {
         _weight = self.upperWeight << 32 | self.lowerWeight;
     }
     return _weight;
@@ -63,7 +56,7 @@
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"[%@|%@|%@|%@|0x%llx]: %@", @(_lv1), @(_lv2), @(_lv3), NSStringFromRange(_range), self.weight, [_attrText.description stringByReplacingOccurrencesOfString:@"\n" withString:@""]];
+    return [NSString stringWithFormat:@"[%@|%@|%@|%@|0x%llx]: %@", @(_lv1), @(_lv2), @(_lv3), _ranges.firstObject, self.weight, [_attrText.description stringByReplacingOccurrencesOfString:@"\n" withString:@""]];
 }
 
 @end
@@ -195,9 +188,8 @@
     if (self.mask & VVTokenMaskTransform) {
         comparison = comparison.simplifiedChineseString;
     }
-    const char *cleanText = clean.cLangString;
-    const char *pText = comparison.cLangString;
-    long nText = (long)strlen(pText);
+    const char *cSource = comparison.cLangString;
+    long nText = (long)strlen(cSource);
     if (nText == 0) return match;
 
     NSString *keyword = _keyword.lowercaseString;
@@ -205,14 +197,11 @@
         keyword = keyword.simplifiedChineseString;
     }
 
-    match = [self highlight:source keyword:keyword lv1:VVMatchLV1_Origin
-                      clean:clean comparison:comparison cleanText:cleanText pText:pText];
+    match = [self highlight:source keyword:keyword lv1:VVMatchLV1_Origin comparison:comparison cSource:cSource];
     BOOL fuzzy = (self.options & VVMatchOptionPinyin) && (self.options & VVMatchOptionFuzzy);
     if (match.upperWeight == 0 && fuzzy) {
-        VVResultMatch *otherMatch = nil;
         if (self.keywordFullPinyin.length > 0 && ![self.keywordFullPinyin isEqualToString:self.keyword]) {
-            otherMatch = [self highlight:source keyword:self.keywordFullPinyin lv1:VVMatchLV1_Fulls
-                                   clean:clean comparison:comparison cleanText:cleanText pText:pText];
+            VVResultMatch *otherMatch = [self highlight:source keyword:self.keywordFullPinyin lv1:VVMatchLV1_Fulls comparison:comparison cSource:cSource];
             if (otherMatch.upperWeight > 0) return otherMatch;
         }
     }
@@ -246,17 +235,38 @@
     return attrText;
 }
 
-- (VVResultMatch *)highlight:(NSString *)source keyword:(NSString *)keyword lv1:(VVMatchLV1)lv1
-                       clean:(NSString *)clean comparison:(NSString *)comparison
-                   cleanText:(const char *)cleanText pText:(const char *)pText
+- (VVResultMatch *)highlight:(NSString *)source
+                     keyword:(NSString *)keyword
+                         lv1:(VVMatchLV1)lv1
+                  comparison:(NSString *)comparison
+                     cSource:(const char *)cSource
 {
+    VVResultMatch *match = [self highlightUsingRegex:source keyword:keyword lv1:lv1 comparison:comparison];
+    if (match) return match;
+
+    if (self.options & VVMatchOptionPinyin) {
+        match = [self highlightUsingPinyin:source keyword:keyword lv1:lv1 comparison:comparison];
+        if (match) return match;
+    }
+
+    if (self.options & VVMatchOptionToken) {
+        match = [self highlightUsingToken:source keyword:keyword lv1:lv1 cSource:cSource];
+        if (match) return match;
+    }
+
     VVResultMatch *nomatch = [[VVResultMatch alloc] init];
     nomatch.source = source;
+    return nomatch;
+}
 
+- (VVResultMatch *)highlightUsingRegex:(NSString *)source
+                               keyword:(NSString *)keyword
+                                   lv1:(VVMatchLV1)lv1
+                            comparison:(NSString *)comparison
+{
     VVResultMatch *match = [[VVResultMatch alloc] init];
     match.lv1 = lv1;
     match.source = source;
-    long nText = (long)strlen(pText);
 
     BOOL hasSpace = [keyword rangeOfString:@" " options:NSLiteralSearch].length > 0;
     NSStringCompareOptions options = (hasSpace ? NSRegularExpressionSearch : 0x0) | NSLiteralSearch;
@@ -270,123 +280,149 @@
         } else {
             match.lv2 = VVMatchLV2_NonPrefix;
         }
-        match.range = found;
+        match.ranges = @[[NSValue valueWithRange:found]];
         match.lv3 = lv1 == VVMatchLV1_Origin ? VVMatchLV3_High : VVMatchLV3_Medium;
-        match.attrText = [self highlightText:clean WithRange:found];
+        match.attrText = [self highlightText:source WithRange:found];
         return match;
     }
+    return nil;
+}
 
-    if (self.options & VVMatchOptionPinyin) {
-        VVPinYinFruit *fruit = [comparison pinyinMatrix];
-        NSArray<NSArray<NSString *> *> *matrixes = @[(lv1 == VVMatchLV1_Origin ? fruit.abbrs : @[]), fruit.fulls];
-        for (NSInteger i = 0; i < matrixes.count; i++) {
-            NSArray *matrix = matrixes[i];
-            for (NSArray *pinyins in matrix) {
-                NSString *py = [pinyins componentsJoinedByString:@""];
-                found = [py rangeOfString:exp options:options];
-                if (found.length > 0) {
-                    VVMatchLV2 lv2 = VVMatchLV2_None;
-                    if (found.location == 0 && found.length == py.length) {
-                        lv2 = keyword.length == 1 ? VVMatchLV2_Prefix : VVMatchLV2_Full;
-                    } else if (found.location == 0 && found.length < py.length) {
-                        lv2 = VVMatchLV2_Prefix;
-                    } else {
-                        lv2 = VVMatchLV2_NonPrefix;
+- (VVResultMatch *)highlightUsingPinyin:(NSString *)source
+                                keyword:(NSString *)keyword
+                                    lv1:(VVMatchLV1)lv1
+                             comparison:(NSString *)comparison
+{
+    VVResultMatch *match = [[VVResultMatch alloc] init];
+    match.lv1 = lv1;
+    match.source = source;
+
+    BOOL hasSpace = [keyword rangeOfString:@" " options:NSLiteralSearch].length > 0;
+    NSStringCompareOptions options = (hasSpace ? NSRegularExpressionSearch : 0x0) | NSLiteralSearch;
+    NSString *exp = hasSpace ? [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:options range:NSMakeRange(0, keyword.length)] : keyword;
+    NSRange found = NSMakeRange(NSNotFound, 0);
+
+    VVPinYinFruit *fruit = [comparison pinyinMatrix];
+    NSArray<NSArray<NSString *> *> *matrixes = @[(lv1 == VVMatchLV1_Origin ? fruit.abbrs : @[]), fruit.fulls];
+    for (NSInteger i = 0; i < matrixes.count; i++) {
+        NSArray *matrix = matrixes[i];
+        for (NSArray *pinyins in matrix) {
+            NSString *py = [pinyins componentsJoinedByString:@""];
+            found = [py rangeOfString:exp options:options];
+            if (found.length > 0) {
+                VVMatchLV2 lv2 = VVMatchLV2_None;
+                if (found.location == 0 && found.length == py.length) {
+                    lv2 = keyword.length == 1 ? VVMatchLV2_Prefix : VVMatchLV2_Full;
+                } else if (found.location == 0 && found.length < py.length) {
+                    lv2 = VVMatchLV2_Prefix;
+                } else {
+                    lv2 = VVMatchLV2_NonPrefix;
+                }
+                NSRange ran = [match.ranges.firstObject rangeValue];
+                if ((lv2 > match.lv2) || (lv2 == match.lv2 && (found.location < ran.location || i == 1) )) {
+                    NSUInteger offset = 0, idx = 0;
+                    while (offset < found.location && idx < pinyins.count) {
+                        NSString *s = pinyins[idx];
+                        offset += s.length;
+                        if (offset > NSMaxRange(found)) break;
+                        idx++;
                     }
-                    if ((lv2 > match.lv2) || (lv2 == match.lv2 && (found.location < match.range.location || i == 1) )) {
-                        NSUInteger offset = 0, idx = 0;
-                        while (offset < found.location && idx < pinyins.count) {
+                    BOOL valid = offset == found.location;
+
+                    if (valid) {
+                        idx = idx >= pinyins.count ? pinyins.count - 1 : idx;
+                        NSUInteger hloc = idx, mlen = 0;
+                        while (mlen < found.length && idx < pinyins.count) {
                             NSString *s = pinyins[idx];
-                            offset += s.length;
-                            if (offset > NSMaxRange(found)) break;
+                            mlen += s.length;
                             idx++;
                         }
-                        BOOL valid = offset == found.location;
-
+                        valid = mlen == found.length;
                         if (valid) {
-                            idx = idx >= pinyins.count ? pinyins.count - 1 : idx;
-                            NSUInteger hloc = idx, mlen = 0;
-                            while (mlen < found.length && idx < pinyins.count) {
-                                NSString *s = pinyins[idx];
-                                mlen += s.length;
-                                idx++;
-                            }
-                            valid = mlen == found.length;
-                            if (valid) {
-                                NSUInteger hlen = idx - hloc;
-                                NSRange hlRange = NSMakeRange(hloc, hlen);
+                            NSUInteger hlen = idx - hloc;
+                            NSRange hlRange = NSMakeRange(hloc, hlen);
 
-                                match.lv2 = lv2;
-                                match.range = hlRange;
-                                match.lv3 = (i == 1) ? VVMatchLV3_Medium : VVMatchLV3_Low;
-                                match.attrText = [self highlightText:clean WithRange:hlRange];
-                            }
+                            match.lv2 = lv2;
+                            match.ranges = @[[NSValue valueWithRange:hlRange]];
+                            match.lv3 = (i == 1) ? VVMatchLV3_Medium : VVMatchLV3_Low;
+                            match.attrText = [self highlightText:source WithRange:hlRange];
                         }
                     }
                 }
-                if (match.lv2 == VVMatchLV2_Full) break;
             }
             if (match.lv2 == VVMatchLV2_Full) break;
         }
+        if (match.lv2 == VVMatchLV2_Full) break;
     }
+
     if (match.lv2 != VVMatchLV2_None) {
         return match;
     }
 
-    if (!(self.options & VVMatchOptionToken)) {
-        return nomatch;
-    }
+    return nil;
+}
 
-    __block uint8_t *tokenized = (uint8_t *)malloc(nText + 1);
-    memset(tokenized, 0x0, nText + 1);
+- (VVResultMatch *)highlightUsingToken:(NSString *)source
+                               keyword:(NSString *)keyword
+                                   lv1:(VVMatchLV1)lv1
+                               cSource:(const char *)cSource
+{
+    VVResultMatch *match = [[VVResultMatch alloc] init];
+    match.lv1 = lv1;
+    match.source = source;
 
     VVTokenMask mask = self.mask;
     if ((mask & VVTokenMaskPinyin) > 0) {
         mask = mask & ~VVTokenMaskSyllable;
     }
 
-    NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:pText method:self.method mask:mask];
+    NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerateCString:cSource method:self.method mask:mask];
 
-    unsigned long count = tokens.count;
-    unsigned long kwcount = self.keywordTokens.count;
-
-    unsigned long k = 0;
-    for (unsigned long j = 0; j < kwcount; j++) {
-        VVToken *kwToken = self.keywordTokens[j];
-        for (unsigned long i = k; i < count; i++) {
-            VVToken *token = tokens[i];
-            if (strcmp(token.token.cLangString, kwToken.token.cLangString) != 0) continue;
-            memcpy(tokenized + token.start, cleanText + token.start, token.end - token.start);
-            k = i + 1;
-            break;
+    NSMutableDictionary *tokenMap = [NSMutableDictionary dictionary];
+    for (VVToken *token in tokens) {
+        NSMutableSet *set = tokenMap[token.token];
+        if (!set) {
+            set = [NSMutableSet set];
+            tokenMap[token.token] = set;
         }
+        [set addObject:token];
+    }
+    NSMutableSet *kwtks = [NSMutableSet set];
+    for (VVToken *token in self.keywordTokens) {
+        [kwtks addObject:token.token];
     }
 
-    long start = -1, end = 0;
-    for (long i = 0; i <= nText; i++) {
-        int flag = tokenized[i] == 0x0 ? 0 : 1;
-        if (start < 0 && flag == 1) {
-            start = i;
-        } else if (start >= 0 && flag == 0) {
-            end = i; break;
-        }
-    }
-    free(tokenized);
-
-    if (end > 0) {
-        NSString *s1 = [[NSString alloc] initWithBytes:cleanText length:start encoding:NSUTF8StringEncoding] ? : @"";
-        NSString *sk = [[NSString alloc] initWithBytes:cleanText + start length:end - start encoding:NSUTF8StringEncoding] ? : @"";
-        match.range = NSMakeRange(s1.length, sk.length);
-        match.attrText = [self highlightText:clean WithRange:NSMakeRange(s1.length, sk.length)];
-        if (match.lv2 == VVMatchLV2_None) {
-            match.lv2 = VVMatchLV2_Other;
-            match.lv3 = VVMatchLV3_Low;
-        }
-    } else {
-        match.attrText = [[NSAttributedString alloc] initWithString:source attributes:self.normalAttributes];
+    NSMutableSet *matchedSet = [NSMutableSet set];
+    for (NSString *tk in kwtks) {
+        NSMutableSet *set = tokenMap[tk];
+        if (set) [matchedSet addObjectsFromArray:set.allObjects];
     }
 
-    return match.lv2 == VVMatchLV2_None ? nomatch : match;
+    if (matchedSet.count == 0) {
+        return nil;
+    }
+
+    NSArray *array = [matchedSet.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
+        return tk1.start == tk2.start ? (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
+    }];
+
+    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
+    NSMutableArray *ranges = [NSMutableArray arrayWithCapacity:array.count];
+    for (VVToken *token in array) {
+        NSString *s1 = [[NSString alloc] initWithBytes:cSource length:token.start encoding:NSUTF8StringEncoding] ? : @"";
+        NSString *sk = [[NSString alloc] initWithBytes:cSource + token.start length:token.end - token.start encoding:NSUTF8StringEncoding] ? : @"";
+        NSRange range = NSMakeRange(s1.length, sk.length);
+        [attrText addAttributes:self.highlightAttributes range:range];
+        [ranges addObject:[NSValue valueWithRange:range]];
+    }
+    match.attrText = attrText;
+    match.ranges = ranges;
+    if (match.lv2 == VVMatchLV2_None) {
+        match.lv2 = VVMatchLV2_Other;
+        match.lv3 = VVMatchLV3_Low;
+    }
+
+    return match;
 }
 
 @end
