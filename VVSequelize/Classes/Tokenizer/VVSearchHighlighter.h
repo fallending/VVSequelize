@@ -32,13 +32,11 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
     VVMatchLV3_High,
 };
 
-typedef NS_OPTIONS (NSUInteger, VVMatchOptions) {
-    VVMatchOptionPinyin  = 1 << 0, ///< match words with pinyin
-    VVMatchOptionFuzzy   = 1 << 1, ///< match words with pinyin of keywords, VVMatchOptionPinyin must be set
-    VVMatchOptionToken   = 1 << 2, ///< match words with token
-
-    VVMatchOptionDefault = VVMatchOptionPinyin,
-    VVMatchOptionsAll    = 0xFFFFFFFF,
+typedef NS_ENUM(NSUInteger, VVMatchOption) {
+    VVMatchOptionDefault = 0,
+    VVMatchOptionToken,
+    VVMatchOptionPinyin,
+    VVMatchOptionFuzzy,
 };
 
 @interface VVResultMatch : NSObject
@@ -60,7 +58,7 @@ typedef NS_OPTIONS (NSUInteger, VVMatchOptions) {
 
 @interface VVSearchHighlighter : NSObject
 @property (nonatomic, copy) NSString *keyword;
-@property (nonatomic, assign) VVMatchOptions options;
+@property (nonatomic, assign) VVMatchOption option;
 @property (nonatomic, assign) VVTokenMethod method;         ///< default is VVTokenMethodSequelize
 @property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDefault
 @property (nonatomic, assign) NSUInteger attrTextMaxLength; ///< default is 17

@@ -54,6 +54,8 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
 
 + (NSArray<VVToken *> *)enumerateCString:(const char *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
 
++ (NSArray<VVToken *> *)extraTokens:(const char *)cSource mask:(VVTokenMask)mask;
+
 @end
 
 NS_ASSUME_NONNULL_END
