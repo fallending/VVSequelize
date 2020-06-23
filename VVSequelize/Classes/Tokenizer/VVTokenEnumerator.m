@@ -38,6 +38,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 @property (nonatomic, strong) NSArray<VVTokenCursor *> *cursors;
 @property (nonatomic, assign) VVTokenType type;
 @property (nonatomic, assign) NSStringEncoding encoding;
+@property (nonatomic, assign) BOOL syllable;
 
 + (instancetype)tuple:(NSArray<VVTokenCursor *> *)cursors type:(VVTokenType)type encoding:(NSStringEncoding)encoding;
 
@@ -259,15 +260,16 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     NSArray<VVTokenCursor *> *cursors = [self cursorsWithCString:cSource];
     NSArray<VVTokenCursorTuple *> *tuples = [VVTokenCursorTuple group:cursors];
 
-    // essential
-    NSArray *tokens = [self sequelizeTokensWithCString:cSource tuples:tuples];
-
+    NSMutableArray *results = [NSMutableArray array];
     if (mask > 0) {
         NSArray *extras = [self extraTokens:cSource tuples:tuples mask:mask];
-        return [tokens arrayByAddingObjectsFromArray:extras];
+        [results addObjectsFromArray:extras];
     }
 
-    return tokens;
+    // essential
+    NSArray *tokens = [self sequelizeTokensWithCString:cSource tuples:tuples];
+    [results addObjectsFromArray:tokens];
+    return results;
 }
 
 // MARK: - Extra Tokens
@@ -383,16 +385,27 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
 }
 
 // MARK: - Combine
+
 + (NSArray<VVToken *> *)wordTokensByCombine:(const char *)cSource
                                     cursors:(NSArray<VVTokenCursor *> *)cursors
                                    encoding:(NSStringEncoding)encoding
                                    quantity:(NSUInteger)quantity
 {
+    return [self wordTokensByCombine:cSource cursors:cursors encoding:encoding quantity:quantity tail:YES];
+}
+
++ (NSArray<VVToken *> *)wordTokensByCombine:(const char *)cSource
+                                    cursors:(NSArray<VVTokenCursor *> *)cursors
+                                   encoding:(NSStringEncoding)encoding
+                                   quantity:(NSUInteger)quantity
+                                       tail:(BOOL)tail
+{
     if (cursors.count == 0 || encoding == NSUIntegerMax || quantity == 0) return @[];
 
     NSMutableArray *results = [NSMutableArray array];
     NSInteger count = cursors.count;
-    for (NSInteger i = 0; i < count; i++) {
+    NSInteger loop = tail ? count : count - quantity + 1;
+    for (NSInteger i = 0; i < loop; i++) {
         VVTokenCursor *c1 = cursors[i];
         u_long offset = c1.offset;
         u_long len = c1.len;
@@ -415,6 +428,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
 {
     NSMutableArray *results = [NSMutableArray array];
     for (VVTokenCursorTuple *tuple in tuples) {
+        if (tuple.syllable) continue;
         NSUInteger quantity = tuple.encoding == NSASCIIStringEncoding ? 3 : 2;
         NSArray<VVToken *> *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:quantity];
         [results addObjectsFromArray:tokens];
@@ -446,7 +460,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
         }
 
         if (!abbr) continue;
-        tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:3];
+        tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:3 tail:NO];
         for (VVToken *tk in tokens) {
             VVPinYinFruit *fruit = tk.token.pinyins;
             for (NSString *abbr in fruit.abbrs) {
@@ -492,6 +506,8 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
             token.len = tkLen;
             token.token = tkString;
             [results addObject:token];
+
+            tuple.syllable = YES;
             start += flen;
         }
     }
