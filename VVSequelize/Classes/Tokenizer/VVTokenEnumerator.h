@@ -11,7 +11,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface VVToken : NSObject
+@interface VVToken : NSObject <NSCopying>
 @property (nonatomic, copy) NSString *token;
 @property (nonatomic, assign) int len;
 @property (nonatomic, assign) int start;
@@ -38,6 +38,8 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskDefault      = (VVTokenMaskNumber | VVTokenMaskTransform),
     VVTokenMaskAll          = 0xFFFFFFFF,
     VVTokenMaskAllPinYin    = (VVTokenMaskPinyin | VVTokenMaskAbbreviation),
+
+    VVTokenMaskHighlight    = 1 << 32,
 };
 
 @protocol VVTokenEnumeratorProtocol <NSObject>
@@ -53,8 +55,6 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
 + (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
 
 + (NSArray<VVToken *> *)enumerateCString:(const char *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
-
-+ (NSArray<VVToken *> *)extraTokens:(const char *)cSource mask:(VVTokenMask)mask;
 
 @end
 

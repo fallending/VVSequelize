@@ -135,7 +135,7 @@
 {
     if (_keyword.length == 0) return;
     VVTokenMask mask = (_mask & ~(VVTokenMaskAllPinYin | VVTokenMaskSyllable));
-    VVTokenMask pymask = mask | VVTokenMaskSyllable;
+    VVTokenMask pymask = mask | VVTokenMaskSyllable | VVTokenMaskHighlight;
     VVTokenMask fzmask = pymask | VVTokenMaskPinyin;
     _kwTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
     _pyKwTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:pymask];
@@ -191,8 +191,7 @@
         keyword = keyword.simplifiedChineseString;
     }
 
-    BOOL fuzzy = (self.option & VVMatchOptionPinyin) && (self.option & VVMatchOptionFuzzy);
-    match = [self highlight:source comparison:comparison cSource:cSource keyword:keyword lv1:VVMatchLV1_Origin fuzzy:fuzzy];
+    match = [self highlight:source comparison:comparison cSource:cSource keyword:keyword lv1:VVMatchLV1_Origin];
     return match;
 }
 
@@ -228,31 +227,15 @@
                      cSource:(const char *)cSource
                      keyword:(NSString *)keyword
                          lv1:(VVMatchLV1)lv1
-                       fuzzy:(BOOL)fuzzy
 {
     VVResultMatch *match = [self highlightUsingRegex:source comparison:comparison keyword:keyword lv1:lv1];
     if (match) return match;
 
-    VVResultMatch *nomatch = [[VVResultMatch alloc] init];
-    nomatch.source = source;
-
-    NSArray *keywordTokens = nil;
-    switch (self.option) {
-        case VVMatchOptionToken: keywordTokens = self.kwTokens; break;
-        case VVMatchOptionPinyin: keywordTokens = self.pyKwTokens; break;
-        case VVMatchOptionFuzzy: keywordTokens = self.fzKwTokens; break;
-        default: return nomatch;
-    }
-
-    if (keywordTokens.count == 0) {
-        return nomatch;
-    }
-
-    VVTokenMask mask = self.mask & ~VVTokenMaskSyllable;
-    NSArray<VVToken *> *sourceTokens = [VVTokenEnumerator enumerateCString:cSource method:self.method mask:mask];
-    match = [self highlightUsingToken:source cSource:cSource lv1:lv1 keywordTokens:keywordTokens sourceTokens:sourceTokens];
+    match = [self highlightUsingToken:source cSource:cSource lv1:lv1];
     if (match) return match;
 
+    VVResultMatch *nomatch = [[VVResultMatch alloc] init];
+    nomatch.source = source;
     return nomatch;
 }
 
@@ -296,12 +279,19 @@
 - (VVResultMatch *)highlightUsingToken:(NSString *)source
                                cSource:(const char *)cSource
                                    lv1:(VVMatchLV1)lv1
-                         keywordTokens:(NSArray<VVToken *> *)keywordTokens
-                          sourceTokens:(NSArray<VVToken *> *)sourceTokens
 {
-    if (keywordTokens.count == 0 || sourceTokens.count == 0) {
-        return nil;
+    NSArray *keywordTokens = nil;
+    switch (self.option) {
+        case VVMatchOptionToken: keywordTokens = self.kwTokens; break;
+        case VVMatchOptionPinyin: keywordTokens = self.pyKwTokens; break;
+        case VVMatchOptionFuzzy: keywordTokens = self.fzKwTokens; break;
+        default: return nil;
     }
+    if (keywordTokens.count == 0) return nil;
+
+    VVTokenMask mask = self.mask & ~VVTokenMaskSyllable;
+    NSArray<VVToken *> *sourceTokens = [VVTokenEnumerator enumerateCString:cSource method:self.method mask:mask];
+    if (sourceTokens.count == 0) return nil;
 
     NSMutableDictionary *tokenMap = [NSMutableDictionary dictionary];
     for (VVToken *token in sourceTokens) {
@@ -317,15 +307,25 @@
         [kwtks addObject:token.token];
     }
 
+    if (self.option >= VVMatchOptionPinyin) {
+        NSArray *allTokens = tokenMap.allKeys;
+        NSArray *allKwtks = kwtks.allObjects;
+        for (NSString *tk in allTokens) {
+            for (NSString *kwtk in allKwtks) {
+                if ([tk hasPrefix:kwtk]) {
+                    [kwtks addObject:tk];
+                    break;
+                }
+            }
+        }
+    }
+
     NSMutableSet *matchedSet = [NSMutableSet set];
     for (NSString *tk in kwtks) {
         NSMutableSet *set = tokenMap[tk];
         if (set) [matchedSet addObjectsFromArray:set.allObjects];
     }
-
-    if (matchedSet.count == 0) {
-        return nil;
-    }
+    if (matchedSet.count == 0) return nil;
 
     NSArray *array = [matchedSet.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
         return tk1.start == tk2.start ? (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);

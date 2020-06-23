@@ -542,15 +542,19 @@
 
 - (void)testHighlight2
 {
-    NSString *keyword = @"金田";
-    NSString *source = @"今天天气真好";
-    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword];
-    highlighter.option = VVMatchOptionFuzzy;
-    highlighter.mask = VVTokenMaskAll;
-    highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
-    VVResultMatch *match = [highlighter highlight:source];
-    if (match) {
+    NSString *string = @"mtcz";
+    NSString *source = @"媒体重组";
+    for (NSUInteger i = 1; i <= string.length; i ++) {
+        NSString *keyword = [string substringToIndex:i];
+        VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword];
+        highlighter.option = VVMatchOptionFuzzy;
+        highlighter.mask = VVTokenMaskAll;
+        highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
+        VVResultMatch *match = [highlighter highlight:source];
+        printf("\n%16s : %s", keyword.UTF8String, match.description.UTF8String);
+        if (match) {}
     }
+    printf("\n");
 }
 
 - (void)testTransform
