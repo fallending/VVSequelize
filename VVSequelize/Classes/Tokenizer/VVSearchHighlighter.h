@@ -32,11 +32,14 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
     VVMatchLV3_High,
 };
 
-typedef NS_ENUM(NSUInteger, VVMatchOption) {
-    VVMatchOptionDefault = 0,
-    VVMatchOptionToken,
-    VVMatchOptionPinyin,
-    VVMatchOptionFuzzy,
+typedef NS_OPTIONS (NSUInteger, VVMatchOption) {
+    VVMatchOptionDefault = 0,      ///< direct match
+
+    VVMatchOptionPinyin  = 1 << 0, ///< match with pinyin
+    VVMatchOptionFuzzy   = 1 << 1, ///< convert chinese to pinyin, then match with pinyin
+    VVMatchOptionToken   = 1 << 2, ///< match with token
+
+    VVMatchOptionAll     = 0xFFFFFFFF,
 };
 
 @interface VVResultMatch : NSObject
@@ -61,7 +64,6 @@ typedef NS_ENUM(NSUInteger, VVMatchOption) {
 @property (nonatomic, assign) VVMatchOption option;
 @property (nonatomic, assign) VVTokenMethod method;         ///< default is VVTokenMethodSequelize
 @property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDefault
-@property (nonatomic, assign) NSUInteger attrTextMaxLength; ///< default is 17
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *normalAttributes;
 @property (nonatomic, strong) id reserved;
@@ -76,6 +78,9 @@ typedef NS_ENUM(NSUInteger, VVMatchOption) {
 
 /// highlight search result
 - (VVResultMatch *)highlight:(NSString *)source;
+
+/// trim matched text with specified length
+- (NSAttributedString *)trim:(NSAttributedString *)matchedText maxLength:(NSUInteger)maxLen;
 
 @end
 

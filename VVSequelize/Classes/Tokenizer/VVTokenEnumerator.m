@@ -277,7 +277,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     }
 
     // essential
-    NSArray *tokens = [self sequelizeTokensWithCString:cSource tuples:tuples mask:mask];
+    NSArray *tokens = [self sequelizeTokensWithCString:cSource tuples:tuples];
     [results addObjectsFromArray:tokens];
     return results;
 }
@@ -435,13 +435,11 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
 
 + (NSArray<VVToken *> *)sequelizeTokensWithCString:(const char *)cSource
                                             tuples:(NSArray<VVTokenCursorTuple *> *)tuples
-                                              mask:(VVTokenMask)mask
 {
-    BOOL hl = (mask & VVTokenMaskHighlight);
     NSMutableArray *results = [NSMutableArray array];
     for (VVTokenCursorTuple *tuple in tuples) {
         if (tuple.syllable) continue;
-        NSUInteger quantity = hl ? 1 : tuple.encoding == NSASCIIStringEncoding ? 3 : 2;
+        NSUInteger quantity = tuple.encoding == NSASCIIStringEncoding ? 3 : 2;
         NSArray<VVToken *> *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:quantity];
         [results addObjectsFromArray:tokens];
     }
@@ -456,15 +454,12 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     BOOL flag = (mask & VVTokenMaskPinyin);
     if (!flag || tuples.count == 0) return @[];
     BOOL abbr = (mask & VVTokenMaskAbbreviation);
-    BOOL hl = (mask & VVTokenMaskHighlight);
-    NSUInteger quantity = (hl ? 1 : 2);
-    NSUInteger abbrquan = (hl ? 1 : 3);
 
     NSMutableArray *results = [NSMutableArray array];
     for (VVTokenCursorTuple *tuple in tuples) {
         if (tuple.type != VVTokenMultilingualPlaneOther || tuple.cursors.count == 0) continue;
 
-        NSArray *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:quantity];
+        NSArray *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:2];
         for (VVToken *tk in tokens) {
             VVPinYinFruit *fruit = tk.token.pinyins;
             for (NSString *full in fruit.fulls) {
@@ -475,7 +470,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
         }
 
         if (!abbr) continue;
-        tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:abbrquan tail:NO];
+        tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:3 tail:NO];
         for (VVToken *tk in tokens) {
             VVPinYinFruit *fruit = tk.token.pinyins;
             for (NSString *abbr in fruit.abbrs) {
@@ -496,7 +491,6 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
 {
     BOOL flag = (mask & VVTokenMaskSyllable);
     if (!flag || tuples.count == 0) return @[];
-    BOOL hl = (mask & VVTokenMaskHighlight);
 
     NSMutableArray *results = [NSMutableArray array];
     for (VVTokenCursorTuple *tuple in tuples) {
@@ -511,7 +505,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
             NSString *tkString = pinyins[i];
             int flen = (int)tkString.length;
             int tkLen = flen;
-            if (!hl && i + 1 < pinyins.count) {
+            if (i + 1 < pinyins.count) {
                 NSString *second = pinyins[i + 1];
                 tkString = [tkString stringByAppendingString:second];
                 tkLen += (int)second.length;

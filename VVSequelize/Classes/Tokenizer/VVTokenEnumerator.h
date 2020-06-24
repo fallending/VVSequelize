@@ -38,8 +38,6 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskDefault      = (VVTokenMaskNumber | VVTokenMaskTransform),
     VVTokenMaskAll          = 0xFFFFFFFF,
     VVTokenMaskAllPinYin    = (VVTokenMaskPinyin | VVTokenMaskAbbreviation),
-
-    VVTokenMaskHighlight    = 1 << 32,
 };
 
 @protocol VVTokenEnumeratorProtocol <NSObject>
