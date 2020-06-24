@@ -162,29 +162,7 @@
 
 - (NSAttributedString *)trim:(NSAttributedString *)matchedText maxLength:(NSUInteger)maxLen
 {
-    if (matchedText.length < maxLen) return matchedText;
-    NSUInteger length = matchedText.length;
-
-    __block NSRange first = NSMakeRange(NSNotFound, 0);
-    [matchedText enumerateAttributesInRange:NSMakeRange(0, length) options:0 usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attrs, NSRange range, BOOL *stop) {
-        if ([attrs isEqualToDictionary:self.highlightAttributes]) {
-            first = range;
-            *stop = YES;
-        }
-    }];
-
-    NSMutableAttributedString *attrText = [matchedText mutableCopy];
-    NSUInteger lower = first.location;
-    NSUInteger upper = NSMaxRange(first);
-    NSUInteger len = first.length;
-    if (upper > maxLen && lower > 2) {
-        NSInteger rlen = (2 + len > maxLen) ? (lower - 2) : (upper - maxLen);
-        [attrText deleteCharactersInRange:NSMakeRange(0, rlen)];
-        NSAttributedString *ellipsis = [[NSAttributedString alloc] initWithString:@"..."];
-        [attrText insertAttributedString:ellipsis atIndex:0];
-    }
-
-    return attrText;
+    return [matchedText attributedStringByTrimmingToLength:maxLen withAttributes:self.highlightAttributes];
 }
 
 //MARK: - highlight search result

@@ -83,4 +83,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+@interface NSAttributedString (Highlighter)
+
+/// trim the text to the specified length, and use ellipsis to replace the excess part
+- (NSAttributedString *)attributedStringByTrimmingToLength:(NSUInteger)maxLen withAttributes:(NSDictionary<NSAttributedStringKey, id> *)attributes;
+
+@end
+
 NS_ASSUME_NONNULL_END

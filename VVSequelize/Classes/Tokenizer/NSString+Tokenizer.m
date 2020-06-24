@@ -401,3 +401,34 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 }
 
 @end
+
+@implementation NSAttributedString (Highlighter)
+
+- (NSAttributedString *)attributedStringByTrimmingToLength:(NSUInteger)maxLen withAttributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
+{
+    if (self.length < maxLen) return self.copy;
+    NSUInteger length = self.length;
+
+    __block NSRange first = NSMakeRange(NSNotFound, 0);
+    [self enumerateAttributesInRange:NSMakeRange(0, length) options:0 usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attrs, NSRange range, BOOL *stop) {
+        if ([attrs isEqualToDictionary:attributes]) {
+            first = range;
+            *stop = YES;
+        }
+    }];
+
+    NSMutableAttributedString *attrText = [self mutableCopy];
+    NSUInteger lower = first.location;
+    NSUInteger upper = NSMaxRange(first);
+    NSUInteger len = first.length;
+    if (upper > maxLen && lower > 2) {
+        NSInteger rlen = (2 + len > maxLen) ? (lower - 2) : (upper - maxLen);
+        [attrText deleteCharactersInRange:NSMakeRange(0, rlen)];
+        NSAttributedString *ellipsis = [[NSAttributedString alloc] initWithString:@"..."];
+        [attrText insertAttributedString:ellipsis atIndex:0];
+    }
+
+    return attrText;
+}
+
+@end
