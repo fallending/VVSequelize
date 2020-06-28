@@ -227,7 +227,7 @@
     }
 
     if (self.option & VVMatchOptionFuzzy && ![keyword isEqualToString:self.kwFullPinYin]) {
-        match = [self highlight:source comparison:comparison cSource:cSource keyword:self.kwFullPinYin lv1:lv1];
+        match = [self highlight:source comparison:comparison cSource:cSource keyword:self.kwFullPinYin lv1:VVMatchLV1_Fulls];
         if (match) return match;
     }
 
