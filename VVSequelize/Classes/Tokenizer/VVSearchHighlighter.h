@@ -64,6 +64,7 @@ typedef NS_OPTIONS (NSUInteger, VVMatchOption) {
 @property (nonatomic, assign) VVMatchOption option;
 @property (nonatomic, assign) VVTokenMethod method;         ///< default is VVTokenMethodSequelize
 @property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDefault
+@property (nonatomic, assign) NSUInteger quantity;          ///< number of highlights, 0 means no limit
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *normalAttributes;
 @property (nonatomic, strong) id reserved;

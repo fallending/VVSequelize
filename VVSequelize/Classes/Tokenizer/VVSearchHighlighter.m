@@ -248,6 +248,10 @@
     NSArray<NSTextCheckingResult *> *results = [expression matchesInString:comparison options:0 range:NSMakeRange(0, comparison.length)];
     if (results.count == 0) return nil;
 
+    if (self.quantity > 0 && results.count > self.quantity) {
+        results = [results subarrayWithRange:NSMakeRange(0, self.quantity)];
+    }
+
     NSRange found = results.firstObject.range;
     if (found.location == 0 && found.length == source.length) {
         match.lv2 = VVMatchLV2_Full;
@@ -281,8 +285,7 @@
     NSString *pattern = [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:NSRegularExpressionSearch range:NSMakeRange(0, keyword.length)];
     NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
 
-    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
-    NSMutableArray *ranges = [NSMutableArray array];
+    NSMutableSet<NSValue *> *ranges = [NSMutableSet set];
     VVPinYinFruit *fruit = [comparison pinyinMatrix];
     NSArray<NSArray<NSString *> *> *matrixes = @[(lv1 == VVMatchLV1_Origin ? fruit.abbrs : @[]), fruit.fulls];
     for (NSInteger i = 0; i < matrixes.count; i++) {
@@ -302,7 +305,6 @@
                 lv2 = VVMatchLV2_NonPrefix;
             }
             if (match.lv2 < lv2) match.lv2 = lv2;
-            match.lv3 = (i == 1) ? VVMatchLV3_Medium : VVMatchLV3_Low;
 
             for (NSTextCheckingResult *result in results) {
                 NSRange range = result.range;
@@ -325,17 +327,32 @@
                 NSUInteger hlen = idx - hloc;
                 NSRange hlRange = NSMakeRange(hloc, hlen);
                 [ranges addObject:[NSValue valueWithRange:hlRange]];
-                [attrText addAttributes:self.highlightAttributes range:hlRange];
             }
         }
     }
+    if (ranges.count == 0) return nil;
 
-    if (match.lv2 != VVMatchLV2_None) {
-        match.ranges = ranges;
-        match.attrText = attrText;
-        return match;
+    NSArray *sortedRanges = [ranges.allObjects sortedArrayUsingComparator:^NSComparisonResult (NSValue *v1, NSValue *v2) {
+        NSRange r1 = v1.rangeValue;
+        NSRange r2 = v2.rangeValue;
+        return (r1.location < r2.location || (r1.location == r2.location && r1.length > r2.length)) ? NSOrderedAscending : NSOrderedDescending;
+    }];
+
+    if (self.quantity > 0 && sortedRanges.count > self.quantity) {
+        sortedRanges = [sortedRanges subarrayWithRange:NSMakeRange(0, self.quantity)];
     }
-    return nil;
+
+    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
+    for (NSValue *value in sortedRanges) {
+        NSRange range = value.rangeValue;
+        [attrText addAttributes:self.highlightAttributes range:range];
+    }
+
+    BOOL lv3decision = keyword.length > 1 && [comparison hasPrefix:keyword];
+    match.lv3 = lv3decision ? VVMatchLV3_Medium : VVMatchLV3_Low;
+    match.ranges = sortedRanges;
+    match.attrText = attrText;
+    return match;
 }
 
 - (VVResultMatch *)highlightUsingToken:(NSString *)source
@@ -374,6 +391,10 @@
         return tk1.start == tk2.start ? (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
     }];
 
+    if (self.quantity > 0 && array.count > self.quantity) {
+        array = [array subarrayWithRange:NSMakeRange(0, self.quantity)];
+    }
+
     VVResultMatch *match = [[VVResultMatch alloc] init];
     match.lv1 = lv1;
     match.source = source;
@@ -389,10 +410,8 @@
     }
     match.attrText = attrText;
     match.ranges = ranges;
-    if (match.lv2 == VVMatchLV2_None) {
-        match.lv2 = VVMatchLV2_Other;
-        match.lv3 = VVMatchLV3_Low;
-    }
+    match.lv2 = VVMatchLV2_Other;
+    match.lv3 = VVMatchLV3_Low;
 
     return match;
 }
