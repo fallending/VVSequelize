@@ -4,8 +4,11 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.1-beta6)
-1. [可打开WCDB加密数据库](##打开WCDB加密数据库)
+## 改动(0.3.2)
+1. FTS外部内容表
+2. 修改highlighter
+3. 修改upgrader
+4. 其他优化
 
 ## 功能
 * [x] 根据Class生成数据表
