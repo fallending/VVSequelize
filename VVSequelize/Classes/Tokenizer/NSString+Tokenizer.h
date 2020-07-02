@@ -68,6 +68,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// clean string after removing special characters
 - (NSString *)cleanString;
 
+/// regular expression of keyword
+- (NSString *)regexPattern;
+
 /// pinyin segmentation
 - (NSArray<NSString *> *)pinyinSegmentation;
 

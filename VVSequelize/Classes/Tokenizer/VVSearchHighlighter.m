@@ -243,7 +243,7 @@
     match.lv1 = lv1;
     match.source = source;
 
-    NSString *pattern = [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:NSRegularExpressionSearch range:NSMakeRange(0, keyword.length)];
+    NSString *pattern = keyword.regexPattern;
     NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
     NSArray<NSTextCheckingResult *> *results = [expression matchesInString:comparison options:0 range:NSMakeRange(0, comparison.length)];
     if (results.count == 0) return nil;
@@ -282,7 +282,7 @@
     match.lv1 = lv1;
     match.source = source;
 
-    NSString *pattern = [keyword stringByReplacingOccurrencesOfString:@" +" withString:@" +" options:NSRegularExpressionSearch range:NSMakeRange(0, keyword.length)];
+    NSString *pattern = keyword.regexPattern;
     NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
 
     NSMutableSet<NSValue *> *ranges = [NSMutableSet set];

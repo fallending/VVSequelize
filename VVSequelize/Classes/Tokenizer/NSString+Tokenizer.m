@@ -338,6 +338,21 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     return [array componentsJoinedByString:@""];
 }
 
+- (NSString *)regexPattern
+{
+    NSString *lowercased = self.lowercaseString;
+    NSString *pattern = @"\\.|\\^|\\$|\\\\|\\[|\\]|\\(|\\)|\\||\\{|\\}|\\*|\\+|\\?";
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    NSArray<NSTextCheckingResult *> *array = [regex matchesInString:lowercased options:0 range:NSMakeRange(0, lowercased.length)];
+    NSArray<NSTextCheckingResult *> *reversed = array.reverseObjectEnumerator.allObjects;
+    NSMutableString *result = [lowercased mutableCopy];
+    for (NSTextCheckingResult *r in reversed) {
+        [result insertString:@"\\" atIndex:r.range.location];
+    }
+    [result replaceOccurrencesOfString:@" +" withString:@" +" options:NSRegularExpressionSearch range:NSMakeRange(0, result.length)];
+    return result.copy;
+}
+
 //MARK: - pinyin
 - (NSArray<NSString *> *)pinyinSegmentation
 {
