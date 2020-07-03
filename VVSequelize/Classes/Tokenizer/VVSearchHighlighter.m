@@ -10,6 +10,7 @@
 #import "NSString+Tokenizer.h"
 
 #define _VVMatchPinyinLen 30
+#define _VVMatchHLRange   256
 
 @interface VVResultMatch ()
 @property (nonatomic, assign) VVMatchLV1 lv1;
@@ -187,8 +188,8 @@
     if (source.length == 0 || self.keyword.length == 0) return match;
 
     NSString *keyword = _keyword.lowercaseString;
-    NSString *clean = source.matchingPattern;
-    NSString *comparison = clean;
+    NSString *temp = source.length > _VVMatchHLRange ? [source substringToIndex:_VVMatchHLRange] : source;
+    NSString *comparison = temp.matchingPattern;
     if (self.mask & VVTokenMaskTransform) {
         keyword = keyword.simplifiedChineseString;
         comparison = comparison.simplifiedChineseString;
@@ -384,9 +385,7 @@
     }
     if (matchedSet.count == 0) return nil;
 
-    NSArray *array = [matchedSet.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
-        return tk1.start == tk2.start ? (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
-    }];
+    NSArray *array = [VVToken sortedTokens:matchedSet.allObjects];
 
     if (self.quantity > 0 && array.count > self.quantity) {
         array = [array subarrayWithRange:NSMakeRange(0, self.quantity)];

@@ -122,6 +122,13 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     return token;
 }
 
++ (NSArray<VVToken *> *)sortedTokens:(NSArray<VVToken *> *)tokens
+{
+    return [tokens sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
+        return tk1.start == tk2.start ? (tk1.end > tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
+    }];
+}
+
 @end
 
 //MARK: - Enumerator -
@@ -165,10 +172,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
         } break;
     }
     NSSet *set = [NSSet setWithArray:array];
-    NSArray *results = [set.allObjects sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
-        return tk1.start == tk2.start ? (tk1.end < tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
-    }];
-    return results;
+    return set.allObjects;
 }
 
 + (NSArray<VVToken *> *)enumerateCString:(const char *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask

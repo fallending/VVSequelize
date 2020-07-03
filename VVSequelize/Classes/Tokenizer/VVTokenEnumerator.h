@@ -18,6 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) int end;
 
 + (instancetype)token:(NSString *)token len:(int)len start:(int)start end:(int)end;
+
++ (NSArray<VVToken *> *)sortedTokens:(NSArray<VVToken *> *)tokens;
 @end
 
 typedef NS_ENUM (NSUInteger, VVTokenMethod) {
