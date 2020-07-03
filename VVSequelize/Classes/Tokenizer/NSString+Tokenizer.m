@@ -338,14 +338,21 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     return [array componentsJoinedByString:@""];
 }
 
+- (NSString *)matchingPattern
+{
+    NSMutableString *string = [NSMutableString stringWithString:self.lowercaseString];
+    CFStringTransform((__bridge CFMutableStringRef)string, NULL, kCFStringTransformFullwidthHalfwidth, false);
+    NSString *result = [string stringByReplacingOccurrencesOfString:@"\\n|\\r|\\t| " withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
+    return result;
+}
+
 - (NSString *)regexPattern
 {
-    NSString *lowercased = self.lowercaseString;
+    NSMutableString *result = self.matchingPattern.mutableCopy;
     NSString *pattern = @"\\.|\\^|\\$|\\\\|\\[|\\]|\\(|\\)|\\||\\{|\\}|\\*|\\+|\\?";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-    NSArray<NSTextCheckingResult *> *array = [regex matchesInString:lowercased options:0 range:NSMakeRange(0, lowercased.length)];
+    NSArray<NSTextCheckingResult *> *array = [regex matchesInString:result options:0 range:NSMakeRange(0, result.length)];
     NSArray<NSTextCheckingResult *> *reversed = array.reverseObjectEnumerator.allObjects;
-    NSMutableString *result = [lowercased mutableCopy];
     for (NSTextCheckingResult *r in reversed) {
         [result insertString:@"\\" atIndex:r.range.location];
     }

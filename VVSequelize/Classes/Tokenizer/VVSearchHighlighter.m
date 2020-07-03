@@ -186,8 +186,8 @@
     match.source = source;
     if (source.length == 0 || self.keyword.length == 0) return match;
 
-    NSString *clean = [source stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
-    NSString *comparison = clean.lowercaseString;
+    NSString *clean = source.matchingPattern;
+    NSString *comparison = clean;
     if (self.mask & VVTokenMaskTransform) {
         comparison = comparison.simplifiedChineseString;
     }
