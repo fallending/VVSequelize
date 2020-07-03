@@ -186,19 +186,16 @@
     match.source = source;
     if (source.length == 0 || self.keyword.length == 0) return match;
 
+    NSString *keyword = _keyword.lowercaseString;
     NSString *clean = source.matchingPattern;
     NSString *comparison = clean;
     if (self.mask & VVTokenMaskTransform) {
+        keyword = keyword.simplifiedChineseString;
         comparison = comparison.simplifiedChineseString;
     }
     const char *cSource = comparison.cLangString;
     long nText = (long)strlen(cSource);
     if (nText == 0) return match;
-
-    NSString *keyword = _keyword.lowercaseString;
-    if (self.mask & VVTokenMaskTransform) {
-        keyword = keyword.simplifiedChineseString;
-    }
 
     match = [self highlight:source comparison:comparison cSource:cSource keyword:keyword lv1:VVMatchLV1_Origin];
     return match;
