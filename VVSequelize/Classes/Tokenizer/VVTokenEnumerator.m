@@ -281,7 +281,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     }
 
     // essential
-    NSArray *tokens = [self sequelizeTokensWithCString:cSource tuples:tuples];
+    NSArray *tokens = [self sequelizeTokensWithCString:cSource tuples:tuples mask:mask];
     [results addObjectsFromArray:tokens];
     return results;
 }
@@ -404,21 +404,13 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
                                     cursors:(NSArray<VVTokenCursor *> *)cursors
                                    encoding:(NSStringEncoding)encoding
                                    quantity:(NSUInteger)quantity
-{
-    return [self wordTokensByCombine:cSource cursors:cursors encoding:encoding quantity:quantity tail:YES];
-}
-
-+ (NSArray<VVToken *> *)wordTokensByCombine:(const char *)cSource
-                                    cursors:(NSArray<VVTokenCursor *> *)cursors
-                                   encoding:(NSStringEncoding)encoding
-                                   quantity:(NSUInteger)quantity
                                        tail:(BOOL)tail
 {
     if (cursors.count == 0 || encoding == NSUIntegerMax || quantity == 0) return @[];
 
     NSMutableArray *results = [NSMutableArray array];
     NSInteger count = cursors.count;
-    NSInteger loop = tail ? count : count - quantity + 1;
+    NSInteger loop = tail ? count : (MAX(count - (NSInteger)quantity, 0) + 1);
     for (NSInteger i = 0; i < loop; i++) {
         VVTokenCursor *c1 = cursors[i];
         u_long offset = c1.offset;
@@ -439,12 +431,14 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
 
 + (NSArray<VVToken *> *)sequelizeTokensWithCString:(const char *)cSource
                                             tuples:(NSArray<VVTokenCursorTuple *> *)tuples
+                                              mask:(VVTokenMask)mask
 {
+    BOOL tail = !(mask & VVTokenMaskQuery);
     NSMutableArray *results = [NSMutableArray array];
     for (VVTokenCursorTuple *tuple in tuples) {
         if (tuple.syllable) continue;
         NSUInteger quantity = tuple.encoding == NSASCIIStringEncoding ? 3 : 2;
-        NSArray<VVToken *> *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:quantity];
+        NSArray<VVToken *> *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:quantity tail:tail];
         [results addObjectsFromArray:tokens];
     }
     return results;
@@ -463,7 +457,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     for (VVTokenCursorTuple *tuple in tuples) {
         if (tuple.type != VVTokenMultilingualPlaneOther || tuple.cursors.count == 0) continue;
 
-        NSArray *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:2];
+        NSArray *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:2 tail:NO];
         for (VVToken *tk in tokens) {
             VVPinYinFruit *fruit = tk.token.pinyins;
             for (NSString *full in fruit.fulls) {
@@ -537,7 +531,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     if (!flag) return @[];
 
     unsigned long len = strlen(cString);
-    if (len <= 3) return @[];
+    if (len <= 0) return @[];
     char *copied = (char *)malloc(len + 1);
     strncpy(copied, cString, len);
     copied[len] = 0x0;
@@ -549,7 +543,30 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     int offset = 0;
     for (int i = 0; i <= len; i++) {
         char ch = copied[i];
-        BOOL flag = (ch >= '0' && ch <= '9') || ch == ',';
+        BOOL flag = NO;
+        switch (ch) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case ',':
+            case '.':
+            case 'E':
+            case 'e':
+            case '+':
+            case '-':
+                flag = YES;
+                break;
+
+            default:
+                break;
+        }
         if (flag) {
             container[offset] = ch;
             offset++;
@@ -570,34 +587,29 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
         NSArray *sub = array[i];
         NSString *origin = sub.firstObject;
         NSString *number = [origin numberWithoutSeparator];
-        if (number.length <= 3 || number.length >= origin.length) continue;
+        if (!number.length) continue;
+        const char *subsource = origin.cLangString;
         int offset = (int)[sub.lastObject unsignedIntegerValue];
-        const char *subSource = number.cLangString;
-        NSArray *subCursors = [self cursorsWithCString:subSource];
-        NSArray *tmpTokens = [self wordTokensByCombine:subSource cursors:subCursors encoding:NSASCIIStringEncoding quantity:3];
-        NSInteger count = tmpTokens.count;
-        NSInteger fill = 3 - count % 3;
-        if (fill == 3) fill = 0;
-
-        NSMutableArray *subTokens = [NSMutableArray arrayWithCapacity:number.length];
-        for (NSInteger i = 0; i < count - 2; i++) {
-            VVToken *token = tmpTokens[i];
-            int comma1 = (int)(i + fill) / 3;
-            int comma2 =  i >= count - 3 ? 0 : (i + fill) % 3 == 0 ? 0 : 1;
-            int pre = offset + comma1;
-            token.start += pre;
-            token.end += pre + comma2;
-            [subTokens addObject:token];
-            if ((i + fill) % 3 == 2 && token.token.length == 3) {
-                VVToken *tk = [VVToken new];
-                tk.start = token.start;
-                tk.end = token.end - 1;
-                tk.len = token.len - 1;
-                tk.token = [token.token substringToIndex:2];
-                [subTokens addObject:tk];
+        int len = (int)strlen(subsource);
+        int loop = MAX(len - 3, 0) + 1;
+        for (int j = 0; j < loop; j++) {
+            int k = 0;
+            int l = 0;
+            char *tk = (char *)malloc(4);
+            memset(tk, 0x0, 4);
+            while (l < 3 && j + k < len) {
+                char ch = subsource[j + k];
+                if (ch != ',') {
+                    memset(tk + l, ch, 1);
+                    l++;
+                }
+                k++;
             }
+            NSString *tkstr = [NSString ocStringWithCString:tk];
+            VVToken *token = [VVToken token:tkstr len:l start:offset + j end:offset + j + k];
+            [results addObject:token];
+            free(tk);
         }
-        [results addObjectsFromArray:subTokens];
     }
     return results;
 }

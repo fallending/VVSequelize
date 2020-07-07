@@ -271,7 +271,7 @@ static int vv_fts5_xTokenize(
     uint64_t mask = tok->mask;
     if ((mask & VVTokenMaskPinyin) > 0) {
         if (iUnused & FTS5_TOKENIZE_QUERY) {
-            mask = (mask & ~VVTokenMaskAllPinYin) | VVTokenMaskSyllable;
+            mask = (mask & ~VVTokenMaskAllPinYin) | VVTokenMaskSyllable | VVTokenMaskQuery;
         } else if (iUnused & FTS5_TOKENIZE_DOCUMENT) {
             mask = mask & ~VVTokenMaskSyllable;
         }

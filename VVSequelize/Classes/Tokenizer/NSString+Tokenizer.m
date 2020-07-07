@@ -342,7 +342,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 {
     NSMutableString *string = [NSMutableString stringWithString:self.lowercaseString];
     CFStringTransform((__bridge CFMutableStringRef)string, NULL, kCFStringTransformFullwidthHalfwidth, false);
-    NSString *result = [string stringByReplacingOccurrencesOfString:@"\\n|\\r|\\t| " withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
+    NSString *result = [string stringByReplacingOccurrencesOfString:@"\\s| " withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
     return result;
 }
 

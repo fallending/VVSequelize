@@ -33,13 +33,15 @@ typedef NS_ENUM (NSUInteger, VVTokenMethod) {
 typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
     VVTokenMaskPinyin       = 0xFFFF,  ///< placeholder, it will be executed without setting
     VVTokenMaskAbbreviation = 1 << 16, ///< pinyin abbreviation. not recommended, many invalid results will be found
-    VVTokenMaskSyllable     = 1 << 17, ///< pinyin segmentation
-    VVTokenMaskNumber       = 1 << 18,
-    VVTokenMaskTransform    = 1 << 19,
+    VVTokenMaskNumber       = 1 << 17,
+    VVTokenMaskTransform    = 1 << 18,
 
     VVTokenMaskDefault      = (VVTokenMaskNumber | VVTokenMaskTransform),
-    VVTokenMaskAll          = 0xFFFFFFFF,
+    VVTokenMaskAll          = 0xFFFFFF,
     VVTokenMaskAllPinYin    = (VVTokenMaskPinyin | VVTokenMaskAbbreviation),
+
+    VVTokenMaskSyllable     = 1 << 24, ///< pinyin segmentation
+    VVTokenMaskQuery        = 1 << 25,
 };
 
 @protocol VVTokenEnumeratorProtocol <NSObject>

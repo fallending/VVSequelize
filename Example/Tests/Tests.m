@@ -582,6 +582,47 @@
     //NSLog(@"fruit:\n%@\n%@", fruit.fulls, fruit.abbrs);
 }
 
+- (void)testPattern
+{
+    NSArray *array = @[
+        @"1234~!@# HJHJ",
+        @"１２３４￣！＠＃　ＨＪＨＪ",
+    ];
+    printf("\n\n");
+    for (NSString *string in array) {
+        NSString *pattern = string.matchingPattern;
+        const char *sstr = string.cLangString;
+        const char *pstr = pattern.cLangString;
+        u_long slen = strlen(sstr);
+        u_long plen = strlen(pstr);
+        printf("s: %s, p: %s, sl: %lu, pl: %lu\n", sstr, pstr, slen, plen);
+    }
+    printf("\n\n");
+}
+
+- (void)testNumber
+{
+    NSArray *numbers = @[
+        @"1,234,567.89",
+        @"-1,234,567.89",
+        @"1,234,567.89.123",
+        @"1234567.89",
+        @"-1234567.89",
+        @"123,4567",
+        @".1234567",
+        @",1234567",
+        @"123456E7",
+        @"123456E-7",
+        @"1,234,567.89哈-1,234,567.89哈",
+    ];
+    printf("\n");
+    for (NSString *number in numbers) {
+        NSArray *tokens = [VVTokenEnumerator enumerate:number method:VVTokenMethodSequelize mask:VVTokenMaskNumber];
+        printf("\n--> %s :\n%s", number.UTF8String, tokens.description.UTF8String);
+    }
+    printf("\n");
+}
+
 - (void)testSplit
 {
     NSArray *pinyins = @[
