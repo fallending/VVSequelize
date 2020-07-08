@@ -109,7 +109,7 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"[%2i-%2i|%2i|0x%09lx]: %@ ", _start, _end, _len, self.hash, _token];
+    return [NSString stringWithFormat:@"[%2i-%2i|%2i|0x%09lx]: %@ ", _start, _end, _len, (unsigned long)self.hash, _token];
 }
 
 - (id)copyWithZone:(nullable NSZone *)zone
@@ -125,7 +125,9 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
 + (NSArray<VVToken *> *)sortedTokens:(NSArray<VVToken *> *)tokens
 {
     return [tokens sortedArrayUsingComparator:^NSComparisonResult (VVToken *tk1, VVToken *tk2) {
-        return tk1.start == tk2.start ? (tk1.end > tk2.end ? NSOrderedAscending : NSOrderedDescending) : (tk1.start < tk2.start ? NSOrderedAscending : NSOrderedDescending);
+        uint64_t h1 = ((uint64_t)tk1.start) << 32 | ((uint64_t)tk1.end) | ((uint64_t)tk1.len);
+        uint64_t h2 = ((uint64_t)tk2.start) << 32 | ((uint64_t)tk2.end) | ((uint64_t)tk2.len);
+        return h1 == h2 ? [tk1.token compare:tk2.token] : (h1 < h2 ? NSOrderedAscending : NSOrderedDescending);
     }];
 }
 
@@ -449,8 +451,9 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
                                          tuples:(NSArray<VVTokenCursorTuple *> *)tuples
                                            mask:(VVTokenMask)mask
 {
-    BOOL flag = (mask & VVTokenMaskPinyin);
-    if (!flag || tuples.count == 0) return @[];
+    NSUInteger flag = (mask & VVTokenMaskPinyin);
+    u_long len = strlen(cSource ? : "");
+    if (flag == 0 || len == 0 || tuples.count == 0 || flag < len) return @[];
     BOOL abbr = (mask & VVTokenMaskAbbreviation);
 
     NSMutableArray *results = [NSMutableArray array];
@@ -502,12 +505,11 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
         for (NSUInteger i = 0; i < pinyins.count; i++) {
             NSString *tkString = pinyins[i];
             int flen = (int)tkString.length;
-            int tkLen = flen;
             if (i + 1 < pinyins.count) {
                 NSString *second = pinyins[i + 1];
                 tkString = [tkString stringByAppendingString:second];
-                tkLen += (int)second.length;
             }
+            int tkLen = (int)tkString.length;
             VVToken *token = [VVToken new];
             token.start = start;
             token.end = start + tkLen;

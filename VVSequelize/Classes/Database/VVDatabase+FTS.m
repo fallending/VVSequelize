@@ -149,7 +149,7 @@ static int vv_fts3_open(
     vv_fts3_tokenizer *tok = (vv_fts3_tokenizer *)pTokenizer;
 
     NSString *ocString = [NSString ocStringWithCString:pInput];
-    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:tok->mask];
+    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:(VVTokenMask)tok->mask];
 
     c->pInput = pInput;
     c->nBytes = nInput;
@@ -276,7 +276,7 @@ static int vv_fts5_xTokenize(
             mask = mask & ~VVTokenMaskSyllable;
         }
     }
-    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:mask];
+    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:(VVTokenMask)mask];
 
     for (VVToken *tk in array) {
         rc = xToken(pCtx, iUnused, tk.token.cLangString, tk.len, tk.start, tk.end);

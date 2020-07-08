@@ -50,7 +50,7 @@
     self = [super initWithConfig:config name:name database:database];
     if (self) {
         _sourceTable = name;
-        _name = nil;
+        _name = @"";
     }
     return self;
 }

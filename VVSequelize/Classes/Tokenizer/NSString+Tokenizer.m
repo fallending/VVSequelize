@@ -193,7 +193,10 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 
 + (void)preloadingForPinyin
 {
-    [@"中文" pinyinMatrix];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [@"中文" pinyinMatrix];
+    });
 }
 
 + (instancetype)ocStringWithCString:(const char *)cString
@@ -277,19 +280,19 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     for (NSString *pinyin in pinyins) {
         if (pinyin.length < 1) continue;
         [fulls addObject:[pinyin substringToIndex:pinyin.length - 1]];
-        NSString *first = [pinyin substringToIndex:1];
-        [abbrs addObject:first];
-    }
-    if (fulls.count == 0) {
-        NSString *str = [self substringWithRange:NSMakeRange(index, 1)];
-        [fulls addObject:str];
-        [abbrs addObject:str];
+        [abbrs addObject:[pinyin substringToIndex:1]];
     }
     return [VVPinYinFruit fruitWithAbbrs:abbrs.array fulls:fulls.array];
 }
 
 - (VVPinYinFruit<NSString *> *)pinyins
 {
+    if (self.length == 0) {
+        return [VVPinYinFruit fruitWithAbbrs:@[] fulls:@[]];
+    }
+    VVPinYinFruit *fruit = [VVPinYin.shared.cache objectForKey:self];
+    if (fruit) return fruit;
+
     VVPinYinFruit *matrix = self.pinyinMatrix;
     NSMutableArray<NSString *> *fulls = [NSMutableArray array];
     NSMutableArray<NSString *> *abbrs = [NSMutableArray array];
@@ -299,7 +302,9 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     for (NSArray<NSString *> *abbr in matrix.abbrs) {
         [abbrs addObject:[abbr componentsJoinedByString:@""]];
     }
-    return [VVPinYinFruit fruitWithAbbrs:abbrs fulls:fulls];
+    fruit = [VVPinYinFruit fruitWithAbbrs:abbrs fulls:fulls];
+    [VVPinYin.shared.cache setObject:fruit forKey:self];
+    return fruit;
 }
 
 - (VVPinYinFruit *)pinyinMatrix
@@ -382,7 +387,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 
 - (NSArray<NSArray *> *)tiledArray
 {
-    return [self tiledArray:NSUIntegerMax];
+    return [self tiledArray:16];
 }
 
 - (NSArray<NSArray *> *)tiledArray:(NSUInteger)limit
@@ -402,7 +407,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     }
     NSUInteger rowRepeat = maxCount;
     NSUInteger sectionRepeat = 1;
-    for (uint64_t col = 0; col < self.count; col++) {
+    for (NSUInteger col = 0; col < self.count; col++) {
         NSArray *sub = [self objectAtIndex:col];
         rowRepeat = rowRepeat / sub.count;
         NSUInteger section = maxCount / sectionRepeat;

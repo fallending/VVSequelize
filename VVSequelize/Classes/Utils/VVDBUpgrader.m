@@ -149,7 +149,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 @interface VVDBUpgrader ()
 @property (nonatomic, copy) NSString *lastUpdatedVersion;
 @property (nonatomic, copy) NSString *completedInfoKey;
-@property (nonatomic, copy) NSMutableDictionary<NSString *, NSNumber *> *completedInfo;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *completedInfo;
 
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<VVDBUpgradeItem *> *> *stageItems;
 @property (nonatomic, strong) NSMutableSet<NSString *> *versions;

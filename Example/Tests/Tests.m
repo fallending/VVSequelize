@@ -443,7 +443,7 @@
 
 - (void)testTokenizer1
 {
-    VVTokenMask mask = VVTokenMaskDefault;
+    VVTokenMask mask = VVTokenMaskDefault | VVTokenMaskAbbreviation | 10;
     NSArray *texts = @[
         @"陕西",
         @"西安",
@@ -455,58 +455,16 @@
         @"保险业",
         @"健康",
         @"公益组织",
-        @"军人",
-        @"农业",
-        @"出版",
-        @"化学",
-        @"医疗服务",
-        @"司机",
-        @"司法",
-        @"咨询",
-        @"因特网",
-        @"培训",
-        @"媒体",
-        @"学术研究",
-        @"宾馆",
-        @"广告业",
-        @"建筑业",
-        @"律师",
-        @"房地产",
-        @"批发",
-        @"政府机关",
-        @"教育",
-        @"旅游业",
-        @"服务",
-        @"服装业",
-        @"木材",
-        @"机械制造",
-        @"消防",
-        @"演艺",
-        @"电讯业",
-        @"美容",
-        @"能源",
-        @"航空航天",
-        @"艺术",
-        @"警察",
-        @"计算机",
-        @"设计",
-        @"运输业",
-        @"造纸",
-        @"邮政快递",
-        @"采矿",
-        @"金属冶炼",
-        @"金融",
-        @"银行",
-        @"零售",
-        @"音乐舞蹈",
-        @"餐饮"
     ];
     for (NSString *text in texts) {
         NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
-        if (tokens) {
+        NSArray<VVToken *> *sorted = [VVToken sortedTokens:tokens];
+        printf("\n-> %s :", text.UTF8String);
+        for (VVToken *token in sorted) {
+            printf("\n%s", token.description.UTF8String);
         }
-        //NSLog(@"%@:\n%@", text, tokens);
     }
+    printf("\n");
 }
 
 - (void)testTokenizer2

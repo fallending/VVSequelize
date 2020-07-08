@@ -105,7 +105,7 @@
         }
         if (components.count > 1) {
             NSString *mask = components[1];
-            self.mask = mask.longLongValue;
+            self.mask = (VVTokenMask)mask.longLongValue;
         }
         self.keyword = keyword;
     }
