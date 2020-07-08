@@ -4,11 +4,9 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.2)
-1. FTS外部内容表
-2. 修改highlighter
-3. 修改upgrader
-4. 其他优化
+## 改动(0.3.3)
+1. FTS5搜索优化
+2. 一些细节调整
 
 ## 功能
 * [x] 根据Class生成数据表
@@ -33,6 +31,9 @@
 ![](VVSequelize.png)
 
 ## 安装
+```ruby
+pod 'SQLiteORM', '~> 0.3.3'
+```
 使用测试版本:
 ```ruby
     pod 'VVSequelize', :git => 'https://github.com/pozi119/VVSequelize.git'
