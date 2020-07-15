@@ -12,6 +12,8 @@ typedef NS_ENUM (NSUInteger, VVTokenType) {
     VVTokenAuxiliaryPlaneOther     = 0xFFFFFFFF,
 };
 
+#define VVTokenMaxOCLength 4096
+
 //MARK: - Cursor
 @interface VVTokenCursor : NSObject
 @property (nonatomic, assign) VVTokenType type;
@@ -151,7 +153,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
 + (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask
 {
     if (input.length <= 0) return @[];
-    NSString *source = input.lowercaseString;
+    NSString *source = (input.length <= VVTokenMaxOCLength ? input : [input substringToIndex:VVTokenMaxOCLength]).lowercaseString;
     if (mask & VVTokenMaskTransform) source = source.simplifiedChineseString;
     const char *cSource = source.cLangString;
     NSArray *array = @[];
@@ -170,7 +172,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
 
         default: {
             Class<VVTokenEnumeratorProtocol> cls = _vv_emumerators[@(method)];
-            if (cls) array = [cls enumerate:input method:method mask:mask];
+            if (cls) array = [cls enumerate:source method:method mask:mask];
         } break;
     }
     NSSet *set = [NSSet setWithArray:array];
