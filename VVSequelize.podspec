@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.3.3'
+  s.version          = '0.3.4'
   s.summary          = 'ORM model based on SQLite3.'
   s.description      = <<-DESC
                        ORM model based on SQLite3.
@@ -14,25 +14,45 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '10.0'
   s.default_subspec = 'cipher'
-  
+  s.source_files = 'VVSequelize/VVSequelize.h'
+
   s.subspec 'system' do |ss|
-      ss.dependency 'VVSequelize/common'
+      ss.dependency 'VVSequelize/core'
+      ss.dependency 'VVSequelize/fts'
+      ss.dependency 'VVSequelize/util'
       ss.libraries = 'sqlite3'
   end
   
   s.subspec 'cipher' do |ss|
-      ss.dependency 'VVSequelize/common'
+      ss.dependency 'VVSequelize/core'
+      ss.dependency 'VVSequelize/fts'
+      ss.dependency 'VVSequelize/util'
       ss.dependency 'SQLCipher'
-      ss.pod_target_xcconfig = {
-          'OTHER_CFLAGS' => '$(inherited) -DSQLITE_HAS_CODEC -DHAVE_USLEEP=1',
+      ss.xcconfig = {
+          'OTHER_CFLAGS' => '-DSQLITE_HAS_CODEC -DHAVE_USLEEP=1',
           'HEADER_SEARCH_PATHS' => "{PODS_ROOT}/SQLCipher"
       }
   end
 
-  s.subspec 'common' do |ss|
-      ss.source_files = 'VVSequelize/Classes/**/*'
-      ss.public_header_files = 'VVSequelize/Classes/**/*.h'
+# child specs
+  s.subspec 'core' do |ss|
+      ss.source_files = 'VVSequelize/Core/**/*'
+      ss.public_header_files = 'VVSequelize/Core/**/*.h'
+      ss.xcconfig = { 'OTHER_CFLAGS' => '-DVVSEQUELIZE_CORE' }
+  end
+
+  s.subspec 'fts' do |ss|
+      ss.source_files = 'VVSequelize/FTS/**/*'
+      ss.public_header_files = 'VVSequelize/FTS/**/*.h'
       ss.resource = ['VVSequelize/Assets/VVPinYin.bundle']
+      ss.dependency 'VVSequelize/core'
+      ss.xcconfig = { 'OTHER_CFLAGS' => '-DVVSEQUELIZE_FTS' }
+  end
+
+  s.subspec 'util' do |ss|
+      ss.source_files = 'VVSequelize/Util/**/*'
+      ss.public_header_files = 'VVSequelize/Util/**/*.h'
+      ss.xcconfig = { 'OTHER_CFLAGS' => '-DVVSEQUELIZE_UTIL' }
   end
 
 end

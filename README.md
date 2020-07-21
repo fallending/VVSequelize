@@ -4,9 +4,9 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.3)
-1. FTS5搜索优化
-2. 一些细节调整
+## 改动(0.3.4)
+1. 调整目录结构
+2. 拆分成 core, fts, util 三个子模块,可单独引入
 
 ## 功能
 * [x] 根据Class生成数据表
@@ -32,7 +32,7 @@
 
 ## 安装
 ```ruby
-pod 'SQLiteORM', '~> 0.3.3'
+pod 'SQLiteORM', '~> 0.3.4'
 ```
 使用测试版本:
 ```ruby
