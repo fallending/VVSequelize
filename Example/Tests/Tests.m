@@ -307,6 +307,8 @@
     person.age = 19;
     person.birth = now;
     person.mobile = @"123123123";
+    uint8_t bytes[40] = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+    person.data = [NSData dataWithBytes:bytes length:40];
     VVTestMobile *mobile = [VVTestMobile new];
     mobile.mobile = [NSString stringWithFormat:@"1%02i%04i%04i", arc4random_uniform(99), arc4random_uniform(9999), arc4random_uniform(9999)];
     mobile.province = @"四川";
@@ -356,6 +358,8 @@
     mix.sa = 'b';
     mix.unknown = (void *)str;
     mix.selector = NSSelectorFromString(@"help:");
+    uint8_t bytes[5] = { 0x31, 0x32, 0x33, 0x34, 0x35 };
+    mix.data = [NSData dataWithBytes:bytes length:5];
     NSDictionary *mixkvs = mix.vv_keyValues;
     NSLog(@"mix: %@", mixkvs);
     VVTestMix *mix2 = [VVTestMix vv_objectWithKeyValues:mixkvs];
@@ -404,7 +408,8 @@
 - (void)testJSON
 {
     NSArray *results = [self.vvdb query:@"select json_type(' { \"this\" : \"is\", \"a\": [ \"test\" ] } ');"];
-    if (results) {}
+    if (results) {
+    }
 }
 
 //MARK: - FTS表

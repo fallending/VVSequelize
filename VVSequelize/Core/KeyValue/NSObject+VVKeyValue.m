@@ -44,23 +44,31 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return [NSData dataWithValue:(NSValue *)number];
 }
 
-+ (NSData *)dataWithDescription:(NSString *)dataDescription
++ (NSData *)dataWithHexString:(NSString *)hexString
 {
-    NSString *newStr = [dataDescription stringByReplacingOccurrencesOfString:@" " withString:@""]; //去掉空格
-    NSString *replaceString = [newStr substringWithRange:NSMakeRange(1, newStr.length - 2)]; //去掉<>符号
-    const char *hexChar = [replaceString UTF8String];
-    Byte *byte = malloc(sizeof(Byte) * (replaceString.length / 2));
+    const char *hexChar = [hexString UTF8String];
+    UInt8 *bytes = malloc(sizeof(Byte) * (hexString.length / 2));
     char tmpChar[3] = { '\0', '\0', '\0' };
     int btIndex = 0;
-    for (int i = 0; i < replaceString.length; i += 2) {
+    for (int i = 0; i < hexString.length; i += 2) {
         tmpChar[0] = hexChar[i];
         tmpChar[1] = hexChar[i + 1];
-        byte[btIndex] = strtoul(tmpChar, NULL, 16);
+        bytes[btIndex] = strtoul(tmpChar, NULL, 16);
         btIndex++;
     }
-    NSData *data = [NSData dataWithBytes:byte length:btIndex];
-    free(byte);
+    NSData *data = [NSData dataWithBytes:bytes length:btIndex];
+    free(bytes);
     return data;
+}
+
+- (NSString *)hexString
+{
+    NSMutableString *string = [NSMutableString stringWithCapacity:self.length * 2];
+    uint8_t *bytes = (uint8_t *)self.bytes;
+    for (NSUInteger i = 0; i < self.length; i++) {
+        [string appendFormat:@"%X", bytes[i]];
+    }
+    return string;
 }
 
 @end
@@ -96,7 +104,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
 {
     NSArray *array = [encodedString componentsSeparatedByString:@"|"];
     if (array.count != 3) return nil;
-    NSData *data = [NSData dataWithDescription:array[2]];
+    NSData *data = [NSData dataWithHexString:array[2]];
     char *objCType = (char *)[array[0] UTF8String];
     return [NSValue valueWithBytes:data.bytes objCType:objCType];
 }
@@ -202,7 +210,13 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     for (NSString *key in keyValues.allKeys) {
         VVPropertyInfo *propertyInfo = info.propertyInfos[key];
         if (propertyInfo && ![ignores containsObject:propertyInfo.name]) {
-            [obj setValue:keyValues[key] forProperty:propertyInfo];
+            id value = keyValues[key];
+            if (propertyInfo.nsType == VVEncodingTypeNSData  && [value isKindOfClass:NSString.class]) {
+                NSData *data = [NSData dataWithHexString:(NSString *)value];
+                [obj setValue:data forProperty:propertyInfo];
+            } else {
+                [obj setValue:keyValues[key] forProperty:propertyInfo];
+            }
         }
     }
     return obj;
@@ -352,7 +366,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     NSMutableArray *tempArray = [NSMutableArray arrayWithCapacity:0];
     for (id obj in array) {
         if ([obj isKindOfClass:NSData.class]) {
-            [tempArray addObject:[obj description]];
+            [tempArray addObject:[obj hexString]];
         } else if ([obj isKindOfClass:NSArray.class]) {
             [tempArray addObject:[self convertArrayInlineDataToString:obj]];
         } else if ([obj isKindOfClass:NSDictionary.class]) {
@@ -370,7 +384,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     for (NSString *key in dictionary) {
         id obj = dictionary[key];
         if ([obj isKindOfClass:NSData.class]) {
-            tempdic[key] = [obj description];
+            tempdic[key] = [obj hexString];
         } else if ([obj isKindOfClass:NSArray.class]) {
             tempdic[key] = [self convertArrayInlineDataToString:obj];
         } else if ([obj isKindOfClass:NSDictionary.class]) {

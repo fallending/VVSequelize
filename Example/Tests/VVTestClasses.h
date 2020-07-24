@@ -25,6 +25,7 @@
 @property (nonatomic, assign) NSInteger age;
 @property (nonatomic, assign) NSDate *birth;
 @property (nonatomic, copy) NSString *mobile;
+@property (nonatomic, strong) NSData *data;
 
 /*
 @property (nonatomic, assign) BOOL male;
@@ -75,6 +76,7 @@ typedef struct TestStruct {
 @property (nonatomic, assign) char *str;
 @property (nonatomic, assign) void *unknown;
 @property (nonatomic, assign) char sa;
+@property (nonatomic, strong) NSData *data;
 
 @end
 
