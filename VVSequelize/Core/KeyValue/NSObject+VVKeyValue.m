@@ -26,8 +26,23 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return CLLocationCoordinate2DMake(0, 0);
 }
 
+static const uint8_t invalidDigit = 128;
+
+static uint8_t digitFromChar(unichar c)
+{
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    } else if (c >= 'A' && c <= 'F') {
+        return 10 + c - 'A';
+    } else if (c >= 'a' && c <= 'f') {
+        return 10 + c - 'a';
+    } else {
+        return invalidDigit;
+    }
+}
+
 @implementation NSData (VVKeyValue)
-+ (NSData *)dataWithValue:(NSValue *)value
++ (instancetype)dataWithValue:(NSValue *)value
 {
     NSUInteger size;
     const char *encoding = [value objCType];
@@ -39,36 +54,67 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return data;
 }
 
-+ (NSData *)dataWithNumber:(NSNumber *)number
++ (instancetype)dataWithNumber:(NSNumber *)number
 {
     return [NSData dataWithValue:(NSValue *)number];
 }
 
-+ (NSData *)dataWithHexString:(NSString *)hexString
++ (nullable instancetype)dataWithHexString:(NSString *)hexString
 {
-    const char *hexChar = [hexString UTF8String];
-    UInt8 *bytes = malloc(sizeof(Byte) * (hexString.length / 2));
-    char tmpChar[3] = { '\0', '\0', '\0' };
-    int btIndex = 0;
-    for (int i = 0; i < hexString.length; i += 2) {
-        tmpChar[0] = hexChar[i];
-        tmpChar[1] = hexChar[i + 1];
-        bytes[btIndex] = strtoul(tmpChar, NULL, 16);
-        btIndex++;
+    if (!hexString) return nil;
+
+    const NSUInteger charLength = hexString.length;
+    const NSUInteger maxByteLength = charLength / 2;
+    uint8_t *const bytes = malloc(maxByteLength);
+    uint8_t *bytePtr = bytes;
+
+    CFStringInlineBuffer inlineBuffer;
+    CFStringInitInlineBuffer((CFStringRef)hexString, &inlineBuffer, CFRangeMake(0, charLength));
+
+    // Each byte is made up of two hex characters; store the outstanding half-byte until we read the second
+    uint8_t hiDigit = invalidDigit;
+    for (CFIndex i = 0; i < charLength; ++i) {
+        uint8_t nextDigit = digitFromChar(CFStringGetCharacterFromInlineBuffer(&inlineBuffer, i));
+
+        if (nextDigit == invalidDigit) {
+            free(bytes);
+            return nil;
+        } else if (hiDigit == invalidDigit) {
+            hiDigit = nextDigit;
+        } else if (nextDigit != invalidDigit) {
+            // Have next full byte
+            *bytePtr++ = (hiDigit << 4) | nextDigit;
+            hiDigit = invalidDigit;
+        }
     }
-    NSData *data = [NSData dataWithBytes:bytes length:btIndex];
-    free(bytes);
-    return data;
+
+    if (hiDigit != invalidDigit) { // trailing hex character
+        free(bytes);
+        return nil;
+    }
+
+    return [[NSData alloc] initWithBytesNoCopy:bytes length:(bytePtr - bytes) freeWhenDone:YES];
 }
 
 - (NSString *)hexString
 {
-    NSMutableString *string = [NSMutableString stringWithCapacity:self.length * 2];
-    uint8_t *bytes = (uint8_t *)self.bytes;
-    for (NSUInteger i = 0; i < self.length; i++) {
-        [string appendFormat:@"%X", bytes[i]];
-    }
-    return string;
+    const char *hexTable = "0123456789ABCDEF";
+
+    const NSUInteger byteLength = self.length;
+    const NSUInteger charLength = byteLength * 2;
+    char *const hexChars = malloc(charLength * sizeof(*hexChars));
+    __block char *charPtr = hexChars;
+
+    [self enumerateByteRangesUsingBlock:^(const void *bytes, NSRange byteRange, BOOL *stop) {
+        const uint8_t *bytePtr = bytes;
+        for (NSUInteger count = 0; count < byteRange.length; ++count) {
+            const uint8_t byte = *bytePtr++;
+            *charPtr++ = hexTable[(byte >> 4) & 0xF];
+            *charPtr++ = hexTable[byte & 0xF];
+        }
+    }];
+
+    return [[NSString alloc] initWithBytesNoCopy:hexChars length:charLength encoding:NSASCIIStringEncoding freeWhenDone:YES];
 }
 
 @end
@@ -97,7 +143,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
         default: break;
     }
     NSData *data = [NSData dataWithValue:self];
-    return [NSString stringWithFormat:@"%@|%@|%@", typeEncoding, convertStr, data];
+    return [NSString stringWithFormat:@"%@|%@|%@", typeEncoding, convertStr, data.hexString];
 }
 
 + (nullable instancetype)vv_decodedWithString:(NSString *)encodedString
@@ -122,7 +168,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     return coordinate2D;
 }
 
-+ (NSValue *)valueWithCoordinate2D:(CLLocationCoordinate2D)coordinate2D
++ (instancetype)valueWithCoordinate2D:(CLLocationCoordinate2D)coordinate2D
 {
     return [NSValue valueWithBytes:&coordinate2D objCType:@encode(CLLocationCoordinate2D)];
 }
@@ -210,13 +256,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
     for (NSString *key in keyValues.allKeys) {
         VVPropertyInfo *propertyInfo = info.propertyInfos[key];
         if (propertyInfo && ![ignores containsObject:propertyInfo.name]) {
-            id value = keyValues[key];
-            if (propertyInfo.nsType == VVEncodingTypeNSData  && [value isKindOfClass:NSString.class]) {
-                NSData *data = [NSData dataWithHexString:(NSString *)value];
-                [obj setValue:data forProperty:propertyInfo];
-            } else {
-                [obj setValue:keyValues[key] forProperty:propertyInfo];
-            }
+            [obj setValue:keyValues[key] forProperty:propertyInfo];
         }
     }
     return obj;
@@ -318,7 +358,7 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
 {
     VVEncodingNSType nstype = VVClassGetNSType(self.class);
     switch (nstype) {
-        case VVEncodingTypeNSDate: //NSDate转换为NSTimeInterval
+        case VVEncodingTypeNSDate: //NSDate --> date string
             return [(NSDate *)self vv_dateString];
 
         case VVEncodingTypeNSURL:  //NSURL转换为字符串
@@ -430,6 +470,12 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
             return [val vv_encodedString];
         }
 
+        case VVEncodingTypePointer: {
+            char *bytes = (char *)(__bridge void *)[self performSelector:propertyInfo.getter];
+            NSUInteger length = (NSUInteger)strlen(bytes);
+            return [NSData dataWithBytes:bytes length:length];
+        }
+
         case VVEncodingTypeObject:
             return [value vv_targetValue];
 
@@ -489,10 +535,22 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
             }
             break;
 
+        case VVEncodingTypePointer: {
+            NSData *data = nil;
+            if ([value isKindOfClass:NSData.class]) {
+                data = value;
+            } else if ([value isKindOfClass:NSString.class]) {
+                data = [NSData dataWithHexString:value];
+            }
+            if (data) {
+                ((void (*)(id, SEL, const void *))(void *) objc_msgSend)(self, propertyInfo.setter, data.bytes);
+            }
+        } break;
+
         case VVEncodingTypeObject: {
             VVEncodingNSType nstype = propertyInfo.nsType;
             switch (nstype) {
-                case VVEncodingTypeNSDate: //NSDate转换为NSTimeInterval
+                case VVEncodingTypeNSDate: //NSDate <-- date string
                 {
                     NSDate *date = nil;
                     if ([value isKindOfClass:[NSDate class]]) {
@@ -558,6 +616,15 @@ CLLocationCoordinate2D Coordinate2DFromString(NSString *string)
                     if ([value isKindOfClass:[NSString class]]) {
                         NSValue *val = [NSValue vv_decodedWithString:value];
                         [self setValue:val forKey:propertyName];
+                    }
+                    break;
+
+                case VVEncodingTypeNSData:
+                    if ([value isKindOfClass:NSString.class]) {
+                        NSData *data = [NSData dataWithHexString:value];
+                        [self setValue:data forKey:propertyName];
+                    } else if ([value isKindOfClass:NSData.class]) {
+                        [self setValue:value forKey:propertyName];
                     }
                     break;
 

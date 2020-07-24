@@ -338,6 +338,8 @@
 
 - (void)testMixDataTypes
 {
+    uint8_t bytes[40] = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+
     VVTestMix *mix = [VVTestMix new];
     mix.num = @(10);
     mix.cnum = 9;
@@ -356,10 +358,9 @@
     char *str = (char *)[temp UTF8String];
     mix.str = str;
     mix.sa = 'b';
-    mix.unknown = (void *)str;
+    mix.unknown = (void *)bytes;
     mix.selector = NSSelectorFromString(@"help:");
-    uint8_t bytes[5] = { 0x31, 0x32, 0x33, 0x34, 0x35 };
-    mix.data = [NSData dataWithBytes:bytes length:5];
+    mix.data = [NSData dataWithBytes:bytes length:40];
     NSDictionary *mixkvs = mix.vv_keyValues;
     NSLog(@"mix: %@", mixkvs);
     VVTestMix *mix2 = [VVTestMix vv_objectWithKeyValues:mixkvs];
