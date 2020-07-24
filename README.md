@@ -6,6 +6,7 @@
 
 ## 改动(0.3.5)
 1. 支持sqlite json1扩展
+2. fix bugs
 
 ## 功能
 * [x] 根据Class生成数据表
@@ -31,7 +32,7 @@
 
 ## 安装
 ```ruby
-pod 'SQLiteORM', '~> 0.3.4'
+pod 'SQLiteORM', '~> 0.3.5'
 ```
 使用测试版本:
 ```ruby
