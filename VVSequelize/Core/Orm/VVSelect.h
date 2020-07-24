@@ -23,9 +23,14 @@
 /// create chain
 + (instancetype)makeSelect:(void (^)(VVSelect *make))block;
 
+/// select.orm == select.vvdb(orm.vvdb).table(orm.table).clazz(orm.metaClass ? : orm.config.cls)
 - (VVSelect *(^)(VVOrm *orm))orm;
 
+- (VVSelect *(^)(VVDatabase *vvdb))vvdb;
+
 - (VVSelect *(^)(NSString *table))table;
+
+- (VVSelect *(^)(Class clazz))clazz;
 
 - (VVSelect *(^)(BOOL distinct))distinct;
 

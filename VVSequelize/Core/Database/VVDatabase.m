@@ -8,6 +8,7 @@
 #import "VVDatabase.h"
 #import "VVDBStatement.h"
 #import "NSObject+VVOrm.h"
+#import "NSObject+VVKeyValue.h"
 #import "VVDatabase+Additions.h"
 
 #ifdef SQLITE_HAS_CODEC
@@ -263,12 +264,18 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 }
 
 // MARK: - Run
-- (NSArray *)query:(NSString *)sql
+- (NSArray<NSDictionary *> *)query:(NSString *)sql
 {
     return [[self prepare:sql] query];
 }
 
-- (NSArray<NSArray *> *)query:(NSArray<NSString *> *)sqls inTransaction:(BOOL)inTransaction
+- (NSArray *)query:(NSString *)sql clazz:(Class)clazz
+{
+    NSArray *array = [self query:sql];
+    return [clazz vv_objectsWithKeyValuesArray:array];
+}
+
+- (NSArray<NSArray<NSDictionary *> *> *)query:(NSArray<NSString *> *)sqls inTransaction:(BOOL)inTransaction
 {
     if (inTransaction) {
         [self begin:VVDBTransactionImmediate];

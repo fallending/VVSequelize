@@ -11,15 +11,36 @@
 #endif
 
 #ifdef VVSEQUELIZE_CORE
-#import "VVSequelize+Core.h"
+#import "NSObject+VVKeyValue.h"
+#import "NSObject+VVOrm.h"
+#import "VVClassInfo.h"
+#import "VVDatabase.h"
+#import "VVDBStatement.h"
+#import "VVDatabase+Additions.h"
+#import "VVOrm.h"
+#import "VVOrmConfig.h"
+#import "VVOrmDefs.h"
+#import "VVOrmView.h"
+#import "VVSelect.h"
+#import "VVOrm+Create.h"
+#import "VVOrm+Delete.h"
+#import "VVOrm+Retrieve.h"
+#import "VVOrm+Update.h"
 #endif
 
 #ifdef VVSEQUELIZE_FTS
-#import "VVSequelize+FTS.h"
+#import "NSString+Tokenizer.h"
+#import "VVSearchHighlighter.h"
+#import "VVTokenEnumerator.h"
+#import "VVPinYinSegmentor.h"
+#import "VVDatabase+FTS.h"
+#import "VVOrm+FTS.h"
 #endif
 
 #ifdef VVSEQUELIZE_UTIL
-#import "VVSequelize+Util.h"
+#import "VVDBCipher.h"
+#import "VVDBUpgrader.h"
+#import "VVOrmRoute.h"
 #endif
 
 FOUNDATION_EXPORT double VVSequelizeVersionNumber;

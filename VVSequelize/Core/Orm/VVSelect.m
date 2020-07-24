@@ -15,9 +15,10 @@
 
 @implementation VVSelect
 {
-    VVOrm *_orm;           ///< orm model
-    
+    VVDatabase *_vvdb;     ///< database
     NSString *_table;      ///< table name
+    Class _clazz;          ///< results class
+    
     BOOL _distinct;        ///< clear duplicate records or not
     VVFields *_fields;     ///< query fields: NSString, NSArray
     VVExpr *_where;        ///< query condition: NSString, NSDictionary, NSArray
@@ -40,11 +41,11 @@
 
 - (NSArray *)allResults:(BOOL)useObjects
 {
-    NSAssert(_orm, @"set orm first!");
-    NSArray *keyValuesArray = [_orm.vvdb query:self.sql];
+    NSAssert(_vvdb, @"set database or orm first!");
+    NSArray *keyValuesArray = [_vvdb query:self.sql];
     if (useObjects) {
-        Class cls = _orm.metaClass ? : _orm.config.cls;
-        return [cls vv_objectsWithKeyValuesArray:keyValuesArray];
+        NSAssert(_clazz, @"set class or orm first!");
+        return [_clazz vv_objectsWithKeyValuesArray:keyValuesArray];
     }
     return keyValuesArray;
 }
@@ -60,8 +61,17 @@
 - (VVSelect *(^)(VVOrm *orm))orm
 {
     return ^(VVOrm *orm) {
-        self->_orm = orm;
+        self->_clazz = orm.metaClass ? : orm.config.cls;
+        self->_vvdb = orm.vvdb;
         self->_table = orm.name;
+        return self;
+    };
+}
+
+- (VVSelect *(^)(VVDatabase *vvdb))vvdb
+{
+    return ^(VVDatabase *vvdb) {
+        self->_vvdb = vvdb;
         return self;
     };
 }
@@ -70,6 +80,14 @@
 {
     return ^(NSString *table) {
         self->_table = table;
+        return self;
+    };
+}
+
+- (VVSelect *(^)(Class clazz))clazz
+{
+    return ^(Class clazz) {
+        self->_clazz = clazz;
         return self;
     };
 }

@@ -6,10 +6,11 @@
 //
 
 #import "VVOrm.h"
+#import "VVOrm+Create.h"
+#import "VVOrm+Delete.h"
+#import "VVOrm+Update.h"
 
 NS_ASSUME_NONNULL_BEGIN
-
-#define VVORMVIEW_CUD_CHECK(obj) NSAssert(![(obj) isKindOfClass:VVOrmView.class], @"Unsupported by VVOrmView")
 
 @interface VVOrmView : VVOrm
 @property (nonatomic, strong) VVExpr *condition;
@@ -43,11 +44,45 @@ NS_ASSUME_NONNULL_BEGIN
 
 #define VVORMVIEW_UNAVAILABLE __attribute__((unavailable("This method is not supported by VVOrmView.")))
 
+//MARK: Setup
 - (VVOrmInspection)inspectExistingTable VVORMVIEW_UNAVAILABLE;
 
 - (void)setupTableWith:(VVOrmInspection)inspection VVORMVIEW_UNAVAILABLE;
 
 - (void)createTable VVORMVIEW_UNAVAILABLE;
+
+//MARK: Create
+- (BOOL)insertOne:(nonnull id)object VVORMVIEW_UNAVAILABLE;
+
+- (NSUInteger)insertMulti:(nullable NSArray *)objects VVORMVIEW_UNAVAILABLE;
+
+- (BOOL)upsertOne:(nonnull id)object VVORMVIEW_UNAVAILABLE;
+
+- (NSUInteger)upsertMulti:(nullable NSArray *)objects VVORMVIEW_UNAVAILABLE;
+
+//MARK: Delete
+- (BOOL)drop VVORMVIEW_UNAVAILABLE;
+
+- (BOOL)deleteOne:(nonnull id)object VVORMVIEW_UNAVAILABLE;
+
+- (NSUInteger)deleteMulti:(nullable NSArray *)objects VVORMVIEW_UNAVAILABLE;
+
+- (BOOL)deleteWhere:(nullable VVExpr *)condition VVORMVIEW_UNAVAILABLE;
+
+//MARK: Update
+- (BOOL)update:(nullable VVExpr *)condition keyValues:(NSDictionary<NSString *, id> *)keyValues VVORMVIEW_UNAVAILABLE;
+
+- (BOOL)updateOne:(nonnull id)object VVORMVIEW_UNAVAILABLE;
+
+- (BOOL)updateOne:(nonnull id)object fields:(nullable NSArray<NSString *> *)fields VVORMVIEW_UNAVAILABLE;
+
+- (NSUInteger)updateMulti:(nullable NSArray *)objects fields:(nullable NSArray<NSString *> *)fields VVORMVIEW_UNAVAILABLE;
+
+- (NSUInteger)updateMulti:(nullable NSArray *)objects VVORMVIEW_UNAVAILABLE;
+
+- (BOOL)increase:(nullable VVExpr *)condition
+           field:(nonnull NSString *)field
+           value:(NSInteger)value VVORMVIEW_UNAVAILABLE;
 
 @end
 

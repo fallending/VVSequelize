@@ -2,31 +2,26 @@ PODS:
   - CocoaLumberjack (3.6.1):
     - CocoaLumberjack/Core (= 3.6.1)
   - CocoaLumberjack/Core (3.6.1)
-  - SQLCipher (4.4.0):
-    - SQLCipher/standard (= 4.4.0)
-  - SQLCipher/common (4.4.0)
-  - SQLCipher/standard (4.4.0):
-    - SQLCipher/common
-  - VVSequelize (0.3.4):
-    - VVSequelize/cipher (= 0.3.4)
-  - VVSequelize/cipher (0.3.4):
-    - SQLCipher
+  - VVSequelize/core (0.3.5):
+    - VVSequelize/header
+  - VVSequelize/fts (0.3.5):
+    - VVSequelize/core
+    - VVSequelize/header
+  - VVSequelize/header (0.3.5)
+  - VVSequelize/system (0.3.5):
     - VVSequelize/core
     - VVSequelize/fts
     - VVSequelize/util
-  - VVSequelize/core (0.3.4)
-  - VVSequelize/fts (0.3.4):
-    - VVSequelize/core
-  - VVSequelize/util (0.3.4)
+  - VVSequelize/util (0.3.5):
+    - VVSequelize/header
 
 DEPENDENCIES:
   - CocoaLumberjack
-  - VVSequelize (from `../`)
+  - VVSequelize/system (from `../`)
 
 SPEC REPOS:
   trunk:
     - CocoaLumberjack
-    - SQLCipher
 
 EXTERNAL SOURCES:
   VVSequelize:
@@ -34,9 +29,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   CocoaLumberjack: b17ae15142558d08bbacf69775fa10c4abbebcc9
-  SQLCipher: e434ed542b24f38ea7b36468a13f9765e1b5c072
-  VVSequelize: 32a3f1b58ec569286ddc0338c6882b5e1b92bf43
+  VVSequelize: bb434ae2052cc25d2e069e31f4e3655a3c5abf66
 
-PODFILE CHECKSUM: 93551fd5907f9990e8b8f19e0abcc0881f8dd7dd
+PODFILE CHECKSUM: b932d78b27665b0c9d65deb6a1bc703e821a8ce6
 
 COCOAPODS: 1.9.3

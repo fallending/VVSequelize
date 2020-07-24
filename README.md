@@ -4,9 +4,8 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.4)
-1. 调整目录结构
-2. 拆分成 core, fts, util 三个子模块,可单独引入
+## 改动(0.3.5)
+1. 支持sqlite json1扩展
 
 ## 功能
 * [x] 根据Class生成数据表

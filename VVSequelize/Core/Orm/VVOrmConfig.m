@@ -17,6 +17,7 @@ NSString *const VVSqlTypeInteger = @"INTEGER";
 NSString *const VVSqlTypeText = @"TEXT";
 NSString *const VVSqlTypeBlob = @"BLOB";
 NSString *const VVSqlTypeReal = @"REAL";
+NSString *const VVSqlTypeJson = @"JSON";
 
 @interface VVPropertyInfo (VVOrmConfig)
 - (NSString *)sqlType;
@@ -44,6 +45,7 @@ NSString *const VVSqlTypeReal = @"REAL";
                     type = VVSqlTypeBlob;
                     break;
                 default:
+                    type = VVSqlTypeJson;
                     break;
             }
         }   break;

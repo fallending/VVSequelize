@@ -328,7 +328,7 @@
     NSLog(@"obj: %@", nOne);
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestOne.class];
     config.primaries = @[@"oneId"];
-    VVOrm *orm = [VVOrm ormWithConfig:config];
+    VVOrm *orm = [VVOrm ormWithConfig:config name:@"obj_embed" database:self.vvdb];
     [orm upsertOne:one];
     VVTestOne *mOne = [orm findOne:nil];
     NSLog(@"mOne: %@", mOne);
@@ -399,6 +399,12 @@
     id val5 = [string5 vv_dbStoreValue];
     if (val1 && val2 && val3 && val4 && val5) {
     }
+}
+
+- (void)testJSON
+{
+    NSArray *results = [self.vvdb query:@"select json_type(' { \"this\" : \"is\", \"a\": [ \"test\" ] } ');"];
+    if (results) {}
 }
 
 //MARK: - FTS表

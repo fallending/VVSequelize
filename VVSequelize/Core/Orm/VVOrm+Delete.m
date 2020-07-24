@@ -12,14 +12,12 @@
 @implementation VVOrm (Delete)
 - (BOOL)drop
 {
-    VVORMVIEW_CUD_CHECK(self);
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", self.name.quoted];
     return [self.vvdb run:sql];
 }
 
 - (BOOL)deleteOne:(nonnull id)object
 {
-    VVORMVIEW_CUD_CHECK(self);
     NSDictionary *condition = [self uniqueConditionForObject:object];
     if (condition.count == 0) return NO;
     return [self deleteWhere:condition];
@@ -27,7 +25,6 @@
 
 - (NSUInteger)deleteMulti:(nullable NSArray *)objects
 {
-    VVORMVIEW_CUD_CHECK(self);
     __block NSUInteger count = 0;
     [self.vvdb transaction:VVDBTransactionImmediate block:^BOOL {
         for (id object in objects) {
@@ -41,7 +38,6 @@
 
 - (BOOL)deleteWhere:(nullable VVExpr *)condition
 {
-    VVORMVIEW_CUD_CHECK(self);
     NSString *where = [condition sqlWhere];
     where = where.length == 0 ? @"" : [NSString stringWithFormat:@" WHERE %@", where];
 
