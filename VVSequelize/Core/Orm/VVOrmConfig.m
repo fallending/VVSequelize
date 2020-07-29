@@ -398,6 +398,9 @@ NSString *const VVSqlTypeJson = @"JSON";
                  content_table:(NSString *)content_table
                  content_rowid:(NSString *)content_rowid
 {
+    if (self.indexes.count == 0) {
+        self.indexes = self.columns;
+    }
     [self treate];
     NSArray *notindexeds = [_columns vv_removeObjectsInArray:_indexes];
 

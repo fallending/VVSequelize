@@ -98,10 +98,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
         item.dbName = normal;
         item.dbPath = [dir stringByAppendingPathComponent:item.dbName];
         item.db = [VVDatabase databaseWithPath:item.dbPath];
-        VVOrmConfig *config = [VVOrmConfig configWithClass:VVMessage.class];
-        config.primaries = @[@"message_id"];
-        config.pkAutoIncrement = YES;
-        item.orm = [VVOrm ormWithConfig:config name:item.tableName database:item.db];
+        item.orm = [VVOrm ormWithClass:VVMessage.class name:item.tableName database:item.db];
 
         item.ftsDbName = fts;
         item.ftsDbPath = [dir stringByAppendingPathComponent:item.ftsDbName];
@@ -113,14 +110,7 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
             return 0;
         }];
 
-        NSUInteger ftsTokenParm = VVTokenMaskDefault | VVTokenMaskAbbreviation | 10;
-        NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
-        VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVMessage.class];
-        ftsConfig.fts = YES;
-        ftsConfig.ftsModule = @"fts5";
-        ftsConfig.ftsTokenizer = tokenizer;
-        ftsConfig.indexes = @[@"info"];
-        item.ftsOrm = [VVOrm ormWithConfig:ftsConfig name:item.tableName database:item.ftsDb];
+        item.ftsOrm = [VVOrm ormWithFtsClass:VVMessage.class name:item.tableName database:item.ftsDb];
 
         [items addObject:item];
     }
@@ -313,7 +303,8 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
                             text, @(messages.count), @(end - begin)];
         DDLogInfo(@"%@", string);
         NSArray *highlights = [highlighter highlight:messages field:@"info"];
-        if (highlights) {}
+        if (highlights) {
+        }
         dispatch_async(dispatch_get_main_queue(), ^{
             [self updateUIWithAction:YES isSearch:YES logString:string];
         });

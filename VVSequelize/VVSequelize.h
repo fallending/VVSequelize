@@ -18,6 +18,7 @@
 #import "VVDBStatement.h"
 #import "VVDatabase+Additions.h"
 #import "VVOrm.h"
+#import "VVOrmable.h"
 #import "VVOrmConfig.h"
 #import "VVOrmDefs.h"
 #import "VVOrmView.h"
@@ -33,6 +34,7 @@
 #import "VVSearchHighlighter.h"
 #import "VVTokenEnumerator.h"
 #import "VVPinYinSegmentor.h"
+#import "VVFtsable.h"
 #import "VVDatabase+FTS.h"
 #import "VVOrm+FTS.h"
 #endif
