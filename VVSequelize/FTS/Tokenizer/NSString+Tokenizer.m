@@ -450,6 +450,8 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     NSUInteger len = first.length;
     if (upper > maxLen && lower > 2) {
         NSInteger rlen = (2 + len > maxLen) ? (lower - 2) : (upper - maxLen);
+        unichar ch = [attrText.string characterAtIndex:rlen - 1];
+        if (0xd800 <= ch && ch <= 0xdbff) rlen++; //emoji
         [attrText deleteCharactersInRange:NSMakeRange(0, rlen)];
         NSAttributedString *ellipsis = [[NSAttributedString alloc] initWithString:@"..."];
         [attrText insertAttributedString:ellipsis atIndex:0];
