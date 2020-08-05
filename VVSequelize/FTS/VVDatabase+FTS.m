@@ -276,10 +276,11 @@ static int vv_fts5_xTokenize(
             mask = mask & ~VVTokenMaskSyllable;
         }
     }
+    mask |= VVTokenMaskStandalone;
     NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:(VVTokenMask)mask];
 
     for (VVToken *tk in array) {
-        rc = xToken(pCtx, iUnused, tk.token.cLangString, tk.len, tk.start, tk.end);
+        rc = xToken(pCtx, 0, tk.token.cLangString, tk.len, tk.start, tk.end);
         if (rc != SQLITE_OK) break;
     }
 

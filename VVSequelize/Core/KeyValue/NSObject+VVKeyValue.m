@@ -489,7 +489,13 @@ static uint8_t digitFromChar(unichar c)
 /// stored data -> original data
 - (void)setValue:(id)value forProperty:(VVPropertyInfo *)propertyInfo
 {
+    static NSArray *undefinedKeys;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        undefinedKeys = @[@"hash", @"description", @"debugDescription"];
+    });
     NSString *propertyName = propertyInfo.name;
+    if ([undefinedKeys containsObject: propertyName]) return;
     if (value == nil || [value isKindOfClass:[NSNull class]]) return;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"

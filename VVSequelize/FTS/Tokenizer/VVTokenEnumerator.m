@@ -175,8 +175,8 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
             if (cls) array = [cls enumerate:source method:method mask:mask];
         } break;
     }
-    NSSet *set = [NSSet setWithArray:array];
-    return set.allObjects;
+    NSOrderedSet *set = [NSOrderedSet orderedSetWithArray:array];
+    return set.array;
 }
 
 + (NSArray<VVToken *> *)enumerateCString:(const char *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask
@@ -441,7 +441,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     NSMutableArray *results = [NSMutableArray array];
     for (VVTokenCursorTuple *tuple in tuples) {
         if (tuple.syllable) continue;
-        NSUInteger quantity = tuple.encoding == NSASCIIStringEncoding ? 3 : 2;
+        NSUInteger quantity = (mask | VVTokenMaskStandalone) ? 1 : tuple.encoding == NSASCIIStringEncoding ? 3 : 2;
         NSArray<VVToken *> *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:quantity tail:tail];
         [results addObjectsFromArray:tokens];
     }
@@ -462,7 +462,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
     for (VVTokenCursorTuple *tuple in tuples) {
         if (tuple.type != VVTokenMultilingualPlaneOther || tuple.cursors.count == 0) continue;
 
-        NSArray *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:2 tail:NO];
+        NSArray *tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:(mask | VVTokenMaskStandalone) ? 1 : 2 tail:NO];
         for (VVToken *tk in tokens) {
             VVPinYinFruit *fruit = tk.token.pinyins;
             for (NSString *full in fruit.fulls) {
@@ -473,7 +473,7 @@ static NSMutableDictionary<NSNumber *, Class<VVTokenEnumeratorProtocol> > *_vv_e
         }
 
         if (!abbr) continue;
-        tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:3 tail:NO];
+        tokens = [self wordTokensByCombine:cSource cursors:tuple.cursors encoding:tuple.encoding quantity:(mask | VVTokenMaskStandalone) ? 1 : 3 tail:NO];
         for (VVToken *tk in tokens) {
             VVPinYinFruit *fruit = tk.token.pinyins;
             for (NSString *abbr in fruit.abbrs) {

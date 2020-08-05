@@ -42,6 +42,7 @@ typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
 
     VVTokenMaskSyllable     = 1 << 24, ///< pinyin segmentation
     VVTokenMaskQuery        = 1 << 25,
+    VVTokenMaskStandalone   = 1 << 26,
 };
 
 @protocol VVTokenEnumeratorProtocol <NSObject>
