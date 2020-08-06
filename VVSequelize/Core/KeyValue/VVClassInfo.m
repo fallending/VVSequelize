@@ -243,7 +243,7 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
         _metaCls = objc_getMetaClass(class_getName(cls));
     }
     _name = NSStringFromClass(cls);
-    [self updateInfos];
+    _properties = [VVClassInfo propertyInfosWith:cls];
     return self;
 }
 
@@ -273,22 +273,22 @@ VVStructType VVStructGetType(NSString *typeEncodeing)
     return info;
 }
 
-- (void)updateInfos
++ (NSArray<VVPropertyInfo *> *)propertyInfosWith:(Class)clazz
 {
+    if ([@"NSObject" isEqualToString:NSStringFromClass(clazz)]) return @[];
+    NSArray *ignoreProperties = @[@"hash", @"description", @"debugDescription", @"superclass"];
     unsigned int propertyCount = 0;
-    objc_property_t *properties = class_copyPropertyList(self.cls, &propertyCount);
-    NSMutableArray *infos = [NSMutableArray arrayWithCapacity:propertyCount];
-    NSMutableDictionary *propertyInfos = [NSMutableDictionary dictionaryWithCapacity:propertyCount];
+    objc_property_t *properties = class_copyPropertyList(clazz, &propertyCount);
+    NSMutableArray *infos = [self propertyInfosWith:clazz.superclass].mutableCopy;
     for (unsigned int i = 0; i < propertyCount; i++) {
         VVPropertyInfo *info = [[VVPropertyInfo alloc] initWithProperty:properties[i]];
-        if (info.name) propertyInfos[info.name] = info;
+        if (info.name.length == 0 || [ignoreProperties containsObject:info.name]) continue;
         [infos addObject:info];
     }
     if (properties) {
         free(properties);
     }
-    _properties = infos;
-    _propertyInfos = propertyInfos;
+    return infos.copy;
 }
 
 @end

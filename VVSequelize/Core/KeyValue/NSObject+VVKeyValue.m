@@ -233,17 +233,9 @@ static uint8_t digitFromChar(unichar c)
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
     NSArray *ignores = [[self class] ignoreProperties];
-    unsigned int propsCount;
-    objc_property_t *props = class_copyPropertyList([self class], &propsCount);
-    for (int i = 0; i < propsCount; i++) {
-        objc_property_t prop = props[i];
-        NSString *propName = [NSString stringWithUTF8String:property_getName(prop)];
-        VVPropertyInfo *properyInfo = info.propertyInfos[propName];
-        if ([ignores containsObject:propName]) continue;
-        dic[propName] = [self valueForProperty:properyInfo];
-    }
-    if (props) {
-        free(props);
+    for (VVPropertyInfo *prop in info.properties) {
+        if ([ignores containsObject:prop.name]) continue;
+        dic[prop.name] = [self valueForProperty:prop];
     }
     return dic;
 }
@@ -253,11 +245,9 @@ static uint8_t digitFromChar(unichar c)
     NSObject *obj = [[self alloc] init];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
     NSArray *ignores = [self ignoreProperties];
-    for (NSString *key in keyValues.allKeys) {
-        VVPropertyInfo *propertyInfo = info.propertyInfos[key];
-        if (propertyInfo && ![ignores containsObject:propertyInfo.name]) {
-            [obj setValue:keyValues[key] forProperty:propertyInfo];
-        }
+    for (VVPropertyInfo *prop in info.properties) {
+        if ([ignores containsObject:prop.name]) continue;
+        [obj setValue:keyValues[prop.name] forProperty:prop];
     }
     return obj;
 }
@@ -489,13 +479,9 @@ static uint8_t digitFromChar(unichar c)
 /// stored data -> original data
 - (void)setValue:(id)value forProperty:(VVPropertyInfo *)propertyInfo
 {
-    static NSArray *undefinedKeys;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        undefinedKeys = @[@"hash", @"description", @"debugDescription"];
-    });
     NSString *propertyName = propertyInfo.name;
-    if ([undefinedKeys containsObject: propertyName]) return;
+    NSArray *undefinedKeys = @[@"hash", @"description", @"debugDescription"];
+    if ([undefinedKeys containsObject:propertyName]) return;
     if (value == nil || [value isKindOfClass:[NSNull class]]) return;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"

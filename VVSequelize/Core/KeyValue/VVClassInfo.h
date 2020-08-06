@@ -113,7 +113,6 @@ typedef NS_OPTIONS (NSUInteger, VVPropertyQualifier) {
 @property (nonatomic, assign, readonly) Class metaCls;
 @property (nonatomic, readonly) BOOL isMeta;
 @property (nullable, nonatomic, strong, readonly) NSArray<VVPropertyInfo *> *properties;
-@property (nullable, nonatomic, strong, readonly) NSDictionary<NSString *, VVPropertyInfo *> *propertyInfos;
 
 + (nullable instancetype)classInfoWithClass:(Class)cls;
 @end
