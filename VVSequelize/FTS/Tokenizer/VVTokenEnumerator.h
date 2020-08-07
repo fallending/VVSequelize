@@ -37,6 +37,7 @@ FOUNDATION_EXPORT VVTokenizerName const VVTokenTokenizerNatual;
 @property (nonatomic, assign) int len;
 @property (nonatomic, assign) int start;
 @property (nonatomic, assign) int end;
+@property (nonatomic, assign) bool colocated;
 
 @property (nonatomic, copy, readonly) NSString *token;
 

@@ -245,7 +245,7 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
     memcpy(buff, cSource, nText);
 
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:nText];
-    if (mask | VVTokenMaskSyllable && buff[0] < 0xC0) {
+    if ((mask & VVTokenMaskSyllable) && buff[0] < 0xC0) {
         NSString *source = [NSString stringWithUTF8String:cSource];
         NSArray<NSString *> *pinyins = source.pinyinSegmentation;
         int start = 0;
@@ -259,10 +259,9 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
         if (results.count > 0) return results;
     }
 
-    BOOL usetrans = mask | VVTokenMaskTransform;
-    BOOL usepinyin = mask | VVTokenMaskPinyin;
-    BOOL useabbr = mask | VVTokenMaskAbbreviation;
-
+    BOOL usetrans = mask & VVTokenMaskTransform;
+    BOOL usepinyin = mask & VVTokenMaskPinyin;
+    BOOL useabbr = mask & VVTokenMaskAbbreviation;
 
     int idx = 0;
     int length = 0;
@@ -333,11 +332,13 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
                     }
                     for (NSString *full in fulls) {
                         VVToken *token = [VVToken token:full.UTF8String len:(int)full.length start:idx end:idx + length];
+                        token.colocated = true;
                         [results addObject:token];
                     }
                     if (useabbr) {
                         for (NSString *abbr in abbrs) {
                             VVToken *token = [VVToken token:abbr.UTF8String len:(int)abbr.length start:idx end:idx + length];
+                            token.colocated = true;
                             [results addObject:token];
                         }
                     }
@@ -351,6 +352,7 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
         }
 
         VVToken *token = [VVToken token:(char *)word len:wordlen start:idx end:idx + length];
+        token.colocated = wordlen != length;
         [results addObject:token];
         idx += length;
         free(word);
