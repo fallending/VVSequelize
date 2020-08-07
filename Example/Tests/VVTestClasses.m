@@ -44,16 +44,17 @@
 @end
 
 @implementation VVTestEnumerator
-+ (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask
++ (NSArray<VVToken *> *)enumerate:(const char *)input  mask:(VVTokenMask)mask
 {
-    NSUInteger count = input.length;
+    NSString *string = [NSString stringWithUTF8String:input];
+    NSUInteger count = string.length;
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:count];
     for (NSUInteger i = 0; i < count; i++) {
-        const char *prefix = [input substringToIndex:i].cLangString;
-        NSString *cur = [input substringWithRange:NSMakeRange(i, 1)];
+        const char *prefix = [string substringToIndex:i].cLangString;
+        NSString *cur = [string substringWithRange:NSMakeRange(i, 1)];
         int start = (int)strlen(prefix);
         int len = (int)strlen(cur.cLangString);
-        VVToken *token = [VVToken token:cur len:len start:start end:(start + len)];
+        VVToken *token = [VVToken token:cur.UTF8String len:len start:start end:(start + len)];
         [results addObject:token];
     }
     return results;

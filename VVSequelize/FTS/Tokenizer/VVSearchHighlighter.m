@@ -101,7 +101,7 @@
         NSArray *components = [orm.config.ftsTokenizer componentsSeparatedByString:@" "];
         if (components.count > 0) {
             NSString *tokenizer = components[0];
-            self.method = [orm.vvdb methodForTokenizer:tokenizer];
+            self.enumerator = [orm.vvdb enumeratorForTokenizer:tokenizer];
         }
         if (components.count > 1) {
             NSString *mask = components[1];
@@ -114,7 +114,7 @@
 
 - (void)setup {
     _option = VVMatchOptionDefault;
-    _method = VVTokenMethodSequelize;
+    _enumerator = VVTokenSequelizeEnumerator.class;
     _mask = VVTokenMaskDefault;
 }
 
@@ -134,7 +134,7 @@
 {
     if (_keyword.length == 0) return;
     VVTokenMask mask = (_mask & ~(VVTokenMaskAllPinYin | VVTokenMaskSyllable));
-    _kwTokens = [VVTokenEnumerator enumerate:_keyword method:_method mask:mask];
+    _kwTokens = [_enumerator enumerate:_keyword.UTF8String mask:mask];
 
     if (_keyword.length > _VVMatchPinyinLen) {
         _kwFullPinYin = @"";
@@ -361,7 +361,7 @@
     if (keywordTokens.count == 0) return nil;
 
     VVTokenMask mask = self.mask & ~VVTokenMaskSyllable;
-    NSArray<VVToken *> *sourceTokens = [VVTokenEnumerator enumerateCString:cSource method:self.method mask:mask];
+    NSArray<VVToken *> *sourceTokens = [_enumerator enumerate:cSource mask:mask];
     if (sourceTokens.count == 0) return nil;
 
     NSMutableDictionary *tokenMap = [NSMutableDictionary dictionary];

@@ -13,11 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface VVDatabase (FTS)
 
 /// register tokenizer, fts3/4/5
-/// @param method tokenizer
-- (BOOL)registerMethod:(VVTokenMethod)method forTokenizer:(NSString *)name;
+- (BOOL)registerEnumerator:(Class<VVTokenEnumerator>)enumerator forTokenizer:(NSString *)name;
 
-/// get tokenzier by name
-- (VVTokenMethod)methodForTokenizer:(NSString *)name;
+- (nullable Class<VVTokenEnumerator>)enumeratorForTokenizer:(NSString *)name;
 
 @end
 

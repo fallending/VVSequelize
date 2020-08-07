@@ -46,7 +46,7 @@
         }
     }
 
-    [self.vvdb registerMethod:VVTokenMethodSequelize forTokenizer:@"sequelize"];
+    [self.vvdb registerEnumerator:VVTokenSequelizeEnumerator.class forTokenizer:@"sequelize"];
 //    [self.vvdb setTraceHook:^int(unsigned int mask, void * _Nonnull stmt, void * _Nonnull sql) {
 //        NSLog(@"mask: %@, sql: %s",@(mask),(char *)sql);
 //        return 0;
@@ -432,8 +432,7 @@
 {
     VVTokenMask mask = VVTokenMaskAll;
     NSArray *texts = @[
-        @"第二章",
-        @"dez",
+        @"！＂＃＄％＆＇（）＊＋，－．／０１２３４５６７８９：；＜＝＞？＠ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ［＼］＾＿｀ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ｛｜｝～￠￡￢￣￤￥　",
 //        @"音乐123舞蹈",
 //        @"13188886666",
 //        @"234",
@@ -448,9 +447,78 @@
 //        @"me",
     ];
     for (NSString *text in texts) {
-        NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
-        NSLog(@"\n%@:\n%@", text, tokens);
+        NSArray<VVToken *> *tokens = [VVTokenSequelizeEnumerator enumerate:text.UTF8String mask:mask];
+        if (tokens) {
+        }
+        //NSLog(@"\n%@:\n%@", text, tokens);
     }
+}
+
+- (void)testFullToHalf {
+    unichar
+        ch = 0x21;
+    printf("\n\n\n");
+    do {
+        NSString *string = [NSString stringWithCharacters:&ch length:1];
+        printf("%s", string.UTF8String);
+        ch++;
+    } while (ch <= 0x7E);
+    printf("\n\n\n");
+
+    ch = 0xFF01;
+    printf("\n\n\n");
+    do {
+        NSString *string = [NSString stringWithCharacters:&ch length:1];
+        printf("%s", string.UTF8String);
+        ch++;
+    } while (ch <= 0xFF5E);
+    printf("\n\n\n");
+
+
+    ch = 0xFFE1;
+    printf("\n\n\n");
+    do {
+        NSString *string = [NSString stringWithCharacters:&ch length:1];
+        printf("%s", string.UTF8String);
+        ch++;
+    } while (ch <= 0xFFEF);
+    printf("\n\n\n");
+
+    int len = 7;
+    unichar *array = (unichar *)malloc(len);
+    for (int i = 0; i < len; i ++) {
+        array[i] = 0xFFE0 + i;
+    }
+    NSString *string = [NSString stringWithCharacters:array length:len];
+    printf("%s", string.UTF8String);
+    NSMutableString *mstring = string.mutableCopy;
+    CFStringTransform((__bridge CFMutableStringRef)mstring, NULL, kCFStringTransformFullwidthHalfwidth, false);
+    printf("\n");
+    printf("%s", mstring.UTF8String);
+    printf("\n");
+    for (int i = 0; i < len; i ++) {
+        unichar ch = [mstring characterAtIndex:i];
+        printf("0x%x,",ch);
+    }
+
+
+    printf("\n\n\n");
+}
+
+- (void)testUniStringToUni{
+    NSString *uni = @"4E01".lowercaseString;
+    const char *str = uni.UTF8String;
+    unichar ch = (unichar)strtol(str, NULL, 16);
+
+    printf("\n\n\n");
+    printf("0x%x",ch);
+
+//    int len = (int)strlen(str);
+//    printf("\n\n\n");
+//    for (int i = 0; i < len; i ++) {
+//        printf("0x%x,",str[i]);
+//    }
+    printf("\n\n\n");
 }
 
 - (void)testTokenizer1
@@ -469,7 +537,7 @@
         @"公益组织",
     ];
     for (NSString *text in texts) {
-        NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
+        NSArray<VVToken *> *tokens = [VVTokenSequelizeEnumerator enumerate:text.UTF8String mask:mask];
         NSArray<VVToken *> *sorted = [VVToken sortedTokens:tokens];
         printf("\n-> %s :", text.UTF8String);
         for (VVToken *token in sorted) {
@@ -481,7 +549,6 @@
 
 - (void)testTokenizer2
 {
-    [VVTokenEnumerator registerEnumerator:VVTestEnumerator.class forMethod:VVTokenMethodTest];
     VVTokenMask mask = VVTokenMaskAll;
     NSArray *texts = @[
         @"第二章",
@@ -490,7 +557,7 @@
         @"13188886666",
     ];
     for (NSString *text in texts) {
-        NSArray<VVToken *> *tokens = [VVTokenEnumerator enumerate:text method:VVTokenMethodSequelize mask:mask];
+        NSArray<VVToken *> *tokens = [VVTokenSequelizeEnumerator enumerate:text.UTF8String mask:mask];
         NSLog(@"\n%@:\n%@", text, tokens);
     }
 }
@@ -587,7 +654,7 @@
     ];
     printf("\n");
     for (NSString *number in numbers) {
-        NSArray *tokens = [VVTokenEnumerator enumerate:number method:VVTokenMethodSequelize mask:VVTokenMaskNumber];
+        NSArray *tokens = [VVTokenSequelizeEnumerator enumerate:number.UTF8String mask:VVTokenMaskNumber];
         printf("\n--> %s :\n%s", number.UTF8String, tokens.description.UTF8String);
     }
     printf("\n");

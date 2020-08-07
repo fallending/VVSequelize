@@ -42,7 +42,7 @@ struct sqlite3_tokenizer_module {
         );
     int (*xLanguageid)(sqlite3_tokenizer_cursor *pCsr, int iLangid);
     const char *xName;
-    int xMethod;
+    const void *xClass;
 };
 
 struct sqlite3_tokenizer {
@@ -142,14 +142,16 @@ static int vv_fts3_open(
     if (c == NULL) return SQLITE_NOMEM;
 
     const sqlite3_tokenizer_module *module = pTokenizer->pModule;
-    VVTokenMethod method = module->xMethod;
+    Class<VVTokenEnumerator> clazz = (__bridge Class)(module->xClass);
+    if (!clazz || ![clazz conformsToProtocol:@protocol(VVTokenEnumerator)]) {
+        return SQLITE_ERROR;
+    }
 
     int nInput = (pInput == 0) ? 0 : (nBytes < 0 ? (int)strlen(pInput) : nBytes);
 
     vv_fts3_tokenizer *tok = (vv_fts3_tokenizer *)pTokenizer;
 
-    NSString *ocString = [NSString ocStringWithCString:pInput];
-    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:(VVTokenMask)tok->mask];
+    NSArray *array = [clazz enumerate:pInput mask:(VVTokenMask)tok->mask];
 
     c->pInput = pInput;
     c->nBytes = nInput;
@@ -182,7 +184,7 @@ static int vv_fts3_next(
     NSArray *array = (__bridge NSArray *)(c->tokens);
     if (array.count == 0 || c->iToken == array.count) return SQLITE_DONE;
     VVToken *t = array[c->iToken];
-    *ppToken = t.token.cLangString;
+    *ppToken = t.word;
     *pnBytes = t.len;
     *piStartOffset = t.start;
     *piEndOffset = t.end;
@@ -216,7 +218,7 @@ typedef struct Fts5VVTokenizer Fts5VVTokenizer;
 struct Fts5VVTokenizer {
     char locale[16];
     uint64_t mask;
-    int method;
+    void *clazz;
 };
 
 static void vv_fts5_xDelete(Fts5Tokenizer *p)
@@ -246,8 +248,7 @@ static int vv_fts5_xCreate(
         }
     }
 
-    VVTokenMethod method = (VVTokenMethod)(*(int *)pUnused);
-    tok->method = (int)method;
+    tok->clazz = pUnused;
     *ppOut = (Fts5Tokenizer *)tok;
     return SQLITE_OK;
 }
@@ -266,21 +267,22 @@ static int vv_fts5_xTokenize(
 
     int rc = SQLITE_OK;
     Fts5VVTokenizer *tok = (Fts5VVTokenizer *)pTokenizer;
-    NSString *ocString = [NSString ocStringWithCString:pText];
-    VVTokenMethod method = tok->method;
+    Class<VVTokenEnumerator> clazz = (__bridge Class)(tok->clazz);
+    if (!clazz || ![clazz conformsToProtocol:@protocol(VVTokenEnumerator)]) {
+        return SQLITE_ERROR;
+    }
     uint64_t mask = tok->mask;
     if ((mask & VVTokenMaskPinyin) > 0) {
         if (iUnused & FTS5_TOKENIZE_QUERY) {
-            mask = (mask & ~VVTokenMaskAllPinYin) | VVTokenMaskSyllable | VVTokenMaskQuery;
+            mask = (mask & ~VVTokenMaskAllPinYin) | VVTokenMaskSyllable;
         } else if (iUnused & FTS5_TOKENIZE_DOCUMENT) {
             mask = mask & ~VVTokenMaskSyllable;
         }
     }
-    mask |= VVTokenMaskStandalone;
-    NSArray *array = [VVTokenEnumerator enumerate:ocString method:method mask:(VVTokenMask)mask];
+    NSArray *array = [clazz enumerate:pText mask:(VVTokenMask)mask];
 
     for (VVToken *tk in array) {
-        rc = xToken(pCtx, 0, tk.token.cLangString, tk.len, tk.start, tk.end);
+        rc = xToken(pCtx, 0, tk.word, tk.len, tk.start, tk.end);
         if (rc != SQLITE_OK) break;
     }
 
@@ -290,7 +292,7 @@ static int vv_fts5_xTokenize(
 
 @implementation VVDatabase (FTS)
 
-- (BOOL)registerMethod:(VVTokenMethod)method forTokenizer:(NSString *)name
+- (BOOL)registerEnumerator:(Class<VVTokenEnumerator>)enumerator forTokenizer:(NSString *)name
 {
     sqlite3_tokenizer_module *module;
     module = (sqlite3_tokenizer_module *)sqlite3_malloc(sizeof(*module));
@@ -301,45 +303,44 @@ static int vv_fts5_xTokenize(
     module->xClose = vv_fts3_close;
     module->xNext = vv_fts3_next;
     module->xName = name.cLangString;
-    module->xMethod = (int)method;
     int rc = fts3_register_tokenizer(self.db, (char *)name.cLangString, module);
 
     NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];
     BOOL ret =  [self check:rc sql:errorsql];
-    if (!ret) return ret;
 
     fts5_api *pApi = fts5_api_from_db(self.db);
-    if (!pApi) return NO;
+    if (!pApi) {
+#if DEBUG
+        printf("[VVDB][Debug] fts5 is not supported\n");
+#endif
+        return ret;
+    }
     fts5_tokenizer *tokenizer;
     tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
     tokenizer->xCreate = vv_fts5_xCreate;
     tokenizer->xDelete = vv_fts5_xDelete;
     tokenizer->xTokenize = vv_fts5_xTokenize;
 
-    int *context = malloc(sizeof(int));
-    *context = (int)method;
-
-    rc = pApi->xCreateTokenizer(pApi,
-                                name.cLangString,
-                                (void *)context,
-                                tokenizer,
-                                0);
-    ret =  [self check:rc sql:errorsql];
+    rc = pApi->xCreateTokenizer(pApi, name.cLangString, (__bridge void *)enumerator, tokenizer, NULL);
+    ret = ret && [self check:rc sql:errorsql];
     return ret;
 }
 
-- (VVTokenMethod)methodForTokenizer:(NSString *)name
+- (Class<VVTokenEnumerator>)enumeratorForTokenizer:(NSString *)name
 {
     fts5_api *pApi = fts5_api_from_db(self.db);
-    if (!pApi) return VVTokenMethodUnknown;
+    if (!pApi) return nil;
 
     void *pUserdata = 0;
     fts5_tokenizer *tokenizer;
     tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
     int rc = pApi->xFindTokenizer(pApi, name.cLangString, &pUserdata, tokenizer);
-    if (rc != SQLITE_OK) return VVTokenMethodUnknown;
-
-    return (VVTokenMethod)(*(int *)pUserdata);
+    if (rc != SQLITE_OK) return nil;
+    Class<VVTokenEnumerator> clazz = (__bridge Class)pUserdata;
+    if (!clazz || ![clazz conformsToProtocol:@protocol(VVTokenEnumerator)]) {
+        return nil;
+    }
+    return clazz;
 }
 
 @end

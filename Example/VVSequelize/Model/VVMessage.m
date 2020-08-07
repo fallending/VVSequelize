@@ -56,7 +56,7 @@
 
 + (NSString *)tokenizer
 {
-    NSUInteger ftsTokenParm = VVTokenMaskDefault | VVTokenMaskAbbreviation | 10;
+    NSUInteger ftsTokenParm = VVTokenMaskTransform | VVTokenMaskPinyin | VVTokenMaskAbbreviation;
     NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
     return tokenizer;
 }

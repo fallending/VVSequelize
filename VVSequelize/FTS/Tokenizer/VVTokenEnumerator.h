@@ -1,6 +1,7 @@
 
 #import <Foundation/Foundation.h>
 
+//MARK: - defines
 #ifndef   UNUSED_PARAM
 #define   UNUSED_PARAM(v) (void)(v)
 #endif
@@ -11,53 +12,54 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
+    VVTokenMaskTransform    = 1 << 0,
+    VVTokenMaskPinyin       = 1 << 1, ///< placeholder, it will be executed without setting
+    VVTokenMaskAbbreviation = 1 << 2, ///< pinyin abbreviation. not recommended, many invalid results will be found
+    VVTokenMaskSyllable     = 1 << 3, ///< pinyin segmentation
+
+    VVTokenMaskDefault      = VVTokenMaskTransform,
+    VVTokenMaskAll          = 0xFFFFFF,
+    VVTokenMaskAllPinYin    = (VVTokenMaskPinyin | VVTokenMaskAbbreviation),
+};
+
+//MARK: - VVTokenizerName
+typedef NSString *VVTokenizerName NS_EXTENSIBLE_STRING_ENUM;
+
+FOUNDATION_EXPORT VVTokenizerName const VVTokenTokenizerSequelize;
+FOUNDATION_EXPORT VVTokenizerName const VVTokenTokenizerApple;
+FOUNDATION_EXPORT VVTokenizerName const VVTokenTokenizerNatual;
+
+//MARK: - VVToken
+
 @interface VVToken : NSObject <NSCopying>
-@property (nonatomic, copy) NSString *token;
+@property (nonatomic, assign) char *word;
 @property (nonatomic, assign) int len;
 @property (nonatomic, assign) int start;
 @property (nonatomic, assign) int end;
 
-+ (instancetype)token:(NSString *)token len:(int)len start:(int)start end:(int)end;
+@property (nonatomic, copy, readonly) NSString *token;
+
++ (instancetype)token:(const char *)word len:(int)len start:(int)start end:(int)end;
 
 + (NSArray<VVToken *> *)sortedTokens:(NSArray<VVToken *> *)tokens;
 @end
 
-typedef NS_ENUM (NSUInteger, VVTokenMethod) {
-    VVTokenMethodApple,
-    VVTokenMethodSequelize,
-    VVTokenMethodNatual,
+@protocol VVTokenEnumerator <NSObject>
 
-    VVTokenMethodUnknown = 0xFFFFFFFF
-};
-
-typedef NS_OPTIONS (NSUInteger, VVTokenMask) {
-    VVTokenMaskPinyin       = 0xFFFF,  ///< placeholder, it will be executed without setting
-    VVTokenMaskAbbreviation = 1 << 16, ///< pinyin abbreviation. not recommended, many invalid results will be found
-    VVTokenMaskNumber       = 1 << 17,
-    VVTokenMaskTransform    = 1 << 18,
-
-    VVTokenMaskDefault      = (VVTokenMaskNumber | VVTokenMaskTransform),
-    VVTokenMaskAll          = 0xFFFFFF,
-    VVTokenMaskAllPinYin    = (VVTokenMaskPinyin | VVTokenMaskAbbreviation),
-
-    VVTokenMaskSyllable     = 1 << 24, ///< pinyin segmentation
-    VVTokenMaskQuery        = 1 << 25,
-    VVTokenMaskStandalone   = 1 << 26,
-};
-
-@protocol VVTokenEnumeratorProtocol <NSObject>
-
-+ (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
++ (NSArray<VVToken *> *)enumerate:(const char *)input mask:(VVTokenMask)mask;
 
 @end
 
-@interface VVTokenEnumerator : NSObject
+@interface VVTokenAppleEnumerator : NSObject <VVTokenEnumerator>
 
-+ (void)registerEnumerator:(Class<VVTokenEnumeratorProtocol>)cls forMethod:(VVTokenMethod)method;
+@end
 
-+ (NSArray<VVToken *> *)enumerate:(NSString *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
+@interface VVTokenNatualEnumerator : NSObject <VVTokenEnumerator>
 
-+ (NSArray<VVToken *> *)enumerateCString:(const char *)input method:(VVTokenMethod)method mask:(VVTokenMask)mask;
+@end
+
+@interface VVTokenSequelizeEnumerator : NSObject <VVTokenEnumerator>
 
 @end
 

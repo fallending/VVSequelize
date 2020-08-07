@@ -80,7 +80,6 @@ typedef struct TestStruct {
 
 @end
 
-#define VVTokenMethodTest 0x3
-@interface VVTestEnumerator : NSObject<VVTokenEnumeratorProtocol>
+@interface VVTestEnumerator : NSObject<VVTokenEnumerator>
 
 @end

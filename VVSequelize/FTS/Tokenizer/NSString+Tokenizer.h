@@ -13,7 +13,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) NSCharacterSet *trimmingSet;
 @property (nonatomic, strong, readonly) NSCharacterSet *cleanSet;
 @property (nonatomic, strong, readonly) NSCharacterSet *symbolSet;
+@property (nonatomic, strong, readonly) NSDictionary *hanzi2pinyins;
 @property (nonatomic, strong, readonly) NSDictionary *pinyins;
+@property (nonatomic, strong, readonly) NSDictionary *gb2big5Map;
+@property (nonatomic, strong, readonly) NSDictionary *big52gbMap;
 @property (nonatomic, strong, readonly) NSDictionary *syllables;
 
 + (instancetype)shared;

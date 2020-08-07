@@ -71,8 +71,10 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     for (NSUInteger i = 0; i < simplified.length; i++) {
         NSString *simp = [simplified substringWithRange:NSMakeRange(i, 1)];
         NSString *trad = [traditional substringWithRange:NSMakeRange(i, 1)];
-        gb2big5Map[simp] = trad;
-        big52gbMap[trad] = simp;
+        unichar simpch = [simp characterAtIndex:0];
+        unichar tradch = [trad characterAtIndex:0];
+        gb2big5Map[@(simpch)] = @(tradch);
+        big52gbMap[@(tradch)] = @(simpch);
     }
     _gb2big5Map = gb2big5Map;
     _big52gbMap = big52gbMap;
@@ -91,7 +93,13 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 {
     if (!_hanzi2pinyins) {
         NSString *path = [[self class] pathWithResource:kVVPinYinHanzi2PinyinFile];
-        _hanzi2pinyins = [NSDictionary dictionaryWithContentsOfFile:path];
+        NSDictionary *dic = [NSDictionary dictionaryWithContentsOfFile:path];
+        NSMutableDictionary<NSNumber *, id> *hanzi2pinyins = [NSMutableDictionary dictionaryWithCapacity:dic.count];
+        [dic enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
+            unichar ch = (unichar)strtol(key.UTF8String, NULL, 16);
+            hanzi2pinyins[@(ch)] = obj;
+        }];
+        _hanzi2pinyins = hanzi2pinyins;
     }
     return _hanzi2pinyins;
 }
@@ -237,9 +245,9 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
         NSString *subString = [self substringWithRange:result.range];
         NSMutableString *fragment = [NSMutableString stringWithCapacity:result.range.length];
         for (NSUInteger i = 0; i < subString.length; i++) {
-            NSString *ch = [subString substringWithRange:NSMakeRange(i, 1)];
-            NSString *trans = map[ch] ? : ch;
-            [fragment appendString:trans];
+            unichar ch = [[subString substringWithRange:NSMakeRange(i, 1)] characterAtIndex:0];
+            unichar trans = (unichar)[(map[@(ch)] ? : @(ch)) unsignedShortValue];
+            [fragment appendString:[NSString stringWithCharacters:&trans length:1]];
         }
         [string replaceCharactersInRange:result.range withString:fragment];
     }];
@@ -273,8 +281,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     }
     NSString *trans = [VVPinYin shared].big52gbMap[single] ? : single;
     ch = [trans characterAtIndex:0];
-    NSString *key = [NSString stringWithFormat:@"%X", ch];
-    NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:key];
+    NSArray *pinyins = [[VVPinYin shared].hanzi2pinyins objectForKey:@(ch)];
     NSMutableOrderedSet *fulls = [NSMutableOrderedSet orderedSet];
     NSMutableOrderedSet *abbrs = [NSMutableOrderedSet orderedSet];
     for (NSString *pinyin in pinyins) {
