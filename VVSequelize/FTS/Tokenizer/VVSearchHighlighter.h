@@ -32,16 +32,6 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
     VVMatchLV3_High,
 };
 
-typedef NS_OPTIONS (NSUInteger, VVMatchOption) {
-    VVMatchOptionDefault = 0,      ///< direct match
-
-    VVMatchOptionPinyin  = 1 << 0, ///< match with pinyin
-    VVMatchOptionFuzzy   = 1 << 1, ///< convert chinese to pinyin, then match with pinyin
-    VVMatchOptionToken   = 1 << 2, ///< match with token
-
-    VVMatchOptionAll     = 0xFFFFFFFF,
-};
-
 @interface VVResultMatch : NSObject
 @property (nonatomic, copy) NSString *source;
 @property (nonatomic, copy) NSAttributedString *attrText;
@@ -61,7 +51,6 @@ typedef NS_OPTIONS (NSUInteger, VVMatchOption) {
 
 @interface VVSearchHighlighter : NSObject
 @property (nonatomic, copy) NSString *keyword;
-@property (nonatomic, assign) VVMatchOption option;
 @property (nonatomic, assign) Class<VVTokenEnumerator> enumerator;    ///< default is VVTokenSequelizeEnumerator
 @property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDefault
 @property (nonatomic, assign) NSUInteger quantity;          ///< number of highlights, 0 means no limit

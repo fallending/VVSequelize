@@ -121,7 +121,7 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat:@"[%2i-%2i|%2i|0x%09lx]: %@ ", _start, _end, _len, (unsigned long)self.hash, self.token];
+    return [NSString stringWithFormat:@"[%2i-%2i|%2i|%i|0x%09lx]: %@ ", _start, _end, _len, (int)_colocated, (unsigned long)self.hash, self.token];
 }
 
 - (void)dealloc
@@ -359,21 +359,6 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
     }
     free(buff);
     return results;
-}
-
-// MARK: - Utils
-+ (BOOL)isSymbol:(unichar)ch {
-    return [VVPinYin.shared.symbolSet characterIsMember:ch];
-}
-
-+ (BOOL)isSupportedPunctuation:(unichar)ch {
-    static NSCharacterSet *_symbolSet;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _symbolSet = [NSCharacterSet characterSetWithCharactersInString:@"#@"];
-    });
-    BOOL ret = [_symbolSet characterIsMember:ch];
-    return ret;
 }
 
 @end
