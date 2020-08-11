@@ -332,13 +332,13 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
                     }
                     for (NSString *full in fulls) {
                         VVToken *token = [VVToken token:full.UTF8String len:(int)full.length start:idx end:idx + length];
-                        token.colocated = true;
+                        token.colocated = 1;
                         [results addObject:token];
                     }
                     if (useabbr) {
                         for (NSString *abbr in abbrs) {
                             VVToken *token = [VVToken token:abbr.UTF8String len:(int)abbr.length start:idx end:idx + length];
-                            token.colocated = true;
+                            token.colocated = 2;
                             [results addObject:token];
                         }
                     }
@@ -352,7 +352,7 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
         }
 
         VVToken *token = [VVToken token:(char *)word len:wordlen start:idx end:idx + length];
-        token.colocated = wordlen != length;
+        token.colocated = wordlen != length ? -1 : 0;
         [results addObject:token];
         idx += length;
         free(word);

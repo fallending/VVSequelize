@@ -64,10 +64,33 @@
 @end
 
 @interface VVSearchHighlighter ()
-@property (nonatomic, strong) NSArray<VVToken *> *kwTokens;
+@property (nonatomic, strong) NSArray<NSSet<NSString *> *> *kwTokens;
 @end
 
 @implementation VVSearchHighlighter
+
++ (NSArray *)fold:(NSArray<VVToken *> *)tokens
+{
+    NSMutableArray *foldedTokens = [NSMutableArray array];
+    NSMutableArray *foldWords = [NSMutableArray array];
+    NSMutableDictionary *tokenMap = [NSMutableDictionary dictionary];
+    NSMutableSet *words = [NSMutableSet set];
+    VVToken *last = nil;
+    for (VVToken *tk in tokens) {
+        if (last != nil && tk.start != last.start) {
+            [foldedTokens addObject:tokenMap];
+            [foldWords addObject:words];
+            tokenMap = [NSMutableDictionary dictionary];
+            words = [NSMutableSet set];
+        }
+        tokenMap[tk.token] = tk;
+        [words addObject:tk.token];
+        last = tk;
+    }
+    [foldedTokens addObject:tokenMap];
+    [foldWords addObject:words];
+    return @[foldedTokens, foldWords];
+}
 
 - (instancetype)init
 {
@@ -131,7 +154,8 @@
 {
     if (_keyword.length == 0) return;
     VVTokenMask mask = _mask | VVTokenMaskSyllable;
-    _kwTokens = [_enumerator enumerate:_keyword.UTF8String mask:mask];
+    NSArray<VVToken *> *tokens = [VVTokenSequelizeEnumerator enumerate:_keyword.UTF8String mask:mask];
+    _kwTokens = [VVSearchHighlighter fold:tokens].lastObject;
 }
 
 - (NSDictionary<NSAttributedStringKey, id> *)normalAttributes {
@@ -182,7 +206,7 @@
     long nText = (long)strlen(cSource);
     if (nText == 0) return match;
 
-    match = [self highlight:source comparison:comparison cSource:cSource keyword:keyword lv1:VVMatchLV1_Origin];
+    match = [self highlight:source comparison:comparison cSource:cSource keyword:keyword];
     return match;
 }
 
@@ -190,15 +214,14 @@
                   comparison:(NSString *)comparison
                      cSource:(const char *)cSource
                      keyword:(NSString *)keyword
-                         lv1:(VVMatchLV1)lv1
 {
     VVResultMatch *nomatch = [[VVResultMatch alloc] init];
     nomatch.source = source;
 
-    VVResultMatch *match = [self highlightUsingRegex:source comparison:comparison keyword:keyword lv1:lv1];
+    VVResultMatch *match = [self highlightUsingRegex:source comparison:comparison keyword:keyword];
     if (match) return match;
 
-    match = [self highlightUsingToken:source cSource:cSource lv1:lv1];
+    match = [self highlightUsingToken:source cSource:cSource];
     if (match) return match;
 
     return nomatch;
@@ -207,10 +230,8 @@
 - (VVResultMatch *)highlightUsingRegex:(NSString *)source
                             comparison:(NSString *)comparison
                                keyword:(NSString *)keyword
-                                   lv1:(VVMatchLV1)lv1
 {
     VVResultMatch *match = [[VVResultMatch alloc] init];
-    match.lv1 = lv1;
     match.source = source;
 
     NSString *pattern = keyword.regexPattern;
@@ -230,7 +251,8 @@
     } else {
         match.lv2 = VVMatchLV2_NonPrefix;
     }
-    match.lv3 = lv1 == VVMatchLV1_Origin ? VVMatchLV3_High : VVMatchLV3_Medium;
+    match.lv1 = VVMatchLV1_Origin;
+    match.lv3 = VVMatchLV3_High;
 
     NSMutableArray *ranges = [NSMutableArray arrayWithCapacity:results.count];
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
@@ -245,70 +267,54 @@
 
 - (VVResultMatch *)highlightUsingToken:(NSString *)source
                                cSource:(const char *)cSource
-                                   lv1:(VVMatchLV1)lv1
 {
-    NSArray *keywordTokens = self.kwTokens;
-    if (keywordTokens.count == 0) return nil;
-
+    if (self.kwTokens.count == 0) return nil;
     VVTokenMask mask = _mask & ~VVTokenMaskSyllable;
-    NSArray<VVToken *> *sourceTokens = [_enumerator enumerate:cSource mask:mask];
+    NSArray<VVToken *> *sourceTokens = [VVTokenSequelizeEnumerator enumerate:cSource mask:mask];
     if (sourceTokens.count == 0) return nil;
+    NSArray *folded = [VVSearchHighlighter fold:sourceTokens];
+    NSArray<NSDictionary<NSString *, VVToken *> *> *foldedTokens = folded.firstObject;
+    NSArray<NSSet<NSString *> *> *foldedWords = folded.lastObject;
 
-    NSMutableDictionary *originMap = [NSMutableDictionary dictionary];
-    NSMutableDictionary *colocatedMap = [NSMutableDictionary dictionary];
-    for (VVToken *token in sourceTokens) {
-        NSMutableDictionary *map = token.colocated ? colocatedMap : originMap;
-        NSMutableSet *set = map[token.token];
-        if (!set) {
-            set = [NSMutableSet set];
-            map[token.token] = set;
-        }
-        [set addObject:token];
-    }
-    NSMutableSet *kwtks = [NSMutableSet set];
-    for (VVToken *token in keywordTokens) {
-        [kwtks addObject:token.token];
-    }
-
+    int colocated = 0;
     NSMutableSet *matchedSet = [NSMutableSet set];
-    for (NSString *tk in kwtks) {
-        NSMutableSet *set = originMap[tk];
-        if (set) [matchedSet addObjectsFromArray:set.allObjects];
-    }
-    if (matchedSet.count == 0) {
-        for (NSString *tk in kwtks) {
-            NSMutableSet *set = colocatedMap[tk];
-            if (set) [matchedSet addObjectsFromArray:set.allObjects];
+    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
+    NSMutableArray *ranges = [NSMutableArray array];
+    for (NSUInteger i = 0; i < foldedWords.count; i++) {
+        NSUInteger j = 0;
+        NSUInteger k = i;
+        while (j < self.kwTokens.count && k < foldedWords.count) {
+            NSSet<NSString *> *kwset = self.kwTokens[j];
+            NSSet<NSString *> *set = foldedWords[k];
+            if ([set intersectsSet:kwset]) {
+                NSMutableSet<NSString *> *mset = [set mutableCopy];
+                [mset intersectSet:kwset];
+                NSDictionary *dic = foldedTokens[k];
+                VVToken *tk = dic[mset.anyObject];
+                if (colocated != tk.colocated) {
+                    colocated = colocated == 0 ? tk.colocated : 0xF;
+                }
+                j++; k++;
+            } else {
+                break;
+            }
+        }
+        if (j == self.kwTokens.count) {
+            NSRange range = NSMakeRange(i, j);
+            [attrText addAttributes:self.highlightAttributes range:range];
+            [ranges addObject:[NSValue valueWithRange:range]];
+            if (self.quantity > 0 && ranges.count > self.quantity) break;
         }
     }
-    if (matchedSet.count == 0) return nil;
-
-    NSArray *array = [VVToken sortedTokens:matchedSet.allObjects];
-
-    if (self.quantity > 0 && array.count > self.quantity) {
-        array = [array subarrayWithRange:NSMakeRange(0, self.quantity)];
-    }
-
+    if (ranges.count == 0) return nil;
+    NSRange first = [ranges.firstObject rangeValue];
     VVResultMatch *match = [[VVResultMatch alloc] init];
-    match.lv1 = lv1;
     match.source = source;
-
-    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
-    NSMutableArray *ranges = [NSMutableArray arrayWithCapacity:array.count];
-    for (VVToken *token in array) {
-        NSString *s1 = [[NSString alloc] initWithBytes:cSource length:token.start encoding:NSUTF8StringEncoding] ? : @"";
-        NSString *sk = [[NSString alloc] initWithBytes:cSource + token.start length:token.end - token.start encoding:NSUTF8StringEncoding] ? : @"";
-        NSRange range = NSMakeRange(s1.length, sk.length);
-        [attrText addAttributes:self.highlightAttributes range:range];
-        [ranges addObject:[NSValue valueWithRange:range]];
-    }
-
-    VVToken *first = array.firstObject;
-    match.attrText = attrText;
     match.ranges = ranges;
-    match.lv2 = first.start == 0 ? VVMatchLV2_Prefix : VVMatchLV2_NonPrefix;
-    match.lv3 = first.colocated ? VVMatchLV3_Low : VVMatchLV3_Medium;
-
+    match.attrText = attrText;
+    match.lv1 = colocated == 0 ? VVMatchLV1_Origin : colocated == 1 ? VVMatchLV1_Fulls : colocated == 2 ? VVMatchLV1_Firsts : VVMatchLV1_Mix;
+    match.lv2 = first.location == 0 ? VVMatchLV2_Prefix : VVMatchLV2_NonPrefix;
+    match.lv3 = colocated == 0 ? VVMatchLV3_High : colocated > 2 ? VVMatchLV3_Low : VVMatchLV3_Medium;
     return match;
 }
 

@@ -282,7 +282,7 @@ static int vv_fts5_xTokenize(
     NSArray *array = [clazz enumerate:pText mask:(VVTokenMask)mask];
 
     for (VVToken *tk in array) {
-        rc = xToken(pCtx, tk.colocated ? 1 : 0, tk.word, tk.len, tk.start, tk.end);
+        rc = xToken(pCtx, tk.colocated == 0 ? 0 : 1, tk.word, tk.len, tk.start, tk.end);
         if (rc != SQLITE_OK) break;
     }
 

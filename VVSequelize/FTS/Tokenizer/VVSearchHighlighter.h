@@ -20,6 +20,7 @@ typedef NS_ENUM (NSUInteger, VVMatchLV1) {
 
 typedef NS_ENUM (NSUInteger, VVMatchLV2) {
     VVMatchLV2_None = 0,
+    VVMatchLV1_Mix,
     VVMatchLV2_Other,
     VVMatchLV2_NonPrefix,
     VVMatchLV2_Prefix,
@@ -51,7 +52,7 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
 
 @interface VVSearchHighlighter : NSObject
 @property (nonatomic, copy) NSString *keyword;
-@property (nonatomic, assign) Class<VVTokenEnumerator> enumerator;    ///< default is VVTokenSequelizeEnumerator
+@property (nonatomic, assign) Class<VVTokenEnumerator> enumerator;    ///< default is VVTokenSequelizeEnumerator, not used yet.
 @property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDefault
 @property (nonatomic, assign) NSUInteger quantity;          ///< number of highlights, 0 means no limit
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
