@@ -350,12 +350,16 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     return [array componentsJoinedByString:@""];
 }
 
+- (NSString *)singleLine
+{
+    return [self stringByReplacingOccurrencesOfString:@"\\s| " withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, self.length)];
+}
+
 - (NSString *)matchingPattern
 {
     NSMutableString *string = [NSMutableString stringWithString:self.lowercaseString];
     CFStringTransform((__bridge CFMutableStringRef)string, NULL, kCFStringTransformFullwidthHalfwidth, false);
-    NSString *result = [string stringByReplacingOccurrencesOfString:@"\\s| " withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
-    return result;
+    return string.singleLine;
 }
 
 - (NSString *)regexPattern

@@ -169,13 +169,6 @@ typedef void (^VVDBRollbackHook)(void);
 /// @attention cache results.  clear cache after update/insert/delete/commit.
 - (NSArray *)query:(NSString *)sql clazz:(Class)clazz;
 
-/// execute native sql query
-/// @param sqls native sqls
-/// @param inTransaction use transaction or not
-/// @return query results
-/// @attention cache results.  clear cache after update/insert/delete/commit.
-- (NSArray<NSArray<NSDictionary *> *> *)query:(NSArray<NSString *> *)sqls inTransaction:(BOOL)inTransaction;
-
 /// check if table exists
 /// @param table name
 - (BOOL)isExist:(NSString *)table;

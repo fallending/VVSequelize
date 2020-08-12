@@ -10,7 +10,6 @@
 #import "NSString+Tokenizer.h"
 
 #define _VVMatchPinyinLen 30
-#define _VVMatchHLRange   256
 
 @interface VVResultMatch ()
 @property (nonatomic, assign) VVMatchLV1 lv1;
@@ -136,6 +135,7 @@
 {
     _enumerator = VVTokenSequelizeEnumerator.class;
     _mask = VVTokenMaskDefault;
+    _useSingleLine = YES;
 }
 
 - (void)setMask:(VVTokenMask)mask
@@ -198,9 +198,8 @@
     match.source = source;
     if (source.length == 0 || self.keyword.length == 0) return match;
 
-    NSString *keyword = _keyword.lowercaseString.simplifiedChineseString;
-    NSString *temp = source.length > _VVMatchHLRange ? [source substringToIndex:_VVMatchHLRange] : source;
-    NSString *comparison = temp.matchingPattern.simplifiedChineseString;
+    NSString *keyword = _keyword.matchingPattern.simplifiedChineseString;
+    NSString *comparison = source.matchingPattern.simplifiedChineseString;
 
     const char *cSource = comparison.cLangString;
     long nText = (long)strlen(cSource);
@@ -255,7 +254,8 @@
     match.lv3 = VVMatchLV3_High;
 
     NSMutableArray *ranges = [NSMutableArray arrayWithCapacity:results.count];
-    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
+    NSString *text = self.useSingleLine ? source.singleLine : source;
+    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text attributes:self.normalAttributes];
     for (NSTextCheckingResult *result in results) {
         [ranges addObject:[NSValue valueWithRange:result.range]];
         [attrText addAttributes:self.highlightAttributes range:result.range];
@@ -278,7 +278,8 @@
 
     int colocated = 0;
     NSMutableSet *matchedSet = [NSMutableSet set];
-    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:source attributes:self.normalAttributes];
+    NSString *text = self.useSingleLine ? source.singleLine : source;
+    NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text attributes:self.normalAttributes];
     NSMutableArray *ranges = [NSMutableArray array];
     for (NSUInteger i = 0; i < foldedWords.count; i++) {
         NSUInteger j = 0;

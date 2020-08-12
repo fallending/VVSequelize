@@ -52,11 +52,12 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
 
 @interface VVSearchHighlighter : NSObject
 @property (nonatomic, copy) NSString *keyword;
-@property (nonatomic, assign) Class<VVTokenEnumerator> enumerator;    ///< default is VVTokenSequelizeEnumerator, not used yet.
-@property (nonatomic, assign) VVTokenMask mask;             ///< default is VVTokenMaskDefault
-@property (nonatomic, assign) NSUInteger quantity;          ///< number of highlights, 0 means no limit
+@property (nonatomic, assign) VVTokenMask mask;     ///< default is VVTokenMaskDefault
+@property (nonatomic, assign) NSUInteger quantity;  ///< number of highlights, 0 means no limit
+@property (nonatomic, assign) BOOL useSingleLine;   ///< use single line attribute text or not. default is YES
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *normalAttributes;
+@property (nonatomic, assign) Class<VVTokenEnumerator> enumerator; ///< default is VVTokenSequelizeEnumerator, not used yet.
 @property (nonatomic, strong) id reserved;
 
 - (instancetype)initWithKeyword:(NSString *)keyword;

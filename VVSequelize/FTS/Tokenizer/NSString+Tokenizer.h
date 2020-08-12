@@ -71,6 +71,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// clean string after removing special characters
 - (NSString *)cleanString;
 
+/// convert white space characters (\t \n \f \r \p{Z}) to whtie space
+- (NSString *)singleLine;
+
 /// string use to match
 - (NSString *)matchingPattern;
 
