@@ -80,6 +80,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// regular expression of keyword
 - (NSString *)regexPattern;
 
+/// transform special characters for fts5 search
+- (NSString *)fts5KeywordPattern;
+
 /// pinyin segmentation
 - (NSArray<NSString *> *)pinyinSegmentation;
 

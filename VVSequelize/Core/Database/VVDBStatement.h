@@ -51,10 +51,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (id)scalar:(nullable NSArray *)values;
 
-/// excute sqlite3_stmt
+/// execute sqlite3_stmt
 - (BOOL)run;
 
-/// excute sqlite3_stmt query
+/// execute sqlite3_stmt query
 - (nullable NSArray<NSDictionary *> *)query;
 
 /// execute sqlite3_step()

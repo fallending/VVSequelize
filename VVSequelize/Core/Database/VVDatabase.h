@@ -90,6 +90,9 @@ typedef void (^VVDBRollbackHook)(void);
 ///
 @property (nonatomic, strong) NSArray<NSString *> *normalOptions;
 
+/// remove file when SQLITE_NOTADB, default is NO
+@property (nonatomic, assign) BOOL removeWhenNotADB;
+
 ///serial write queue
 @property (nonatomic, strong, readonly) dispatch_queue_t writeQueue;
 
@@ -147,7 +150,7 @@ typedef void (^VVDBRollbackHook)(void);
 
 /// use sqlite3_exec() execute native sql statement
 /// @param sql native sql
-- (BOOL)excute:(NSString *)sql;
+- (BOOL)execute:(NSString *)sql;
 
 // MARK: - Prepare
 - (VVDBStatement *)prepare:(NSString *)sql;

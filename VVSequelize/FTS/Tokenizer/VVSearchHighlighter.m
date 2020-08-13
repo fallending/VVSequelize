@@ -63,32 +63,68 @@
 @end
 
 @interface VVSearchHighlighter ()
-@property (nonatomic, strong) NSArray<NSSet<NSString *> *> *kwTokens;
+@property (nonatomic, strong) NSArray<NSArray<NSSet<NSString *> *> *> *kwTokens;
 @end
 
 @implementation VVSearchHighlighter
 
-+ (NSArray *)fold:(NSArray<VVToken *> *)tokens
++ (NSArray *)arrangeTokens:(const char *)text mask:(VVTokenMask)mask
 {
-    NSMutableArray *foldedTokens = [NSMutableArray array];
-    NSMutableArray *foldWords = [NSMutableArray array];
-    NSMutableDictionary *tokenMap = [NSMutableDictionary dictionary];
-    NSMutableSet *words = [NSMutableSet set];
-    VVToken *last = nil;
-    for (VVToken *tk in tokens) {
-        if (last != nil && tk.start != last.start) {
-            [foldedTokens addObject:tokenMap];
-            [foldWords addObject:words];
-            tokenMap = [NSMutableDictionary dictionary];
-            words = [NSMutableSet set];
-        }
-        tokenMap[tk.token] = tk;
-        [words addObject:tk.token];
-        last = tk;
+    static NSCache *_cache;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _cache = [[NSCache alloc] init];
+        _cache.countLimit = 1024;
+    });
+    NSString *key = [NSString stringWithFormat:@"0x%lX-%s", (unsigned long)mask, text];
+    NSArray *results = [_cache objectForKey:key];
+    if (!results) {
+        NSArray<VVToken *> *tokens = [VVTokenSequelizeEnumerator enumerate:text mask:mask];
+        results = [self arrange:tokens];
+        [_cache setObject:results forKey:key];
     }
-    [foldedTokens addObject:tokenMap];
-    [foldWords addObject:words];
-    return @[foldedTokens, foldWords];
+    return results;
+}
+
++ (NSArray *)arrange:(NSArray<VVToken *> *)tokens
+{
+    NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+    NSMutableArray *syllables = [NSMutableArray array];
+    for (VVToken *tk in tokens) {
+        if (tk.colocated < 3) {
+            NSMutableSet *set = dic[@(tk.start)];
+            if (!set) set = [NSMutableSet set];
+            [set addObject:tk];
+            dic[@(tk.start)] = set;
+        } else {
+            [syllables addObject:[NSSet setWithObject:tk]];
+        }
+    }
+    NSArray *array = dic.allValues;
+    NSArray *origins = [array sortedArrayUsingComparator:^NSComparisonResult (NSSet<VVToken *> *s1, NSSet<VVToken *> *s2) {
+        return s1.anyObject.start < s2.anyObject.start ? NSOrderedAscending : NSOrderedDescending;
+    }];
+
+    NSArray *arrangedArrays = @[origins, syllables];
+    NSMutableArray *arrangedWords = [NSMutableArray arrayWithCapacity:arrangedArrays.count];
+    NSMutableArray *arrangedTokens = [NSMutableArray arrayWithCapacity:arrangedArrays.count];
+    for (NSArray *tkSets in arrangedArrays) {
+        NSMutableArray *words = [NSMutableArray arrayWithCapacity:tkSets.count];
+        NSMutableArray *dics = [NSMutableArray arrayWithCapacity:tkSets.count];
+        for (NSSet<VVToken *> *subTokens in tkSets) {
+            NSMutableSet *subWords = [NSMutableSet setWithCapacity:subTokens.count];
+            NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:subTokens.count];
+            for (VVToken *tk in subTokens) {
+                [subWords addObject:tk.token];
+                dic[tk.token] = tk;
+            }
+            [words addObject:subWords];
+            [dics addObject:dic];
+        }
+        [arrangedWords addObject:words];
+        [arrangedTokens addObject:dics];
+    }
+    return @[arrangedTokens, arrangedWords];
 }
 
 - (instancetype)init
@@ -131,31 +167,39 @@
     return self;
 }
 
-- (void)setup
-{
+- (void)setup {
     _enumerator = VVTokenSequelizeEnumerator.class;
     _mask = VVTokenMaskDefault;
     _useSingleLine = YES;
 }
 
+- (void)setFuzzy:(BOOL)fuzzy
+{
+    _fuzzy = fuzzy;
+    _kwTokens = nil;
+}
+
 - (void)setMask:(VVTokenMask)mask
 {
     _mask = mask;
-    [self refreshKeywordTokens];
+    _kwTokens = nil;
 }
 
 - (void)setKeyword:(NSString *)keyword
 {
     _keyword = [keyword stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    [self refreshKeywordTokens];
+    _kwTokens = nil;
 }
 
-- (void)refreshKeywordTokens
+- (NSArray<NSArray<NSSet<NSString *> *> *> *)kwTokens
 {
-    if (_keyword.length == 0) return;
-    VVTokenMask mask = _mask | VVTokenMaskSyllable;
-    NSArray<VVToken *> *tokens = [VVTokenSequelizeEnumerator enumerate:_keyword.UTF8String mask:mask];
-    _kwTokens = [VVSearchHighlighter fold:tokens].lastObject;
+    if (_kwTokens) return _kwTokens;
+    if (_keyword.length == 0) return @[];
+    VVTokenMask mask = (_mask | VVTokenMaskSyllable) & ~VVTokenMaskAbbreviation;
+    if (_fuzzy) mask = mask | VVTokenMaskPinyin;
+    else mask = mask & ~VVTokenMaskPinyin;
+    _kwTokens = [VVSearchHighlighter arrangeTokens:_keyword.UTF8String mask:mask].lastObject;
+    return _kwTokens;
 }
 
 - (NSDictionary<NSAttributedStringKey, id> *)normalAttributes {
@@ -268,44 +312,50 @@
 - (VVResultMatch *)highlightUsingToken:(NSString *)source
                                cSource:(const char *)cSource
 {
-    if (self.kwTokens.count == 0) return nil;
+    if (self.kwTokens.firstObject.count == 0 && self.kwTokens.lastObject.count == 0) return nil;
     VVTokenMask mask = _mask & ~VVTokenMaskSyllable;
-    NSArray<VVToken *> *sourceTokens = [VVTokenSequelizeEnumerator enumerate:cSource mask:mask];
-    if (sourceTokens.count == 0) return nil;
-    NSArray *folded = [VVSearchHighlighter fold:sourceTokens];
-    NSArray<NSDictionary<NSString *, VVToken *> *> *foldedTokens = folded.firstObject;
-    NSArray<NSSet<NSString *> *> *foldedWords = folded.lastObject;
+    NSArray *arranged = [VVSearchHighlighter arrangeTokens:cSource mask:mask];
+    NSArray<NSArray<NSDictionary<NSString *, VVToken *> *> *> *arrangedTokens = arranged.firstObject;
+    NSArray<NSArray<NSSet<NSString *> *> *> *arrangedWords = arranged.lastObject;
+    if (arrangedTokens.count == 0 && arrangedWords.count == 0) return nil;
 
     int colocated = 0;
-    NSMutableSet *matchedSet = [NSMutableSet set];
     NSString *text = self.useSingleLine ? source.singleLine : source;
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text attributes:self.normalAttributes];
     NSMutableArray *ranges = [NSMutableArray array];
-    for (NSUInteger i = 0; i < foldedWords.count; i++) {
-        NSUInteger j = 0;
-        NSUInteger k = i;
-        while (j < self.kwTokens.count && k < foldedWords.count) {
-            NSSet<NSString *> *kwset = self.kwTokens[j];
-            NSSet<NSString *> *set = foldedWords[k];
-            if ([set intersectsSet:kwset]) {
-                NSMutableSet<NSString *> *mset = [set mutableCopy];
-                [mset intersectSet:kwset];
-                NSDictionary *dic = foldedTokens[k];
-                VVToken *tk = dic[mset.anyObject];
-                if (colocated != tk.colocated) {
-                    colocated = colocated == 0 ? tk.colocated : 0xF;
+    for (int c = 0; c < 4; c++) {
+        int sc = c & 0x1;
+        int kc = (c & 0x2) >> 1;
+        NSArray<NSSet<NSString *> *> *groupWords = arrangedWords[sc];
+        NSArray<NSSet<NSString *> *> *kwGroupWords = self.kwTokens[kc];
+        for (NSUInteger i = 0; i < groupWords.count; i++) {
+            NSUInteger j = 0;
+            NSUInteger k = i;
+            while (j < kwGroupWords.count && k < groupWords.count) {
+                NSSet<NSString *> *set = groupWords[k];
+                NSSet<NSString *> *kwset = kwGroupWords[j];
+                if ([set intersectsSet:kwset]) {
+                    NSMutableSet<NSString *> *mset = [set mutableCopy];
+                    [mset intersectSet:kwset];
+                    NSDictionary *dic = arrangedTokens[sc][k];
+                    VVToken *tk = dic[mset.anyObject];
+                    if (colocated != tk.colocated) {
+                        colocated = colocated == 0 ? tk.colocated : 0xF;
+                    }
+                    j++;
+                    k++;
+                } else {
+                    break;
                 }
-                j++; k++;
-            } else {
-                break;
+            }
+            if (j > 0 && j == kwGroupWords.count) {
+                NSRange range = NSMakeRange(i, j);
+                [attrText addAttributes:self.highlightAttributes range:range];
+                [ranges addObject:[NSValue valueWithRange:range]];
+                if (self.quantity > 0 && ranges.count > self.quantity) break;
             }
         }
-        if (j == self.kwTokens.count) {
-            NSRange range = NSMakeRange(i, j);
-            [attrText addAttributes:self.highlightAttributes range:range];
-            [ranges addObject:[NSValue valueWithRange:range]];
-            if (self.quantity > 0 && ranges.count > self.quantity) break;
-        }
+        if (ranges.count > 0) break;
     }
     if (ranges.count == 0) return nil;
     NSRange first = [ranges.firstObject rangeValue];

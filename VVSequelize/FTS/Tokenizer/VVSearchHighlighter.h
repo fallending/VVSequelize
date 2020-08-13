@@ -54,6 +54,7 @@ typedef NS_ENUM (NSUInteger, VVMatchLV3) {
 @property (nonatomic, copy) NSString *keyword;
 @property (nonatomic, assign) VVTokenMask mask;     ///< default is VVTokenMaskDefault
 @property (nonatomic, assign) NSUInteger quantity;  ///< number of highlights, 0 means no limit
+@property (nonatomic, assign) BOOL fuzzy;           ///< search after converting chinese to pinyin. default is NO
 @property (nonatomic, assign) BOOL useSingleLine;   ///< use single line attribute text or not. default is YES
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *highlightAttributes;
 @property (nonatomic, strong) NSDictionary<NSAttributedStringKey, id> *normalAttributes;

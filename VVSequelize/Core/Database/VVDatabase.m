@@ -113,6 +113,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 //MARK: - open and close
 - (BOOL)open
 {
+    if (_db) return YES;
     int rc = sqlite3_open_v2(self.path.UTF8String, &_db, self.flags, NULL);
     BOOL ret = [self check:rc sql:@"sqlite3_open_v2()"];
     NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
@@ -120,12 +121,12 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     if (self.encryptKey.length > 0) {
         [self key:self.encryptKey db:nil];
         for (NSString *option in self.cipherOptions) {
-            [self excute:option];
+            [self execute:option];
         }
     }
 #endif
     for (NSString *option in self.normalOptions) {
-        [self excute:option];
+        [self execute:option];
     }
 
     // hook
@@ -146,9 +147,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 //MARK: - lazy loading
 - (sqlite3 *)db
 {
-    if (!_db) {
-        [self open];
-    }
+    [self open];
     return _db;
 }
 
@@ -249,7 +248,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 }
 
 // MARK: - Execute
-- (BOOL)excute:(NSString *)sql
+- (BOOL)execute:(NSString *)sql
 {
     int rc = sqlite3_exec(self.db, sql.UTF8String, nil, nil, nil);
     return [self check:rc sql:sql];
@@ -279,25 +278,9 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     return [clazz vv_objectsWithKeyValuesArray:array];
 }
 
-- (NSArray<NSArray<NSDictionary *> *> *)query:(NSArray<NSString *> *)sqls inTransaction:(BOOL)inTransaction
-{
-    if (inTransaction) {
-        [self begin:VVDBTransactionImmediate];
-    }
-    NSMutableArray *results = [NSMutableArray arrayWithCapacity:sqls.count];
-    for (NSString *sql in sqls) {
-        NSArray *sub = [[self prepare:sql] query];
-        [results addObject:(sub ? : @[])];
-    }
-    if (inTransaction) {
-        [self commit];
-    }
-    return results;
-}
-
 - (BOOL)isExist:(NSString *)table
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = %@", table.quoted];
+    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = %@", table.singleQuoted];
     return [[self scalar:sql bind:nil] boolValue];
 }
 
@@ -474,6 +457,10 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
             const char *errmsg = sqlite3_errmsg(self.db);
             printf("[VVDB][Error] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
 #endif
+            if (resultCode == SQLITE_NOTADB && _removeWhenNotADB) {
+                [self close];
+                [[NSFileManager defaultManager] removeItemAtPath:self.path error:nil];
+            }
             return NO;
         }
     }

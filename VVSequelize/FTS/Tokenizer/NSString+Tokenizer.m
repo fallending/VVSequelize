@@ -158,7 +158,8 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     return _symbolSet;
 }
 
-- (NSDictionary *)syllables {
+- (NSDictionary *)syllables
+{
     if (!_syllables) {
         NSString *path = [[self class] pathWithResource:kVVPinYinSyllablesFile];
         NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
@@ -376,6 +377,30 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     return result.copy;
 }
 
+- (NSString *)fts5KeywordPattern
+{
+    NSMutableString *result = [NSMutableString stringWithCapacity:self.length];
+    for (NSUInteger i = 0; i < self.length; i++) {
+        unichar ch = [self characterAtIndex:i];
+        if (ch >= 0x21 && ch <= 0x7E) {
+            ch += 0xFEE0;
+        } else {
+            switch (ch) {
+                case 0xa2: ch = 0xFFE0; break;
+                case 0xa3: ch = 0xFFE1; break;
+                case 0xac: ch = 0xFFE2; break;
+                case 0xaf: ch = 0xFFE3; break;
+                case 0xa6: ch = 0xFFE4; break;
+                case 0xa5: ch = 0xFFE5; break;
+                default: break;
+            }
+        }
+        NSString *s = [NSString stringWithCharacters:&ch length:1];
+        [result appendString:s];
+    }
+    return result.copy;
+}
+
 //MARK: - pinyin
 - (NSArray<NSString *> *)pinyinSegmentation
 {
@@ -454,6 +479,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
             *stop = YES;
         }
     }];
+    if (first.location == NSNotFound) return self;
 
     NSMutableAttributedString *attrText = [self mutableCopy];
     NSUInteger lower = first.location;
@@ -462,7 +488,8 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     if (upper > maxLen && lower > 2) {
         NSInteger rlen = (2 + len > maxLen) ? (lower - 2) : (upper - maxLen);
         unichar ch = [attrText.string characterAtIndex:rlen - 1];
-        if (0xd800 <= ch && ch <= 0xdbff) rlen++; //emoji
+        unichar ce = [attrText.string characterAtIndex:rlen];
+        if ((0xd800 <= ch && ch <= 0xdbff) || ce == 0xfe0f) rlen++; //emoji
         [attrText deleteCharactersInRange:NSMakeRange(0, rlen)];
         NSAttributedString *ellipsis = [[NSAttributedString alloc] initWithString:@"..."];
         [attrText insertAttributedString:ellipsis atIndex:0];

@@ -116,7 +116,7 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
 
 - (NSUInteger)hash
 {
-    return _token.hash ^ @(_start).hash ^ @(_len).hash ^ @(_end).hash;
+    return self.token.hash ^ @(_start).hash ^ @(_len).hash ^ @(_end).hash;
 }
 
 - (NSString *)description
@@ -253,10 +253,11 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
             NSString *tkString = pinyins[i];
             int len = (int)tkString.length;
             VVToken *token = [VVToken token:tkString.UTF8String len:len start:start end:start + len];
+            token.colocated = 3;
             [results addObject:token];
             start += len;
         }
-        if (results.count > 0) return results;
+        //if (results.count > 0) return results;
     }
 
     BOOL usetrans = mask & VVTokenMaskTransform;
@@ -290,7 +291,7 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
         if (length == 3 && word[0] == 0xEF) {
             unichar uni = ((unichar)(word[0] & 0xF) << 12) | ((unichar)(word[1] & 0x3F) << 6) | (unichar)(word[2] & 0x3F);
             if (uni >= 0xFF01 && uni <= 0xFF5E) {
-                word[0] = uni - 0xFF01 + 0x21;
+                word[0] = uni - 0xFEE0;
                 word[1] = '\0';
                 wordlen = 1;
             } else if (uni >= 0xFFE0 && uni <= 0xFFE5) {
