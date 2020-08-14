@@ -237,7 +237,7 @@
     // execute create sql
     BOOL ret = [self.vvdb run:sql];
     VV_NO_WARNING(ret);
-    NSAssert1(ret, @"Failure to create a table: %@", _name);
+    //NSAssert1(ret, @"Failure to create a table: %@", _name);
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName
@@ -245,7 +245,7 @@
     NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _name.quoted, tempTableName.quoted];
     BOOL ret = [self.vvdb run:sql];
     VV_NO_WARNING(ret);
-    NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
+    //NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
 }
 
 //MARK: - Private

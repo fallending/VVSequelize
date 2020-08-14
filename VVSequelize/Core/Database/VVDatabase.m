@@ -250,7 +250,10 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 // MARK: - Execute
 - (BOOL)execute:(NSString *)sql
 {
-    int rc = sqlite3_exec(self.db, sql.UTF8String, nil, nil, nil);
+    __block int rc = 0;
+    [self sync:^{
+        rc = sqlite3_exec(self.db, sql.UTF8String, nil, nil, nil);
+    }];
     return [self check:rc sql:sql];
 }
 
