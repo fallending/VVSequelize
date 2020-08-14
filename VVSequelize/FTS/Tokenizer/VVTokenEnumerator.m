@@ -296,16 +296,17 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
                 wordlen = 1;
             } else if (uni >= 0xFFE0 && uni <= 0xFFE5) {
                 switch (uni) {
-                    case 0xFFE0: word[0] = 0xa2; break;
-                    case 0xFFE1: word[0] = 0xa3; break;
-                    case 0xFFE2: word[0] = 0xac; break;
-                    case 0xFFE3: word[0] = 0xaf; break;
-                    case 0xFFE4: word[0] = 0xa6; break;
-                    case 0xFFE5: word[0] = 0xa5; break;
+                    case 0xFFE0: word[1] = 0xa2; break;
+                    case 0xFFE1: word[1] = 0xa3; break;
+                    case 0xFFE2: word[1] = 0xac; break;
+                    case 0xFFE3: word[1] = 0xaf; break;
+                    case 0xFFE4: word[1] = 0xa6; break;
+                    case 0xFFE5: word[1] = 0xa5; break;
                     default: break;
                 }
-                word[1] = '\0';
-                wordlen = 1;
+                word[0] = 0xc2;
+                word[2] = '\0';
+                wordlen = 2;
             } else if (uni == 0x3000) {
                 word[0] = 0x20;
                 word[1] = '\0';
