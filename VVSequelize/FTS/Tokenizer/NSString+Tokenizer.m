@@ -402,9 +402,68 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 }
 
 //MARK: - pinyin
-- (NSArray<NSString *> *)pinyinSegmentation
+- (NSArray<NSString *> *)fastPinyinSegmentation
 {
     return [VVPinYinSegmentor segment:self];
+}
+
+//MARK: all pinyin segmentation
+
+- (NSArray<NSArray<NSString *> *> *)pinyinSegmentation
+{
+    return [self.lowercaseString _pinyinSegmentation];
+}
+
+- (NSArray<NSArray<NSString *> *> *)_pinyinSegmentation
+{
+    NSMutableArray<NSArray<NSString *> *> *results = [NSMutableArray array];
+    @autoreleasepool {
+        NSArray<NSString *> *array = [self legalFirstPinyins];
+        if (array.count == 0) return @[];
+        for (NSString *first in array) {
+            if (first.length == self.length) {
+                [results addObject:@[self]];
+                continue;
+            }
+            NSString *tail = [self substringFromIndex:first.length];
+            NSArray<NSArray<NSString *> *> *components = [tail _pinyinSegmentation];
+            for (NSArray<NSString *> *pinyins in components) {
+                NSArray<NSString *> *result = [@[first] arrayByAddingObjectsFromArray:pinyins];
+                [results addObject:result];
+            }
+        }
+    }
+    return results;
+}
+
+- (NSArray<NSString *> *)legalFirstPinyins
+{
+    const char *str = self.cLangString;
+    u_long length = strlen(str);
+    if (length <= 0) return @[];
+
+    NSString *firstLetter = [self substringToIndex:1];
+    NSArray *array = [[VVPinYin shared].pinyins objectForKey:firstLetter];
+
+    NSMutableArray *results = [NSMutableArray array];
+    for (NSString *pinyin in array) {
+        const char *py = pinyin.cLangString;
+        u_long len = strlen(py);
+        if (len <= length && strncmp(py, str, len) == 0) {
+            [results addObject:pinyin];
+        }
+    }
+    if (results.count == 0) {
+        for (NSString *pinyin in array) {
+            const char *py = pinyin.cLangString;
+            u_long len = strlen(py);
+            if (len > length && strncmp(py, str, length) == 0) {
+                [results addObject:self];
+                break;
+            }
+        }
+    }
+    return results;
 }
 
 @end

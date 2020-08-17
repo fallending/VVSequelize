@@ -247,17 +247,19 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:nText];
     if ((mask & VVTokenMaskSyllable) && buff[0] < 0xC0) {
         NSString *source = [NSString stringWithUTF8String:cSource];
-        NSArray<NSString *> *pinyins = source.pinyinSegmentation;
+        NSArray<NSArray<NSString *> *> *allPinyins = source.pinyinSegmentation;
         int start = 0;
-        for (NSUInteger i = 0; i < pinyins.count; i++) {
-            NSString *tkString = pinyins[i];
-            int len = (int)tkString.length;
-            VVToken *token = [VVToken token:tkString.UTF8String len:len start:start end:start + len];
-            token.colocated = 3;
-            [results addObject:token];
-            start += len;
+        for (int n = 0; n < allPinyins.count; n++) {
+            NSArray<NSString *> *pinyins = allPinyins[n];
+            for (NSUInteger i = 0; i < pinyins.count; i++) {
+                NSString *tkString = pinyins[i];
+                int len = (int)tkString.length;
+                VVToken *token = [VVToken token:tkString.UTF8String len:len start:start end:start + len];
+                token.colocated = n + 3;
+                [results addObject:token];
+                start += len;
+            }
         }
-        //if (results.count > 0) return results;
     }
 
     BOOL usetrans = mask & VVTokenMaskTransform;

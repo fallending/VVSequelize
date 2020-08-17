@@ -12,7 +12,6 @@
 	</array>
 	<key>b</key>
 	<array>
-		<string>b</string>
 		<string>ba</string>
 		<string>bai</string>
 		<string>ban</string>
@@ -32,8 +31,6 @@
 	</array>
 	<key>c</key>
 	<array>
-		<string>c</string>
-		<string>ch</string>
 		<string>ca</string>
 		<string>cai</string>
 		<string>can</string>
@@ -73,7 +70,6 @@
 	</array>
 	<key>d</key>
 	<array>
-		<string>d</string>
 		<string>da</string>
 		<string>dai</string>
 		<string>dan</string>
@@ -108,7 +104,6 @@
 	</array>
 	<key>f</key>
 	<array>
-		<string>f</string>
 		<string>fa</string>
 		<string>fan</string>
 		<string>fang</string>
@@ -121,7 +116,6 @@
 	</array>
 	<key>g</key>
 	<array>
-		<string>g</string>
 		<string>ga</string>
 		<string>gai</string>
 		<string>gan</string>
@@ -144,7 +138,6 @@
 	</array>
 	<key>h</key>
 	<array>
-		<string>h</string>
 		<string>ha</string>
 		<string>hai</string>
 		<string>han</string>
@@ -167,7 +160,6 @@
 	</array>
 	<key>j</key>
 	<array>
-		<string>j</string>
 		<string>ji</string>
 		<string>jia</string>
 		<string>jian</string>
@@ -185,7 +177,6 @@
 	</array>
 	<key>k</key>
 	<array>
-		<string>k</string>
 		<string>ka</string>
 		<string>kai</string>
 		<string>kan</string>
@@ -207,7 +198,6 @@
 	</array>
 	<key>l</key>
 	<array>
-		<string>l</string>
 		<string>la</string>
 		<string>lai</string>
 		<string>lan</string>
@@ -236,7 +226,6 @@
 	</array>
 	<key>m</key>
 	<array>
-		<string>m</string>
 		<string>ma</string>
 		<string>mai</string>
 		<string>man</string>
@@ -259,7 +248,6 @@
 	</array>
 	<key>n</key>
 	<array>
-		<string>n</string>
 		<string>na</string>
 		<string>nai</string>
 		<string>nan</string>
@@ -293,7 +281,6 @@
 	</array>
 	<key>p</key>
 	<array>
-		<string>p</string>
 		<string>pa</string>
 		<string>pai</string>
 		<string>pan</string>
@@ -314,7 +301,6 @@
 	</array>
 	<key>q</key>
 	<array>
-		<string>q</string>
 		<string>qi</string>
 		<string>qia</string>
 		<string>qian</string>
@@ -332,7 +318,6 @@
 	</array>
 	<key>r</key>
 	<array>
-		<string>r</string>
 		<string>ran</string>
 		<string>rang</string>
 		<string>rao</string>
@@ -350,8 +335,6 @@
 	</array>
 	<key>s</key>
 	<array>
-		<string>s</string>
-		<string>sh</string>
 		<string>sa</string>
 		<string>sai</string>
 		<string>san</string>
@@ -390,7 +373,6 @@
 	</array>
 	<key>t</key>
 	<array>
-		<string>t</string>
 		<string>ta</string>
 		<string>tai</string>
 		<string>tan</string>
@@ -413,7 +395,6 @@
 	</array>
 	<key>w</key>
 	<array>
-		<string>w</string>
 		<string>wa</string>
 		<string>wai</string>
 		<string>wan</string>
@@ -426,7 +407,6 @@
 	</array>
 	<key>x</key>
 	<array>
-		<string>x</string>
 		<string>xi</string>
 		<string>xia</string>
 		<string>xian</string>
@@ -444,7 +424,6 @@
 	</array>
 	<key>y</key>
 	<array>
-		<string>y</string>
 		<string>ya</string>
 		<string>yan</string>
 		<string>yang</string>
@@ -463,8 +442,6 @@
 	</array>
 	<key>z</key>
 	<array>
-		<string>z</string>
-		<string>zh</string>
 		<string>za</string>
 		<string>zai</string>
 		<string>zan</string>

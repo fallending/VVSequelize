@@ -83,8 +83,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// transform special characters for fts5 search
 - (NSString *)fts5KeywordPattern;
 
-/// pinyin segmentation
-- (NSArray<NSString *> *)pinyinSegmentation;
+/// fast pinyin segmentation
+- (NSArray<NSString *> *)fastPinyinSegmentation;
+
+/// all pinyin segmentation
+- (NSArray<NSArray<NSString *> *> *)pinyinSegmentation;
 
 @end
 

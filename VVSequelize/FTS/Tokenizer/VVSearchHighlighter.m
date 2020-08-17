@@ -88,42 +88,57 @@
 
 + (NSArray *)arrange:(NSArray<VVToken *> *)tokens
 {
-    NSMutableDictionary *dic = [NSMutableDictionary dictionary];
-    NSMutableArray *syllables = [NSMutableArray array];
+    NSMutableDictionary *commons = [NSMutableDictionary dictionary];
+    NSMutableDictionary *syllables = [NSMutableDictionary dictionary];
     for (VVToken *tk in tokens) {
         if (tk.colocated < 3) {
-            NSMutableSet *set = dic[@(tk.start)];
+            NSMutableSet *set = commons[@(tk.start)];
             if (!set) set = [NSMutableSet set];
             [set addObject:tk];
-            dic[@(tk.start)] = set;
+            commons[@(tk.start)] = set;
         } else {
-            [syllables addObject:[NSSet setWithObject:tk]];
+            NSMutableSet *set = syllables[@(tk.colocated)];
+            if (!set) set = [NSMutableSet set];
+            [set addObject:tk];
+            syllables[@(tk.colocated)] = set;
         }
     }
-    NSArray *array = dic.allValues;
-    NSArray *origins = [array sortedArrayUsingComparator:^NSComparisonResult (NSSet<VVToken *> *s1, NSSet<VVToken *> *s2) {
+
+    NSMutableArray *arrangedWords = [NSMutableArray array];
+    NSMutableArray *arrangedTokens = [NSMutableArray array];
+
+    // commons
+    NSArray *commonSorted = [commons.allValues sortedArrayUsingComparator:^NSComparisonResult (NSSet<VVToken *> *s1, NSSet<VVToken *> *s2) {
         return s1.anyObject.start < s2.anyObject.start ? NSOrderedAscending : NSOrderedDescending;
     }];
-
-    NSArray *arrangedArrays = @[origins, syllables];
-    NSMutableArray *arrangedWords = [NSMutableArray arrayWithCapacity:arrangedArrays.count];
-    NSMutableArray *arrangedTokens = [NSMutableArray arrayWithCapacity:arrangedArrays.count];
-    for (NSArray *tkSets in arrangedArrays) {
-        NSMutableArray *words = [NSMutableArray arrayWithCapacity:tkSets.count];
-        NSMutableArray *dics = [NSMutableArray arrayWithCapacity:tkSets.count];
-        for (NSSet<VVToken *> *subTokens in tkSets) {
-            NSMutableSet *subWords = [NSMutableSet setWithCapacity:subTokens.count];
-            NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:subTokens.count];
-            for (VVToken *tk in subTokens) {
-                [subWords addObject:tk.token];
-                dic[tk.token] = tk;
-            }
-            [words addObject:subWords];
-            [dics addObject:dic];
+    NSMutableArray *commonWords = [NSMutableArray arrayWithCapacity:commonSorted.count];
+    NSMutableArray *commonTokens = [NSMutableArray arrayWithCapacity:commonSorted.count];
+    for (NSSet<VVToken *> *subTokens in commonSorted) {
+        NSMutableSet *subWords = [NSMutableSet setWithCapacity:subTokens.count];
+        NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:subTokens.count];
+        for (VVToken *tk in subTokens) {
+            [subWords addObject:tk.token];
+            dic[tk.token] = tk;
         }
-        [arrangedWords addObject:words];
-        [arrangedTokens addObject:dics];
+        [commonWords addObject:subWords];
+        [commonTokens addObject:dic];
     }
+    [arrangedWords addObject:commonWords];
+    [arrangedTokens addObject:commonTokens];
+
+    //syllables
+    for (NSSet<VVToken *> *subTokens in syllables.allValues) {
+        NSMutableArray *syllableWords = [NSMutableArray arrayWithCapacity:subTokens.count];
+        NSMutableArray *syllableTokens = [NSMutableArray arrayWithCapacity:subTokens.count];
+        NSArray *subSorted = [VVToken sortedTokens:subTokens.allObjects];
+        for (VVToken *tk in subSorted) {
+            [syllableWords addObject:[NSSet setWithObject:tk.token]];
+            [syllableTokens addObject:@{ tk.token: tk }];
+        }
+        [arrangedWords addObject:syllableWords];
+        [arrangedTokens addObject:syllableTokens];
+    }
+
     return @[arrangedTokens, arrangedWords];
 }
 
@@ -323,39 +338,53 @@
     NSString *text = self.useSingleLine ? source.singleLine : source;
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text attributes:self.normalAttributes];
     NSMutableArray *ranges = [NSMutableArray array];
-    for (int c = 0; c < 4; c++) {
-        int sc = c & 0x1;
-        int kc = (c & 0x2) >> 1;
-        NSArray<NSSet<NSString *> *> *groupWords = arrangedWords[sc];
-        NSArray<NSSet<NSString *> *> *kwGroupWords = self.kwTokens[kc];
-        for (NSUInteger i = 0; i < groupWords.count; i++) {
-            NSUInteger j = 0;
-            NSUInteger k = i;
-            while (j < kwGroupWords.count && k < groupWords.count) {
-                NSSet<NSString *> *set = groupWords[k];
-                NSSet<NSString *> *kwset = kwGroupWords[j];
-                if ([set intersectsSet:kwset]) {
-                    NSMutableSet<NSString *> *mset = [set mutableCopy];
-                    [mset intersectSet:kwset];
-                    NSDictionary *dic = arrangedTokens[sc][k];
-                    VVToken *tk = dic[mset.anyObject];
-                    if (colocated != tk.colocated) {
-                        colocated = colocated == 0 ? tk.colocated : 0xF;
+    for (int kc = 0; kc < self.kwTokens.count; kc++) {
+        for (int sc = 0; sc < arrangedWords.count; sc++) {
+            NSArray<NSSet<NSString *> *> *groupWords = arrangedWords[sc];
+            NSArray<NSSet<NSString *> *> *kwGroupWords = self.kwTokens[kc];
+            for (NSUInteger i = 0; i < groupWords.count; i++) {
+                NSUInteger j = 0;
+                NSUInteger k = i;
+                while (j < kwGroupWords.count && k < groupWords.count) {
+                    NSSet<NSString *> *set = groupWords[k];
+                    NSSet<NSString *> *kwset = kwGroupWords[j];
+                    NSString *matchword = nil;
+                    if ([set intersectsSet:kwset]) {
+                        NSMutableSet<NSString *> *mset = [set mutableCopy];
+                        [mset intersectSet:kwset];
+                        matchword = mset.anyObject;
+                    } else if (j == kwGroupWords.count - 1 && kc > 0) {
+                        for (NSString *kwword in kwset) {
+                            for (NSString *word in set) {
+                                if ([word hasPrefix:kwword]) {
+                                    matchword = word;
+                                    break;
+                                }
+                            }
+                            if (matchword) break;
+                        }
                     }
-                    j++;
-                    k++;
-                } else {
-                    break;
+                    if (matchword) {
+                        NSDictionary *dic = arrangedTokens[sc][k];
+                        VVToken *tk = dic[matchword];
+                        if (colocated != tk.colocated) {
+                            colocated = colocated == 0 ? tk.colocated : 0xF;
+                        }
+                        j++;
+                        k++;
+                    } else {
+                        break;
+                    }
+                }
+                if (j > 0 && j == kwGroupWords.count) {
+                    NSRange range = NSMakeRange(i, j);
+                    [attrText addAttributes:self.highlightAttributes range:range];
+                    [ranges addObject:[NSValue valueWithRange:range]];
+                    if (self.quantity > 0 && ranges.count > self.quantity) break;
                 }
             }
-            if (j > 0 && j == kwGroupWords.count) {
-                NSRange range = NSMakeRange(i, j);
-                [attrText addAttributes:self.highlightAttributes range:range];
-                [ranges addObject:[NSValue valueWithRange:range]];
-                if (self.quantity > 0 && ranges.count > self.quantity) break;
-            }
+            if (ranges.count > 0) break;
         }
-        if (ranges.count > 0) break;
     }
     if (ranges.count == 0) return nil;
     NSRange first = [ranges.firstObject rangeValue];
