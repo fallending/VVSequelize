@@ -38,12 +38,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param vvdb db object
 /// @param sql native sql
 /// @note has cache
-+ (instancetype)statementWithDatabase:(VVDatabase *)vvdb sql:(NSString *)sql;
++ (nullable instancetype)statementWithDatabase:(VVDatabase *)vvdb sql:(NSString *)sql;
 
 /// Initialize VVDBStatement
 /// @param vvdb db object
 /// @param sql native sql
-- (instancetype)initWithDatabase:(VVDatabase *)vvdb sql:(NSString *)sql;
+- (nullable instancetype)initWithDatabase:(VVDatabase *)vvdb sql:(NSString *)sql;
 
 /// bind data
 /// @param values data array, corresponding to 'columnnames' one by one

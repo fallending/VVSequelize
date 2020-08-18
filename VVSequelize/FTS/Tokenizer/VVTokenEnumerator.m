@@ -234,6 +234,25 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
 
 @implementation VVTokenSequelizeEnumerator
 
++ (NSArray<VVToken *> *)syllableTokens:(NSString *)source end:(int)end
+{
+    NSMutableArray *results = [NSMutableArray array];
+    NSArray<NSArray<NSString *> *> *allPinyins = source.pinyinSegmentation;
+    for (int n = 0; n < allPinyins.count; n++) {
+        int start = end - (int)source.length;
+        NSArray<NSString *> *pinyins = allPinyins[n];
+        for (NSUInteger i = 0; i < pinyins.count; i++) {
+            NSString *tkString = pinyins[i];
+            int len = (int)tkString.length;
+            VVToken *token = [VVToken token:tkString.UTF8String len:len start:start end:start + len];
+            token.colocated = n + 3;
+            [results addObject:token];
+            start += len;
+        }
+    }
+    return results;
+}
+
 + (NSArray<VVToken *> *)enumerate:(const char *)cSource mask:(VVTokenMask)mask
 {
     UNUSED_PARAM(mask);
@@ -245,29 +264,15 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
     memcpy(buff, cSource, nText);
 
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:nText];
-    if ((mask & VVTokenMaskSyllable) && buff[0] < 0xC0) {
-        NSString *source = [NSString stringWithUTF8String:cSource];
-        NSArray<NSArray<NSString *> *> *allPinyins = source.pinyinSegmentation;
-        int start = 0;
-        for (int n = 0; n < allPinyins.count; n++) {
-            NSArray<NSString *> *pinyins = allPinyins[n];
-            for (NSUInteger i = 0; i < pinyins.count; i++) {
-                NSString *tkString = pinyins[i];
-                int len = (int)tkString.length;
-                VVToken *token = [VVToken token:tkString.UTF8String len:len start:start end:start + len];
-                token.colocated = n + 3;
-                [results addObject:token];
-                start += len;
-            }
-        }
-    }
 
     BOOL usetrans = mask & VVTokenMaskTransform;
     BOOL usepinyin = mask & VVTokenMaskPinyin;
     BOOL useabbr = mask & VVTokenMaskAbbreviation;
+    BOOL usesyllable = mask & VVTokenMaskSyllable;
 
     int idx = 0;
     int length = 0;
+    NSMutableString *syllableString = [NSMutableString string];
     while (idx < nText) {
         if (buff[idx] < 0xC0) {
             length = 1;
@@ -354,12 +359,26 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
         if (wordlen == 1 && word[0] > 64 && word[0] < 91) {
             word[0] += 32;
         }
+        // syllable
+        if (usesyllable) {
+            if (wordlen == 1 && word[0] > 96 && word[0] < 123) {
+                [syllableString appendFormat:@"%c", word[0]];
+            } else {
+                NSArray *subTks = [self syllableTokens:syllableString end:idx];
+                [results addObjectsFromArray:subTks];
+                syllableString = [NSMutableString string];
+            }
+        }
 
         VVToken *token = [VVToken token:(char *)word len:wordlen start:idx end:idx + length];
         token.colocated = wordlen != length ? -1 : 0;
         [results addObject:token];
         idx += length;
         free(word);
+    }
+    if (syllableString.length > 0) {
+        NSArray *subTks = [self syllableTokens:syllableString end:idx];
+        [results addObjectsFromArray:subTks];
     }
     free(buff);
     return results;

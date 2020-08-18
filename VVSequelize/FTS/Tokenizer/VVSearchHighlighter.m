@@ -76,7 +76,7 @@
         _cache = [[NSCache alloc] init];
         _cache.countLimit = 1024;
     });
-    NSString *key = [NSString stringWithFormat:@"0x%lX-%s", (unsigned long)mask, text];
+    NSString *key = [NSString stringWithFormat:@"0x%lX-%@", (unsigned long)mask, [NSString ocStringWithCString:text]];
     NSArray *results = [_cache objectForKey:key];
     if (!results) {
         NSArray<VVToken *> *tokens = [VVTokenSequelizeEnumerator enumerate:text mask:mask];
@@ -131,10 +131,39 @@
         NSMutableArray *syllableWords = [NSMutableArray arrayWithCapacity:subTokens.count];
         NSMutableArray *syllableTokens = [NSMutableArray arrayWithCapacity:subTokens.count];
         NSArray *subSorted = [VVToken sortedTokens:subTokens.allObjects];
+        int pos = 0;
         for (VVToken *tk in subSorted) {
+            for (int i = pos; i < tk.start; i++) {
+                NSSet *set = commons[@(i)];
+                if (!set) continue;
+                NSMutableSet *subWords = [NSMutableSet setWithCapacity:set.count];
+                NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:set.count];
+                for (VVToken *xtk in set) {
+                    [subWords addObject:xtk.token];
+                    dic[xtk.token] = xtk;
+                }
+                [syllableWords addObject:subWords];
+                [syllableTokens addObject:dic];
+            }
+            pos = tk.end;
             [syllableWords addObject:[NSSet setWithObject:tk.token]];
             [syllableTokens addObject:@{ tk.token: tk }];
         }
+        NSSet *lasts = commonSorted.lastObject;
+        VVToken *ltk = lasts.anyObject;
+        for (int i = pos; i < ltk.end; i++) {
+            NSSet *set = commons[@(i)];
+            if (!set) continue;
+            NSMutableSet *subWords = [NSMutableSet setWithCapacity:set.count];
+            NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:set.count];
+            for (VVToken *xtk in set) {
+                [subWords addObject:xtk.token];
+                dic[xtk.token] = xtk;
+            }
+            [syllableWords addObject:subWords];
+            [syllableTokens addObject:dic];
+        }
+
         [arrangedWords addObject:syllableWords];
         [arrangedTokens addObject:syllableTokens];
     }
@@ -328,13 +357,14 @@
                                cSource:(const char *)cSource
 {
     if (self.kwTokens.firstObject.count == 0 && self.kwTokens.lastObject.count == 0) return nil;
-    VVTokenMask mask = _mask & ~VVTokenMaskSyllable;
+    VVTokenMask mask = _fuzzy ? (_mask | VVTokenMaskPinyin) : _mask;
     NSArray *arranged = [VVSearchHighlighter arrangeTokens:cSource mask:mask];
     NSArray<NSArray<NSDictionary<NSString *, VVToken *> *> *> *arrangedTokens = arranged.firstObject;
     NSArray<NSArray<NSSet<NSString *> *> *> *arrangedWords = arranged.lastObject;
     if (arrangedTokens.count == 0 && arrangedWords.count == 0) return nil;
 
-    int colocated = 0;
+    VVMatchLV1 lv1 = VVMatchLV1_Origin;
+    BOOL whole = YES;
     NSString *text = self.useSingleLine ? source.singleLine : source;
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text attributes:self.normalAttributes];
     NSMutableArray *ranges = [NSMutableArray array];
@@ -345,6 +375,8 @@
             for (NSUInteger i = 0; i < groupWords.count; i++) {
                 NSUInteger j = 0;
                 NSUInteger k = i;
+                int sloc = -1;
+                int slen = -1;
                 while (j < kwGroupWords.count && k < groupWords.count) {
                     NSSet<NSString *> *set = groupWords[k];
                     NSSet<NSString *> *kwset = kwGroupWords[j];
@@ -358,6 +390,7 @@
                             for (NSString *word in set) {
                                 if ([word hasPrefix:kwword]) {
                                     matchword = word;
+                                    whole = NO;
                                     break;
                                 }
                             }
@@ -367,8 +400,18 @@
                     if (matchword) {
                         NSDictionary *dic = arrangedTokens[sc][k];
                         VVToken *tk = dic[matchword];
-                        if (colocated != tk.colocated) {
-                            colocated = colocated == 0 ? tk.colocated : 0xF;
+                        VVMatchLV1 tlv1 = VVMatchLV1_None;
+                        if (kc == 0 && sc == 0) {
+                            tlv1 = tk.colocated <= 0 ? VVMatchLV1_Origin : VVMatchLV1_Firsts;
+                        } else if (kc > 0 && sc == 0) {
+                            tlv1 = VVMatchLV1_Fulls;
+                        } else {
+                            tlv1 = VVMatchLV1_Fuzzy;
+                        }
+                        if (tlv1 < lv1) lv1 = tlv1;
+                        if (sc > 0) {
+                            if (sloc < 0) sloc = tk.start;
+                            slen = tk.end - sloc;
                         }
                         j++;
                         k++;
@@ -378,6 +421,11 @@
                 }
                 if (j > 0 && j == kwGroupWords.count) {
                     NSRange range = NSMakeRange(i, j);
+                    if (sc > 0) {
+                        NSString *s1 = [[NSString alloc] initWithBytes:cSource length:sloc encoding:NSUTF8StringEncoding];
+                        NSString *s2 = [[NSString alloc] initWithBytes:cSource + sloc length:slen encoding:NSUTF8StringEncoding];
+                        range = NSMakeRange(s1.length, s2.length);
+                    }
                     [attrText addAttributes:self.highlightAttributes range:range];
                     [ranges addObject:[NSValue valueWithRange:range]];
                     if (self.quantity > 0 && ranges.count > self.quantity) break;
@@ -385,6 +433,7 @@
             }
             if (ranges.count > 0) break;
         }
+        if (ranges.count > 0) break;
     }
     if (ranges.count == 0) return nil;
     NSRange first = [ranges.firstObject rangeValue];
@@ -392,9 +441,9 @@
     match.source = source;
     match.ranges = ranges;
     match.attrText = attrText;
-    match.lv1 = colocated == 0 ? VVMatchLV1_Origin : colocated == 1 ? VVMatchLV1_Fulls : colocated == 2 ? VVMatchLV1_Firsts : VVMatchLV1_Mix;
-    match.lv2 = first.location == 0 ? VVMatchLV2_Prefix : VVMatchLV2_NonPrefix;
-    match.lv3 = colocated == 0 ? VVMatchLV3_High : colocated > 2 ? VVMatchLV3_Low : VVMatchLV3_Medium;
+    match.lv1 = lv1;
+    match.lv2 = first.location == 0 ? (first.length == attrText.length && whole ? VVMatchLV2_Full : VVMatchLV2_Prefix) : VVMatchLV2_NonPrefix;
+    match.lv3 = lv1 == VVMatchLV1_Origin ? VVMatchLV3_High : lv1 == VVMatchLV1_Fulls ? VVMatchLV3_Medium : VVMatchLV3_Low;
     return match;
 }
 

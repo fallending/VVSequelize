@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM (NSUInteger, VVMatchLV1) {
     VVMatchLV1_None = 0,
+    VVMatchLV1_Fuzzy,
     VVMatchLV1_Firsts,
     VVMatchLV1_Fulls,
     VVMatchLV1_Origin,
