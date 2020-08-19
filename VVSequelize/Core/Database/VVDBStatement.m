@@ -38,7 +38,7 @@
         _sql = sql;
         int rc = sqlite3_prepare_v2(vvdb.db, sql.UTF8String, -1, &_stmt, nil);
         BOOL ret = [self.vvdb check:rc sql:sql];
-        //NSAssert(ret && _stmt != NULL, @"prepare sqlite3_stmt failure: %@, egdb : %@", sql, egdb);
+        //NSAssert(ret && _stmt != NULL, @"prepare sqlite3_stmt failure: %@, vvdb : %@", sql, vvdb);
         if (!ret) return nil;
     }
     return self;

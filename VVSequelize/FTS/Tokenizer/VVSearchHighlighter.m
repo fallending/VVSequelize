@@ -409,10 +409,8 @@
                             tlv1 = VVMatchLV1_Fuzzy;
                         }
                         if (tlv1 < lv1) lv1 = tlv1;
-                        if (sc > 0) {
-                            if (sloc < 0) sloc = tk.start;
-                            slen = tk.end - sloc;
-                        }
+                        if (sloc < 0) sloc = tk.start;
+                        slen = tk.end - sloc;
                         j++;
                         k++;
                     } else {
@@ -420,12 +418,9 @@
                     }
                 }
                 if (j > 0 && j == kwGroupWords.count) {
-                    NSRange range = NSMakeRange(i, j);
-                    if (sc > 0) {
-                        NSString *s1 = [[NSString alloc] initWithBytes:cSource length:sloc encoding:NSUTF8StringEncoding];
-                        NSString *s2 = [[NSString alloc] initWithBytes:cSource + sloc length:slen encoding:NSUTF8StringEncoding];
-                        range = NSMakeRange(s1.length, s2.length);
-                    }
+                    NSString *s1 = [[NSString alloc] initWithBytes:cSource length:sloc encoding:NSUTF8StringEncoding];
+                    NSString *s2 = [[NSString alloc] initWithBytes:cSource + sloc length:slen encoding:NSUTF8StringEncoding];
+                    NSRange range = NSMakeRange(s1.length, s2.length);
                     [attrText addAttributes:self.highlightAttributes range:range];
                     [ranges addObject:[NSValue valueWithRange:range]];
                     if (self.quantity > 0 && ranges.count > self.quantity) break;

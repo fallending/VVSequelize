@@ -21,7 +21,6 @@ typedef NS_ENUM (NSUInteger, VVMatchLV1) {
 
 typedef NS_ENUM (NSUInteger, VVMatchLV2) {
     VVMatchLV2_None = 0,
-    VVMatchLV1_Mix,
     VVMatchLV2_Other,
     VVMatchLV2_NonPrefix,
     VVMatchLV2_Prefix,

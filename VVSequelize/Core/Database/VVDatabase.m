@@ -456,10 +456,15 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
             return YES;
 
         default: {
-#if DEBUG
             const char *errmsg = sqlite3_errmsg(self.db);
-            printf("[VVDB][Error] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
+            NSString *msg = [NSString stringWithUTF8String:errmsg];
+            if (_traceError) {
+                _traceError(resultCode, sql, msg);
+            } else {
+#if DEBUG
+                printf("[VVDB][Error] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
 #endif
+            }
             if (resultCode == SQLITE_NOTADB && _removeWhenNotADB) {
                 [self close];
                 [[NSFileManager defaultManager] removeItemAtPath:self.path error:nil];

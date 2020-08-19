@@ -52,6 +52,9 @@ typedef int (^VVDBCommitHook)(void);
 ///hook rollback
 typedef void (^VVDBRollbackHook)(void);
 
+/// trace error
+typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
+
 @class VVDBStatement;
 
 /**
@@ -234,6 +237,9 @@ typedef void (^VVDBRollbackHook)(void);
 
 ///hook rollback
 @property (nonatomic, copy) VVDBRollbackHook rollbackHook;
+
+///error handler
+@property (nonatomic, copy) VVDBTraceError traceError;
 
 // MARK: - Error Handling
 /// check sqlite3 return value
