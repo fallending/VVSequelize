@@ -12,11 +12,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol VVFtsable <NSObject>
 @optional
-+ (NSArray<NSString *> *)whitelist;
-+ (NSArray<NSString *> *)blacklist;
-+ (NSArray<NSString *> *)indexlist;
-+ (NSString *)module;
-+ (NSString *)tokenizer;
++ (NSArray<NSString *> *)fts_whites;
++ (NSArray<NSString *> *)fts_blacks;
++ (NSArray<NSString *> *)fts_indexes;
++ (NSString *)fts_module;
++ (NSString *)fts_tokenizer;
 @end
 
 @interface VVOrmConfig (VVFtsable)

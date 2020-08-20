@@ -11,6 +11,7 @@
 
 + (instancetype)configWithOrmable:(Class<VVOrmable>)cls
 {
+    NSAssert([cls conformsToProtocol:@protocol(VVOrmable)], @"class must confroms to VVOrmable");
     VVOrmConfig *config = [VVOrmConfig configWithClass:cls];
     if ([cls respondsToSelector:@selector(primaries)]) {
         config.primaries = [cls primaries] ? : @[];

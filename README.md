@@ -4,9 +4,10 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.3.5)
-1. 支持sqlite json1扩展
-2. fix bugs
+## 改动(0.4.0)
+1. 修改highlighter.
+2. 新增协议`VVOrmable`,`VVFtsable`,可直接从Class创建Orm.
+3. 在复杂项目中使用,经过测试,修复多个bug.
 
 ## 功能
 * [x] 根据Class生成数据表
@@ -32,7 +33,7 @@
 
 ## 安装
 ```ruby
-pod 'SQLiteORM', '~> 0.3.5'
+pod 'SQLiteORM', '~> 0.4.0'
 ```
 使用测试版本:
 ```ruby
@@ -52,34 +53,10 @@ pod 'SQLiteORM', '~> 0.3.5'
 ```
 
 ### 定义ORM配置
-使用`VVOrmConfig`统一表配置,可复用.
+1. 手动创建`VVOrmConfig`.
+2. 普通表适配协议`VVOrmable`, fts表适配协议`VVFtsable`
 
-普通表配置:
-```objc
-    VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
-    config.primaries = @[@"mobile"];
-```
-
-Fts表配置
-```objc
-    NSUInteger ftsTokenParm = VVFtsTokenParamNumber | VVFtsTokenParamTransform | (15 & VVFtsTokenParamPinyin);
-    NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
-
-    VVOrmConfig *ftsConfig = [VVOrmConfig configWithClass:VVTestMobile.class];
-    ftsConfig.fts = YES;
-    ftsConfig.ftsModule = @"fts5";
-    ftsConfig.ftsTokenizer = tokenizer;
-    ftsConfig.indexes = @[@"mobile", @"industry"];
-```
-或者
-```objc
-    VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVMessage.class module:@"fts5" tokenizer:tokenizer indexes:@[@"info"]];
-```
-**FTS表配置特别注意**:
-* 需设置`ftsConfig.fts=YES`,否则视为普通表.
-* fts3以上版本(fts4,fts5)需设置索引字段`ftsConfig.indexes`,否则不会索引任何字段,无法搜索
-* ftsTokenizer传入参数`pinyin`,表示该表支持拼音分词,多音字并未智能匹配, 5个汉字以内的中文,可返回多个拼音组合, 超过5个汉字则只返回一组.
-* `pinyin`后可带数字参数,比如`sequelize pinyin 9`,表示Unicode长度超过9的字符串,不会进行拼音分词
+**注意:** 支持fts3/4/5,但建议仅使用fts5
 
 ### 定义ORM模型 
 可自定义表名和存放的数据库文件.
@@ -88,8 +65,11 @@ Fts表配置
 示例如下:
 
 ```objc
-    self.mobileModel = [VVOrm ormWithConfig:config tableName:@"mobiles" dataBase:self.vvdb];
+item.orm = [VVOrm ormWithClass:VVMessage.class name:item.tableName database:item.db];
+        
+item.ftsOrm = [VVOrm ormWithFtsClass:VVMessage.class name:item.tableName database:item.ftsDb];
 ```
+
 ### 增删改查
 使用ORM模型进行增删改查等操作.
 
@@ -155,20 +135,22 @@ Fts表配置
     NSLog(@"%@", select.sql);
 }
 ```
+### 原生语句查询
+```
+- (NSArray<NSDictionary *> *)query:(NSString *)sql;
 
-## 打开WCDB加密数据库
+- (NSArray *)query:(NSString *)sql clazz:(Class)clazz;
+```
+
+## 加密数据数据转换(sqlcipher 3.x->4.x)
 ```objc
     VVDatabase *database = [VVDatabase databaseWithPath:path flags:0 encrypt:@"XXXXX"];
-    NSArray *options = @[
-        @"pragma cipher_page_size = 4096;",
+    database.cipherOptions = @[
+        @"pragma cipher_page_size = 4096;", ///<3.x的cipher_page_size,默认为1024
         @"pragma kdf_iter = 64000;",
         @"pragma cipher_hmac_algorithm = HMAC_SHA1;",
-        @"pragma cipher_kdf_algorithm = PBKDF2_HMAC_SHA1;",
-        @"pragma synchronous='NORMAL'",
-        @"pragma journal_mode=wal",
+        @"pragma cipher_kdf_algorithm = PBKDF2_HMAC_SHA1;"
     ];
-    [database setOptions:options];
-
 ```
 
 ## Author

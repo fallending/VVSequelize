@@ -12,23 +12,24 @@
 
 + (instancetype)configWithFtsable:(Class<VVFtsable>)cls
 {
+    NSAssert([cls conformsToProtocol:@protocol(VVFtsable)], @"class must confroms to VVFtsable");
     VVOrmConfig *config = [VVOrmConfig configWithClass:cls];
     config.fts = YES;
-    if ([cls respondsToSelector:@selector(whitelist)]) {
-        config.whiteList = [cls whitelist] ? : @[];
+    if ([cls respondsToSelector:@selector(fts_whites)]) {
+        config.whiteList = [cls fts_whites] ? : @[];
     }
-    if ([cls respondsToSelector:@selector(whitelist)]) {
-        config.blackList = [cls whitelist] ? : @[];
+    if ([cls respondsToSelector:@selector(fts_blacks)]) {
+        config.blackList = [cls fts_blacks] ? : @[];
     }
-    if ([cls respondsToSelector:@selector(indexlist)]) {
-        config.indexes = [cls indexlist] ? : @[];
+    if ([cls respondsToSelector:@selector(fts_indexes)]) {
+        config.indexes = [cls fts_indexes] ? : @[];
     }
-    if ([cls respondsToSelector:@selector(module)]) {
-        config.ftsModule = [cls module] ? : @"fts5";
+    if ([cls respondsToSelector:@selector(fts_module)]) {
+        config.ftsModule = [cls fts_module] ? : @"fts5";
     }
-    if ([cls respondsToSelector:@selector(tokenizer)]) {
+    if ([cls respondsToSelector:@selector(fts_tokenizer)]) {
         NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(VVTokenMaskDefault)];
-        config.ftsTokenizer = [cls tokenizer] ? : tokenizer;
+        config.ftsTokenizer = [cls fts_tokenizer] ? : tokenizer;
     }
     return config;
 }

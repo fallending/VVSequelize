@@ -49,12 +49,12 @@
 
 @implementation VVMessage (VVFtsable)
 
-+ (NSArray<NSString *> *)indexlist
++ (NSArray<NSString *> *)fts_indexes
 {
     return @[@"info"];
 }
 
-+ (NSString *)tokenizer
++ (NSString *)fts_tokenizer
 {
     NSUInteger ftsTokenParm = VVTokenMaskAll;
     NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];

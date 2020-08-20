@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.3.5'
+  s.version          = '0.4.0'
   s.summary          = 'ORM model based on SQLite3.'
   s.description      = <<-DESC
                        ORM model based on SQLite3.
