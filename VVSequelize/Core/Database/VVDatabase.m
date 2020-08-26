@@ -119,16 +119,20 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
 #ifdef SQLITE_HAS_CODEC
     if (self.encryptKey.length > 0) {
-        [self key:self.encryptKey db:nil];
-        for (NSString *option in self.cipherOptions) {
-            [self execute:option];
-        }
+        const char *key = self.encryptKey.UTF8String;
+        int klen = (int)strlen(key);
+        rc = sqlite3_key(_db, key, klen);
+        [self check:rc sql:@"sqlite3_key()"];
+    }
+    for (NSString *sql in self.cipherOptions) {
+        rc = sqlite3_exec(_db, sql.UTF8String, nil, nil, nil);
+        [self check:rc sql:sql];
     }
 #endif
-    for (NSString *option in self.normalOptions) {
-        [self execute:option];
+    for (NSString *sql in self.normalOptions) {
+        rc = sqlite3_exec(_db, sql.UTF8String, nil, nil, nil);
+        [self check:rc sql:sql];
     }
-
     // hook
     sqlite3_update_hook(_db, vvdb_update_hook, (__bridge void *)self);
     sqlite3_commit_hook(_db, vvdb_commit_hook, (__bridge void *)self);
@@ -137,17 +141,17 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 
 - (BOOL)close
 {
+    if (_db == NULL) return YES;
     BOOL ret = [self check:sqlite3_close_v2(_db) sql:@"sqlite3_close_v2()"];
-    if (ret) {
-        _db = NULL;
-    }
+    if (ret) _db = NULL;
     return ret;
 }
 
 //MARK: - lazy loading
 - (sqlite3 *)db
 {
-    [self open];
+    if (_db) return _db;
+    @synchronized (self) { [self open]; }
     return _db;
 }
 

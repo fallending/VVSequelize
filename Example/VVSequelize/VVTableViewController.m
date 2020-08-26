@@ -73,7 +73,13 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
     self.selectedIndex = 0;
 
     [NSString preloadingForPinyin];
-
+    NSString *cipherkey = @"87c7133c-be62-4a40-b9ea-afe93b808084";
+    NSArray *cipherOptions = @[
+        @"pragma cipher_page_size = 4096;",
+        @"pragma kdf_iter = 64000;",
+        @"pragma cipher_hmac_algorithm = HMAC_SHA1;",
+        @"pragma cipher_kdf_algorithm = PBKDF2_HMAC_SHA1;",
+    ];
     //db
     NSString *dir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
     NSMutableArray *items = [NSMutableArray arrayWithCapacity:4];
@@ -97,12 +103,14 @@ static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
 
         item.dbName = normal;
         item.dbPath = [dir stringByAppendingPathComponent:item.dbName];
-        item.db = [VVDatabase databaseWithPath:item.dbPath];
+        item.db = [VVDatabase databaseWithPath:item.dbPath flags:0 encrypt:cipherkey];
+        item.db.cipherOptions = cipherOptions;
         item.orm = [VVOrm ormWithClass:VVMessage.class name:item.tableName database:item.db];
 
         item.ftsDbName = fts;
         item.ftsDbPath = [dir stringByAppendingPathComponent:item.ftsDbName];
-        item.ftsDb = [VVDatabase databaseWithPath:item.ftsDbPath];
+        item.ftsDb = [VVDatabase databaseWithPath:item.ftsDbPath flags:0 encrypt:cipherkey];
+        item.ftsDb.cipherOptions = cipherOptions;
         [item.ftsDb registerEnumerator:VVTokenSequelizeEnumerator.class forTokenizer:VVTokenTokenizerSequelize];
         [item.ftsDb registerEnumerator:VVTokenAppleEnumerator.class forTokenizer:VVTokenTokenizerApple];
         [item.ftsDb registerEnumerator:VVTokenNatualEnumerator.class forTokenizer:VVTokenTokenizerNatual];

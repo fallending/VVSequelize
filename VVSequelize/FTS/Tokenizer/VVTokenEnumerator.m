@@ -133,7 +133,10 @@ VVTokenizerName const VVTokenTokenizerNatual = @"natual";
 - (id)copyWithZone:(nullable NSZone *)zone
 {
     VVToken *token = [[[self class] allocWithZone:zone] init];
-    token.word = _word;
+    char *temp = (char *)malloc(_len + 1);
+    memcpy(temp, _word, _len);
+    temp[_len] = '\0';
+    token.word = temp;
     token.start = _start;
     token.end = _end;
     token.len = _len;

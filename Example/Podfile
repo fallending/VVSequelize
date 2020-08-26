@@ -3,7 +3,7 @@ use_frameworks!
 platform :ios, '10.0'
 
 target 'VVSequelize_Example' do
-  pod 'VVSequelize/system', :path => '../'
+  pod 'VVSequelize', :path => '../'
   pod 'CocoaLumberjack'
 
   target 'VVSequelize_Tests' do

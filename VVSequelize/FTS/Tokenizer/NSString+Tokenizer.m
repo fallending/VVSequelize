@@ -446,22 +446,18 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
     NSArray *array = [[VVPinYin shared].pinyins objectForKey:firstLetter];
 
     NSMutableArray *results = [NSMutableArray array];
+    BOOL spare = NO;
     for (NSString *pinyin in array) {
         const char *py = pinyin.cLangString;
-        u_long len = strlen(py);
-        if (len <= length && strncmp(py, str, len) == 0) {
-            [results addObject:pinyin];
+        u_long pylen = strlen(py);
+        if (pylen <= length) {
+            if (strncmp(py, str, pylen) == 0) [results addObject:pinyin];
+        } else {
+            if (strncmp(py, str, length) == 0) spare = YES;
         }
     }
-    if (results.count == 0) {
-        for (NSString *pinyin in array) {
-            const char *py = pinyin.cLangString;
-            u_long len = strlen(py);
-            if (len > length && strncmp(py, str, length) == 0) {
-                [results addObject:self];
-                break;
-            }
-        }
+    if (results.count == 0 && spare) {
+        [results addObject:self];
     }
     return results;
 }

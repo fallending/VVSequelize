@@ -303,6 +303,7 @@ static int vv_fts5_xTokenize(
     module->xClose = vv_fts3_close;
     module->xNext = vv_fts3_next;
     module->xName = name.cLangString;
+    module->xClass = (__bridge void *)enumerator;
     int rc = fts3_register_tokenizer(self.db, (char *)name.cLangString, module);
 
     NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];
