@@ -158,6 +158,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<VVDBUpgradeItem *> *> *upgradeItems;
 @property (nonatomic, assign) BOOL pretreated;
 @property (nonatomic, assign, getter = isUpgrading) BOOL upgrading;
+@property (nonatomic, assign, getter = isCanceling) BOOL canceling;
 @end
 
 @implementation VVDBUpgrader
@@ -211,6 +212,25 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
             [item reset];
         }
     }
+}
+
+- (void)clean
+{
+    _completedInfo = nil;
+    _lastUpdatedVersion = nil;
+    _pretreated = NO;
+    _stageItems = [NSMutableDictionary dictionary];
+    _versions = [NSMutableSet set];
+    _stages = [NSMutableSet set];
+}
+
+- (void)cancel
+{
+    if (!_upgrading) {
+        [self clean];
+        return;
+    }
+    _canceling = YES;
 }
 
 - (void)addItem:(VVDBUpgradeItem *)item
@@ -297,6 +317,11 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     return self.upgradeItems.count > 0;
 }
 
+- (BOOL)isNeedToUpgrade:(NSString *)version
+{
+    return [NSString compareVersion:self.lastUpdatedVersion with:version] == NSOrderedAscending;
+}
+
 - (void)upgradeAll
 {
     [self pretreat];
@@ -332,11 +357,14 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     }
 
     for (VVDBUpgradeItem *item in sorted) {
+        if (_canceling) break;
         BOOL ret = [self upgradeItem:item];
         if (ret) {
             [self completeItem:item];
         }
     }
+    [self clean];
+    _canceling = NO;
     _upgrading = NO;
 }
 
@@ -362,6 +390,9 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     if (ret) {
         item.progress = 1.0;
     }
+#if DEBUG
+    printf("\nU-> %s\n", item.description.UTF8String);
+#endif
     return ret;
 }
 
@@ -413,8 +444,11 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     progress.totalUnitCount = (int64_t)(totalWeight * VVDBUpgraderProgressAccuracy);
     progress.completedUnitCount = 0;
     for (VVDBUpgradeItem *item in sorted) {
+        if (_canceling) break;
         [self upgradeItem:item];
     }
+    _canceling = NO;
+    _upgrading = NO;
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context

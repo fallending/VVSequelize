@@ -65,8 +65,14 @@ NS_ASSUME_NONNULL_BEGIN
 /// reset upgrade progress
 - (void)reset;
 
-/// need to upgrade or not
+/// cancel upgrade
+- (void)cancel;
+
+/// check if the updater needs to be executed
 - (BOOL)needUpgrade;
+
+/// check if the version needs to be upgraded
+- (BOOL)isNeedToUpgrade:(NSString *)version;
 
 /// upgrade all stages
 - (void)upgradeAll;
