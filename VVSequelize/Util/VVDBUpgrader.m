@@ -363,7 +363,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
             [self completeItem:item];
         }
     }
-    [self clean];
+    if (_canceling) [self clean];
     _canceling = NO;
     _upgrading = NO;
 }
@@ -416,6 +416,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
         [defaults setObject:latestVersion forKey:_versionKey];
         [defaults setObject:@{} forKey:_completedInfoKey];
         [defaults synchronize];
+        [self clean];
     } else if (item.record) {
         self.completedInfo[item.identifier] = @(YES);
         [defaults setObject:self.completedInfo forKey:_completedInfoKey];
