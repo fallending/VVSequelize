@@ -188,7 +188,7 @@ NSString *const VVSqlTypeJson = @"JSON";
     NSStringCompareOptions options = NSRegularExpressionSearch | NSCaseInsensitiveSearch;
     NSRange range = [tableSQL rangeOfString:@" +fts.*\\(" options:options];
     if (range.location != NSNotFound) {
-        ftsModule = [tableSQL substringWithRange:NSMakeRange(range.location, range.length - 1)].trim;
+        ftsModule = [tableSQL substringWithRange:NSMakeRange(range.location, range.length - 1)].vv_trim;
         ftsVersion = [[ftsModule substringWithRange:NSMakeRange(3, 1)] integerValue];
     }
     config.ftsVersion = ftsVersion;
@@ -202,7 +202,7 @@ NSString *const VVSqlTypeJson = @"JSON";
     for (NSString *optionStr in ftsOptions) {
         if ([optionStr isMatch:@"tokenize *=.*"]) {
             range = [optionStr rangeOfString:@"=.*" options:options];
-            NSString *tokenizer = [optionStr substringWithRange:NSMakeRange(range.location + 1, range.length - 1)].trim;
+            NSString *tokenizer = [optionStr substringWithRange:NSMakeRange(range.location + 1, range.length - 1)].vv_trim;
             config.ftsTokenizer = [tokenizer stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"'\""]];
             break;
         }
@@ -391,7 +391,7 @@ NSString *const VVSqlTypeJson = @"JSON";
     }
     NSString *sql = [array componentsJoinedByString:@","];
     if (sql.length == 0) return @"";
-    return [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (%@)", tableName.quoted, sql].strip;
+    return [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (%@)", tableName.quoted, sql].vv_strip;
 }
 
 - (NSString *)createFtsSQLWith:(NSString *)tableName
@@ -436,7 +436,7 @@ NSString *const VVSqlTypeJson = @"JSON";
 
     NSString *sql = [array componentsJoinedByString:@","];
     return [NSString stringWithFormat:@"CREATE VIRTUAL TABLE IF NOT EXISTS %@ USING %@(%@)",
-            tableName.quoted, self.ftsModule, sql].strip;
+            tableName.quoted, self.ftsModule, sql].vv_strip;
 }
 
 // MARK: - Utils
@@ -470,8 +470,8 @@ NSString *const VVSqlTypeJson = @"JSON";
         _charset = [NSCharacterSet characterSetWithCharactersInString:@"\"'"];
     });
 
-    NSString *str = [string stringByTrimmingCharactersInSet:_charset].strip;
-    NSString *other = [otherString stringByTrimmingCharactersInSet:_charset].strip;
+    NSString *str = [string stringByTrimmingCharactersInSet:_charset].vv_strip;
+    NSString *other = [otherString stringByTrimmingCharactersInSet:_charset].vv_strip;
     return [str isEqualToString:other];
 }
 

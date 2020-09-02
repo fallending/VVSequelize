@@ -71,6 +71,14 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 ///third parameter of sqlite3_open_v2(), (flags | VVDBEssentialFlags)
 @property (nonatomic, assign) int flags;
 
+/// execute between sqlite3_open_v2() and sqlite3_key()
+///
+/// example:
+///
+/// "pragma cipher_default_plaintext_header_size = 32;"
+///
+@property (nonatomic, strong) NSArray<NSString *> *cipherDefaultOptions;
+
 /// execute after sqlite3_key_v2()
 ///
 /// example: open 3.x ciphered database

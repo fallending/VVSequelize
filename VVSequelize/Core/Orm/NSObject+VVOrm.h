@@ -150,10 +150,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)singleQuoted;
 
 /// remove spaces and returns at the beginning and end of a string
-- (NSString *)trim;
+- (NSString *)vv_trim;
 
 /// remove duplicate spaces
-- (NSString *)strip;
+- (NSString *)vv_strip;
 
 /// match regular expression or not
 - (BOOL)isMatch:(NSString *)regex;

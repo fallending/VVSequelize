@@ -21,7 +21,7 @@ NSString *const VVDBPathInMemory = @":memory:";
 NSString *const VVDBPathTemporary = @"";
 NSString *const VVDBErrorDomain = @"com.sequelize.db";
 
-int VVDBEssentialFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX;
+int VVDBEssentialFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
 static const char *const VVDBSpecificKey = "com.sequelize.db.specific";
 
 // MARK: - sqlite callbacks
@@ -41,7 +41,7 @@ static void vvdb_update_hook(void *pCtx, int op, char const *db, char const *tab
 {
     VVDatabase *vvdb = (__bridge VVDatabase *)pCtx;
     [vvdb.cache removeAllObjects];
-    !vvdb.updateHook ? : vvdb.updateHook(op, db, table, rowid);
+    if (vvdb.updateHook) vvdb.updateHook(op, db, table, rowid);
 }
 
 static int vvdb_commit_hook(void *pCtx)
@@ -54,7 +54,7 @@ static int vvdb_commit_hook(void *pCtx)
 static void vvdb_rollback_hook(void *pCtx)
 {
     VVDatabase *vvdb = (__bridge VVDatabase *)pCtx;
-    !vvdb.rollbackHook ? : vvdb.rollbackHook();
+    if (vvdb.rollbackHook) vvdb.rollbackHook();
 }
 
 static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSString *type, dispatch_queue_attr_t _Nullable attr)
@@ -118,6 +118,10 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     BOOL ret = [self check:rc sql:@"sqlite3_open_v2()"];
     NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
 #ifdef SQLITE_HAS_CODEC
+    for (NSString *sql in self.cipherDefaultOptions) {
+        rc = sqlite3_exec(_db, sql.UTF8String, nil, nil, nil);
+        [self check:rc sql:sql];
+    }
     if (self.encryptKey.length > 0) {
         const char *key = self.encryptKey.UTF8String;
         int klen = (int)strlen(key);
@@ -151,7 +155,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 - (sqlite3 *)db
 {
     if (_db) return _db;
-    @synchronized (self) { [self open]; }
+    [self open];
     return _db;
 }
 
@@ -193,8 +197,8 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 - (NSArray<NSString *> *)normalOptions
 {
     if (!_normalOptions) {
-        _normalOptions = @[@"pragma synchronous = NORMAL;",
-                           @"pragma journal_mode = WAL;"];
+        _normalOptions = @[@"pragma synchronous = normal;",
+                           @"pragma journal_mode = wal;"];
     }
     return _normalOptions;
 }

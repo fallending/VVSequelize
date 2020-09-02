@@ -199,7 +199,7 @@
     
     NSString *sql = [NSMutableString stringWithFormat:@"SELECT %@ %@ FROM %@ %@ %@ %@ %@ %@ %@",
                      _distinct ? @"DISTINCT" : @"", self.fieldsString, _table,
-                     where, groupBy, having, orderBy, limit, offset].strip;
+                     where, groupBy, having, orderBy, limit, offset].vv_strip;
     return sql;
 }
 

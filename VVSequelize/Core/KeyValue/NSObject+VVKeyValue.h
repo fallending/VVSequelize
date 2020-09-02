@@ -25,7 +25,7 @@ FOUNDATION_EXPORT CLLocationCoordinate2D Coordinate2DFromString(NSString *string
 + (instancetype)dataWithNumber:(NSNumber *)number;
 
 /// hex data string -> NSData
-+ (nullable instancetype)dataWithHexString:(NSString *)hexString;
++ (nullable instancetype)vv_dataWithHexString:(NSString *)hexString;
 
 /// data -> hex string
 - (NSString *)hexString;

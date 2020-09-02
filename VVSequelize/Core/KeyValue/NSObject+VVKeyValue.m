@@ -59,7 +59,7 @@ static uint8_t digitFromChar(unichar c)
     return [NSData dataWithValue:(NSValue *)number];
 }
 
-+ (nullable instancetype)dataWithHexString:(NSString *)hexString
++ (nullable instancetype)vv_dataWithHexString:(NSString *)hexString
 {
     if (!hexString) return nil;
 
@@ -150,7 +150,7 @@ static uint8_t digitFromChar(unichar c)
 {
     NSArray *array = [encodedString componentsSeparatedByString:@"|"];
     if (array.count != 3) return nil;
-    NSData *data = [NSData dataWithHexString:array[2]];
+    NSData *data = [NSData vv_dataWithHexString:array[2]];
     char *objCType = (char *)[array[0] UTF8String];
     return [NSValue valueWithBytes:data.bytes objCType:objCType];
 }
@@ -532,7 +532,7 @@ static uint8_t digitFromChar(unichar c)
             if ([value isKindOfClass:NSData.class]) {
                 data = value;
             } else if ([value isKindOfClass:NSString.class]) {
-                data = [NSData dataWithHexString:value];
+                data = [NSData vv_dataWithHexString:value];
             }
             if (data) {
                 ((void (*)(id, SEL, const void *))(void *) objc_msgSend)(self, propertyInfo.setter, data.bytes);
@@ -613,7 +613,7 @@ static uint8_t digitFromChar(unichar c)
 
                 case VVEncodingTypeNSData:
                     if ([value isKindOfClass:NSString.class]) {
-                        NSData *data = [NSData dataWithHexString:value];
+                        NSData *data = [NSData vv_dataWithHexString:value];
                         [self setValue:data forKey:propertyName];
                     } else if ([value isKindOfClass:NSData.class]) {
                         [self setValue:value forKey:propertyName];
