@@ -9,6 +9,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@interface NSString (VVDBUpgrader)
++ (NSComparisonResult)vv_compareVersion:(NSString *)version1 with:(NSString *)version2;
+@end
+
 /// upgrade item
 @interface VVDBUpgradeItem : NSObject <NSCopying>
 @property (nonatomic, weak, nullable) id target;
@@ -54,7 +58,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSProgress *progress;
 
 /// upgrading or not
-@property (nonatomic, assign, readonly) BOOL isUpgrading;
+@property (nonatomic, assign, readonly, getter = isUpgrading) BOOL upgrading;
 
 /// add upgrade item
 - (void)addItem:(VVDBUpgradeItem *)item;

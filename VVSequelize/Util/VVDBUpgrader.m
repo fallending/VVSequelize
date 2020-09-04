@@ -11,13 +11,9 @@ NSString *const VVDBUpgraderLastVersionKey = @"VVDBUpgraderLastVersionKey";
 NSString *const VVDBUpgraderCompletedInfoSuffix = @"-lastCompleted";
 CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 
-@interface NSString (VVDBUpgrader)
-+ (NSComparisonResult)compareVersion:(NSString *)version1 with:(NSString *)version2;
-@end
-
 @implementation NSString (VVDBUpgrader)
 
-+ (NSComparisonResult)compareVersion:(NSString *)version1 with:(NSString *)version2
++ (NSComparisonResult)vv_compareVersion:(NSString *)version1 with:(NSString *)version2
 {
     if ([version1 isEqualToString:version2]) return NSOrderedSame;
 
@@ -114,7 +110,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 {
     NSComparisonResult result = self.stage < other.stage ? NSOrderedAscending : (self.stage == other.stage ? NSOrderedSame : NSOrderedDescending);
     if (result == NSOrderedSame) {
-        result = [NSString compareVersion:self.version with:other.version];
+        result = [NSString vv_compareVersion:self.version with:other.version];
     }
     if (result == NSOrderedSame) {
         result = self.priority > other.priority ? NSOrderedAscending : (self.priority == other.priority ? NSOrderedSame : NSOrderedDescending);
@@ -270,7 +266,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 - (NSString *)latestVersion
 {
     NSArray *versions = [self.versions.allObjects sortedArrayUsingComparator:^NSComparisonResult (NSString *v1, NSString *v2) {
-        return [NSString compareVersion:v1 with:v2];
+        return [NSString vv_compareVersion:v1 with:v2];
     }];
     return versions.lastObject;
 }
@@ -280,7 +276,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     NSString *fromVersion = self.lastUpdatedVersion;
     NSDictionary *completedInfo = self.completedInfo;
     NSString *toVersion = [self latestVersion];
-    if (!toVersion.length || (fromVersion.length && [NSString compareVersion:fromVersion with:toVersion] >= NSOrderedSame)) {
+    if (!toVersion.length || (fromVersion.length && [NSString vv_compareVersion:fromVersion with:toVersion] >= NSOrderedSame)) {
         _upgradeItems = @{}.mutableCopy;
         _pretreated = YES;
         return;
@@ -290,7 +286,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
     NSMutableDictionary<NSNumber *, NSMutableArray<VVDBUpgradeItem *> *> *upgradeItems = [NSMutableDictionary dictionary];
     for (NSMutableArray<VVDBUpgradeItem *> *items in self.stageItems.allValues) {
         for (VVDBUpgradeItem *item in items) {
-            if ([NSString compareVersion:fromVersion with:item.version] > NSOrderedAscending) {
+            if ([NSString vv_compareVersion:fromVersion with:item.version] > NSOrderedAscending) {
                 continue;
             }
             if (item.record) {
@@ -319,7 +315,7 @@ CGFloat const VVDBUpgraderProgressAccuracy = 100.0;
 
 - (BOOL)isNeedToUpgrade:(NSString *)version
 {
-    return [NSString compareVersion:self.lastUpdatedVersion with:version] == NSOrderedAscending;
+    return [NSString vv_compareVersion:self.lastUpdatedVersion with:version] == NSOrderedAscending;
 }
 
 - (void)upgradeAll

@@ -5,114 +5,171 @@
 //  Created by Valo on 2018/6/19.
 //
 
-#import "VVDBCipher.h"
-
 #ifdef SQLITE_HAS_CODEC
+
+#import "VVDBCipher.h"
 #import "sqlite3.h"
-#else
-#import <sqlite3.h>
-#endif
 
 @implementation VVDBCipher
 
-+ (BOOL)encrypt:(NSString *)path key:(NSString *)key
++ (BOOL)encrypt:(NSString *)path
+            key:(NSString *)key
+        options:(NSArray<NSString *> *)options
 {
-    NSString *source = path;
     NSString *target = [NSString stringWithFormat:@"%@.tmp.sqlite", path];
-    if ([self encrypt:source target:target key:key]) {
-        NSFileManager *fm = [[NSFileManager alloc] init];
-        [fm removeItemAtPath:source error:nil];
-        [fm moveItemAtPath:target toPath:source error:nil];
+    if ([self encrypt:path target:target key:key options:options]) {
+        NSFileManager *fm = [NSFileManager defaultManager];
+        [fm removeItemAtPath:path error:nil];
+        [fm moveItemAtPath:target toPath:path error:nil];
         return YES;
-    } else {
-        return NO;
     }
+    return NO;
 }
 
-+ (BOOL)decrypt:(NSString *)path key:(NSString *)key
++ (BOOL)decrypt:(NSString *)path
+            key:(NSString *)key
+        options:(NSArray<NSString *> *)options
 {
-    NSString *source = path;
     NSString *target = [NSString stringWithFormat:@"%@.tmp.sqlite", path];
-    if ([self decrypt:source target:target key:key]) {
-        NSFileManager *fm = [[NSFileManager alloc] init];
-        [fm removeItemAtPath:source error:nil];
-        [fm moveItemAtPath:target toPath:source error:nil];
+    if ([self decrypt:path target:target key:key options:options]) {
+        NSFileManager *fm = [NSFileManager defaultManager];
+        [fm removeItemAtPath:path error:nil];
+        [fm moveItemAtPath:target toPath:path error:nil];
         return YES;
-    } else {
-        return NO;
     }
+    return NO;
 }
 
-+ (BOOL)encrypt:(NSString *)source target:(NSString *)target key:(NSString *)key
++ (BOOL)encrypt:(NSString *)source
+         target:(NSString *)target
+            key:(NSString *)key
+        options:(NSArray<NSString *> *)options
 {
-    if (key.length == 0) {
-        return NO;
-    }
-    
-    const char *sql = [[NSString stringWithFormat:@"ATTACH DATABASE '%@' AS encrypted KEY '%@';", target, key] UTF8String];
+    if (key.length == 0) return NO;
+
     sqlite3 *db;
-    if (sqlite3_open([source UTF8String], &db) == SQLITE_OK) {
-        // Attach empty encrypted database to decrypted database
-        sqlite3_exec(db, sql, NULL, NULL, NULL);
-        // export database
-        sqlite3_exec(db, "SELECT sqlcipher_export('encrypted');", NULL, NULL, NULL);
-        // Detach encrypted database
-        sqlite3_exec(db, "DETACH DATABASE encrypted;", NULL, NULL, NULL);
-        sqlite3_close(db);
-        return YES;
-    } else {
-        sqlite3_close(db);
-        NSAssert1(NO, @"Failed to open database with message '%s'.", sqlite3_errmsg(db));
-        return NO;
+    int rc = sqlite3_open(source.UTF8String, &db);
+    if (rc != SQLITE_OK) return NO;
+
+    NSString *attach = [NSString stringWithFormat:@"ATTACH DATABASE '%@' AS encrypted KEY '%@';", target, key];
+    NSString *export = @"SELECT sqlcipher_export('encrypted');";
+    NSString *detach = @"DETACH DATABASE encrypted;";
+    NSArray *pragmas = [self pretreat:options db:@"encrypted"];
+
+    NSMutableArray *array = [NSMutableArray array];
+    [array addObject:attach];
+    [array addObjectsFromArray:pragmas];
+    [array addObject:export];
+    [array addObject:detach];
+
+    for (NSString *sql in array) {
+        int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+#if DEBUG
+        if (rc != SQLITE_OK) {
+            printf("[VVDBCipher][Error] code: %i, error: %s, sql: %s\n", rc, sqlite3_errmsg(db), sql.UTF8String);
+        } else {
+            printf("[VVDBCipher][DEBUG] code: %i, sql: %s\n", rc, sql.UTF8String);
+        }
+#endif
+        if (rc != SQLITE_OK) break;
     }
+    sqlite3_close(db);
+    return rc == SQLITE_OK;
 }
 
-+ (BOOL)decrypt:(NSString *)source target:(NSString *)target key:(NSString *)key
++ (BOOL)decrypt:(NSString *)source
+         target:(NSString *)target
+            key:(NSString *)key
+        options:(NSArray<NSString *> *)options
 {
-    if (key.length == 0) {
-        return NO;
-    }
-    
-    const char *sql = [[NSString stringWithFormat:@"ATTACH DATABASE '%@' AS plaintext KEY '';", target] UTF8String];
+    if (key.length == 0) return NO;
+
     sqlite3 *db;
-    if (sqlite3_open([source UTF8String], &db) == SQLITE_OK) {
-        sqlite3_exec(db, [[NSString stringWithFormat:@"PRAGMA key = '%@';", key] UTF8String], NULL, NULL, NULL);
-        // Attach empty decrypted database to encrypted database
-        sqlite3_exec(db, sql, NULL, NULL, NULL);
-        // export database
-        sqlite3_exec(db, "SELECT sqlcipher_export('plaintext');", NULL, NULL, NULL);
-        // Detach decrypted database
-        sqlite3_exec(db, "DETACH DATABASE plaintext;", NULL, NULL, NULL);
-        sqlite3_close(db);
-        return YES;
-    } else {
-        sqlite3_close(db);
-        NSAssert1(NO, @"Failed to open database with message '%s'.", sqlite3_errmsg(db));
-        return NO;
+    int rc = sqlite3_open(source.UTF8String, &db);
+    if (rc != SQLITE_OK) return NO;
+    const char *xKey = key.UTF8String ? : "";
+    int nKey = (int)strlen(xKey);
+    if (nKey == 0) return NO;
+    rc = sqlite3_key(db, xKey, nKey);
+    if (rc != SQLITE_OK) return NO;
+
+    NSString *attach = [NSString stringWithFormat:@"ATTACH DATABASE '%@' AS plaintext KEY '';", target];
+    NSString *export = @"SELECT sqlcipher_export('plaintext');";
+    NSString *detach = @"DETACH DATABASE plaintext;";
+    NSArray *pragmas = [self pretreat:options db:@"main"];
+
+    NSMutableArray *array = [NSMutableArray array];
+    [array addObjectsFromArray:pragmas];
+    [array addObject:attach];
+    [array addObject:export];
+    [array addObject:detach];
+
+    for (NSString *sql in array) {
+        int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+#if DEBUG
+        if (rc != SQLITE_OK) {
+            printf("[VVDBCipher][Error] code: %i, error: %s, sql: %s\n", rc, sqlite3_errmsg(db), sql.UTF8String);
+        } else {
+            printf("[VVDBCipher][DEBUG] code: %i, sql: %s\n", rc, sql.UTF8String);
+        }
+#endif
+        if (rc != SQLITE_OK) break;
     }
+    sqlite3_close(db);
+    return rc == SQLITE_OK;
 }
 
-+ (BOOL)reEncrypt:(NSString *)path origin:(NSString *)originKey newKey:(NSString *)newKey
++ (BOOL)change:(NSString *)path
+        oldKey:(NSString *)oldKey
+    oldOptions:(NSArray<NSString *> *)oldOptions
+        newKey:(NSString *)newKey
+    newOptions:(NSArray<NSString *> *)newOptions
 {
-    if ((originKey.length == 0 && newKey.length == 0) ||
-        [originKey isEqualToString:newKey]) {
-        return YES;
-    } else if (originKey.length == 0) {
-        return [self encrypt:path key:newKey];
+    if (oldKey.length == 0) {
+        return [self encrypt:path key:newKey options:newOptions];
     } else if (newKey.length == 0) {
-        return [self decrypt:path key:originKey];
+        return [self decrypt:path key:oldKey options:oldOptions];
     }
-    sqlite3 *db;
-    if (sqlite3_open([path UTF8String], &db) == SQLITE_OK) {
-        sqlite3_exec(db, [[NSString stringWithFormat:@"PRAGMA key = '%@';", originKey] UTF8String], NULL, NULL, NULL);
-        sqlite3_exec(db, [[NSString stringWithFormat:@"PRAGMA rekey = '%@';", newKey] UTF8String], NULL, NULL, NULL);
-        sqlite3_close(db);
-        return YES;
-    } else {
-        sqlite3_close(db);
-        NSAssert1(NO, @"Failed to open database with message '%s'.", sqlite3_errmsg(db));
-        return NO;
+
+    NSString *target = [NSString stringWithFormat:@"%@.tmp.sqlite", path];
+    BOOL ret = [self decrypt:path target:target key:oldKey options:oldOptions];
+    if (!ret) return ret;
+    [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+    ret = [self encrypt:target target:path key:newKey options:newOptions];
+    [[NSFileManager defaultManager] removeItemAtPath:target error:nil];
+    return ret;
+}
+
++ (NSArray<NSString *> *)pretreat:(NSArray<NSString *> *)options db:(NSString *)db
+{
+    if (db.length == 0) return options ? : @[];
+
+    NSRegularExpression *exp = [NSRegularExpression regularExpressionWithPattern:@"[a-z]|[A-Z]" options:0 error:nil];
+    NSString *dbPrefix = [db stringByAppendingString:@"."];
+    NSMutableArray *results = [NSMutableArray arrayWithCapacity:options.count];
+    for (NSString *option in options) {
+        NSArray<NSString *> *subOptions = [option componentsSeparatedByString:@";"];
+        for (NSString *pragma in subOptions) {
+            NSRange r = [pragma.lowercaseString rangeOfString:@"pragma "];
+            if (r.location == NSNotFound) {
+#if DEBUG
+                NSRange range = [pragma rangeOfString:@" *" options:NSRegularExpressionSearch];
+                if (range.location == NSNotFound) printf("[VVDBCipher][DEBUG] invalid option: %s\n", pragma.UTF8String);
+#endif
+                continue;
+            }
+            NSUInteger loc = NSMaxRange(r);
+            NSTextCheckingResult *first = [exp firstMatchInString:pragma options:0 range:NSMakeRange(loc, pragma.length - loc)];
+            if (!first) continue;
+            NSMutableString *string = [pragma mutableCopy];
+            [string insertString:dbPrefix atIndex:first.range.location];
+            [string appendString:@";"];
+            [results addObject:string];
+        }
     }
+    return results;
 }
 
 @end
+
+#endif

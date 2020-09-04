@@ -84,8 +84,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// self <= value
 - (NSString *(^)(id value))lte;
 
-/// self IS NOT value
-- (NSString *(^)(id value))not;
+/// IS NULL
+- (NSString *(^)(void))isNull;
+
+/// IS NOT NULL
+- (NSString *(^)(void))isNotNull;
 
 /// self BETWEEN value1,value2
 - (NSString *(^)(id value, id value2))between;
