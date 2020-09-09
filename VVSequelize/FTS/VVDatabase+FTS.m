@@ -292,56 +292,51 @@ static int vv_fts5_xTokenize(
 
 @implementation VVDatabase (FTS)
 
-- (BOOL)registerEnumerator:(Class<VVTokenEnumerator>)enumerator forTokenizer:(NSString *)name
+- (void)registerEnumerator:(Class<VVTokenEnumerator>)enumerator forTokenizer:(NSString *)name
 {
-    sqlite3_tokenizer_module *module;
-    module = (sqlite3_tokenizer_module *)sqlite3_malloc(sizeof(*module));
-    module->iVersion = 0;
-    module->xCreate = vv_fts3_create;
-    module->xDestroy = vv_fts3_destroy;
-    module->xOpen = vv_fts3_open;
-    module->xClose = vv_fts3_close;
-    module->xNext = vv_fts3_next;
-    module->xName = name.cLangString;
-    module->xClass = (__bridge void *)enumerator;
-    int rc = fts3_register_tokenizer(self.db, (char *)name.cLangString, module);
-
-    NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];
-    BOOL ret =  [self check:rc sql:errorsql];
-
-    fts5_api *pApi = fts5_api_from_db(self.db);
-    if (!pApi) {
-#if DEBUG
-        printf("[VVDB][Debug] fts5 is not supported\n");
-#endif
-        return ret;
-    }
-    fts5_tokenizer *tokenizer;
-    tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
-    tokenizer->xCreate = vv_fts5_xCreate;
-    tokenizer->xDelete = vv_fts5_xDelete;
-    tokenizer->xTokenize = vv_fts5_xTokenize;
-
-    rc = pApi->xCreateTokenizer(pApi, name.cLangString, (__bridge void *)enumerator, tokenizer, NULL);
-    ret = ret && [self check:rc sql:errorsql];
-    return ret;
+    [self.enumerators setObject:enumerator forKey:name];
 }
 
 - (Class<VVTokenEnumerator>)enumeratorForTokenizer:(NSString *)name
 {
-    fts5_api *pApi = fts5_api_from_db(self.db);
-    if (!pApi) return nil;
+    return [self.enumerators objectForKey:name];
+}
 
-    void *pUserdata = 0;
-    fts5_tokenizer *tokenizer;
-    tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
-    int rc = pApi->xFindTokenizer(pApi, name.cLangString, &pUserdata, tokenizer);
-    if (rc != SQLITE_OK) return nil;
-    Class<VVTokenEnumerator> clazz = (__bridge Class)pUserdata;
-    if (!clazz || ![clazz conformsToProtocol:@protocol(VVTokenEnumerator)]) {
-        return nil;
+- (void)registerEnumerators:(sqlite3 *)db
+{
+    fts5_api *pApi = fts5_api_from_db(db);
+    if (!pApi) {
+#if DEBUG
+        printf("[VVDB][Debug] fts5 is not supported\n");
+#endif
+        return;
     }
-    return clazz;
+
+    [self.enumerators enumerateKeysAndObjectsUsingBlock:^(NSString *name, Class<VVTokenEnumerator> enumerator, BOOL *stop) {
+        sqlite3_tokenizer_module *module;
+        module = (sqlite3_tokenizer_module *)sqlite3_malloc(sizeof(*module));
+        module->iVersion = 0;
+        module->xCreate = vv_fts3_create;
+        module->xDestroy = vv_fts3_destroy;
+        module->xOpen = vv_fts3_open;
+        module->xClose = vv_fts3_close;
+        module->xNext = vv_fts3_next;
+        module->xName = name.cLangString;
+        module->xClass = (__bridge void *)enumerator;
+        int rc = fts3_register_tokenizer(db, (char *)name.cLangString, module);
+
+        NSString *errorsql = [NSString stringWithFormat:@"register tokenizer: %@", name];
+        [self check:rc sql:errorsql];
+
+        fts5_tokenizer *tokenizer;
+        tokenizer = (fts5_tokenizer *)sqlite3_malloc(sizeof(*tokenizer));
+        tokenizer->xCreate = vv_fts5_xCreate;
+        tokenizer->xDelete = vv_fts5_xDelete;
+        tokenizer->xTokenize = vv_fts5_xTokenize;
+
+        rc = pApi->xCreateTokenizer(pApi, name.cLangString, (__bridge void *)enumerator, tokenizer, NULL);
+        [self check:rc sql:errorsql];
+    }];
 }
 
 @end

@@ -17,6 +17,10 @@
 #import <sqlite3.h>
 #endif
 
+#ifdef VVSEQUELIZE_FTS
+#import "VVDatabase+FTS.h"
+#endif
+
 NSString *const VVDBPathInMemory = @":memory:";
 NSString *const VVDBPathTemporary = @"";
 NSString *const VVDBErrorDomain = @"com.sequelize.db";
@@ -116,7 +120,8 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     if (_db) return YES;
     int rc = sqlite3_open_v2(self.path.UTF8String, &_db, self.flags, NULL);
     BOOL ret = [self check:rc sql:@"sqlite3_open_v2()"];
-    NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
+    //NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
+    if (!ret) return NO;
 #ifdef SQLITE_HAS_CODEC
     for (NSString *sql in self.cipherDefaultOptions) {
         rc = sqlite3_exec(_db, sql.UTF8String, nil, nil, nil);
@@ -140,6 +145,11 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     // hook
     sqlite3_update_hook(_db, vvdb_update_hook, (__bridge void *)self);
     sqlite3_commit_hook(_db, vvdb_commit_hook, (__bridge void *)self);
+
+#ifdef VVSEQUELIZE_FTS
+    [self registerEnumerators:_db];
+#endif
+
     return ret;
 }
 
@@ -177,6 +187,17 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
         return cache;
     }
 }
+
+#ifdef VVSEQUELIZE_FTS
+
+- (NSMutableDictionary *)enumerators {
+    if (!_enumerators) {
+        _enumerators = [NSMutableDictionary dictionary];
+    }
+    return _enumerators;
+}
+
+#endif
 
 - (int)flags
 {

@@ -284,6 +284,11 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 
 /// sqlite3 structure
 @property (nonatomic, assign, readonly) sqlite3 *db;
+
+#ifdef VVSEQUELIZE_FTS
+@property (nonatomic, strong) NSMutableDictionary *enumerators;
+#endif
+
 @end
 
 NS_ASSUME_NONNULL_END

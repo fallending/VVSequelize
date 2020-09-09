@@ -13,9 +13,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface VVDatabase (FTS)
 
 /// register tokenizer, fts3/4/5
-- (BOOL)registerEnumerator:(Class<VVTokenEnumerator>)enumerator forTokenizer:(NSString *)name;
+- (void)registerEnumerator:(Class<VVTokenEnumerator>)enumerator forTokenizer:(NSString *)name;
 
 - (nullable Class<VVTokenEnumerator>)enumeratorForTokenizer:(NSString *)name;
+
+- (void)registerEnumerators:(sqlite3 *)db;
 
 @end
 
