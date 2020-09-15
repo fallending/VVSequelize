@@ -232,10 +232,18 @@ static uint8_t digitFromChar(unichar c)
 {
     NSMutableDictionary *dic = [NSMutableDictionary dictionary];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
-    NSArray *ignores = [[self class] ignoreProperties];
-    for (VVPropertyInfo *prop in info.properties) {
-        if ([ignores containsObject:prop.name]) continue;
-        dic[prop.name] = [self valueForProperty:prop];
+    NSArray *whites = [[self class] whiteProperties];
+    if (whites.count > 0) {
+        for (VVPropertyInfo *prop in info.properties) {
+            if (![whites containsObject:prop.name]) continue;
+            dic[prop.name] = [self valueForProperty:prop];
+        }
+    } else {
+        NSArray *blacks = [[self class] blackProperties];
+        for (VVPropertyInfo *prop in info.properties) {
+            if ([blacks containsObject:prop.name]) continue;
+            dic[prop.name] = [self valueForProperty:prop];
+        }
     }
     return dic;
 }
@@ -244,10 +252,18 @@ static uint8_t digitFromChar(unichar c)
 {
     NSObject *obj = [[self alloc] init];
     VVClassInfo *info = [VVClassInfo classInfoWithClass:self.class];
-    NSArray *ignores = [self ignoreProperties];
-    for (VVPropertyInfo *prop in info.properties) {
-        if ([ignores containsObject:prop.name]) continue;
-        [obj setValue:keyValues[prop.name] forProperty:prop];
+    NSArray *whites = [self whiteProperties];
+    if (whites.count > 0) {
+        for (VVPropertyInfo *prop in info.properties) {
+            if (![whites containsObject:prop.name]) continue;
+            [obj setValue:keyValues[prop.name] forProperty:prop];
+        }
+    } else {
+        NSArray *blacks = [self blackProperties];
+        for (VVPropertyInfo *prop in info.properties) {
+            if ([blacks containsObject:prop.name]) continue;
+            [obj setValue:keyValues[prop.name] forProperty:prop];
+        }
     }
     return obj;
 }
@@ -271,75 +287,43 @@ static uint8_t digitFromChar(unichar c)
 }
 
 //MARK: - Private
-/// class in Array/Set, key: array property name, value: class or name
-/// @note traverse mapping relations VVKeyValue,MJExtension,YYModel, use the first result
 + (NSDictionary *)customMapper
 {
-    NSString *className = NSStringFromClass(self);
-    static NSMutableDictionary *_mapperPool;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _mapperPool = [NSMutableDictionary dictionaryWithCapacity:0];
-    });
-    NSMutableDictionary *_mapper = [_mapperPool objectForKey:className];
-    if (_mapper) return _mapper;
-    NSDictionary *tempDic = [NSDictionary dictionary];
-    NSArray *selectors = @[@"vv_collectionMapper",        // VVKeyValue
-                           @"mj_objectClassInArray",      // MJExtension
-                           @"modelCustomPropertyMapper"]; // YYModel
-    for (NSString *selectorString in selectors) {
-        SEL mapperSelector = NSSelectorFromString(selectorString);
-        if ([self respondsToSelector:mapperSelector]) {
+    SEL sel = @selector(vv_collectionMapper);
+    if ([self respondsToSelector:sel]) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-            NSDictionary *dic = [self performSelector:mapperSelector];
+        NSDictionary *dic = [self performSelector:sel];
 #pragma clang diagnostic pop
-            if (dic && [dic isKindOfClass:[NSDictionary class]]) {
-                tempDic = dic;
-                break;
-            }
-        }
+        return dic;
     }
-    _mapper = [NSMutableDictionary dictionaryWithCapacity:0];
-    for (NSString *key in tempDic.allKeys) {
-        id val = tempDic[key];
-        _mapper[key] = [val isKindOfClass:NSString.class] ? NSClassFromString(val) : val;
-    }
-    [_mapperPool setObject:_mapper forKey:className];
-    return _mapper;
+    return nil;
 }
 
-/// ingnore properties
-/// @note traverse VVKeyValue,MJExtension,YYModel, use the first result
-+ (NSArray *)ignoreProperties
++ (NSArray *)blackProperties
 {
-    NSString *className = NSStringFromClass(self);
-    static NSMutableDictionary *_ignoresPool;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _ignoresPool = [NSMutableDictionary dictionaryWithCapacity:0];
-    });
-    NSArray *_ignores = [_ignoresPool objectForKey:className];
-    if (_ignores) return _ignores;
-    NSArray *ignores = [NSArray array];
-    NSArray *selectors = @[@"vv_ignoredProperties",         // VVKeyValue
-                           @"mj_ignoredPropertyNames",      // MJExtension
-                           @"modelPropertyBlacklist"];      // YYModel
-    for (NSString *selectorString in selectors) {
-        SEL mapperSelector = NSSelectorFromString(selectorString);
-        if ([self respondsToSelector:mapperSelector]) {
+    SEL sel = @selector(vv_blackProperties);
+    if ([self respondsToSelector:sel]) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-            NSArray *array = [self performSelector:mapperSelector];
+        NSArray *array = [self performSelector:sel];
 #pragma clang diagnostic pop
-            if (array && [array isKindOfClass:[NSArray class]]) {
-                ignores = array;
-                break;
-            }
-        }
+        return array;
     }
-    [_ignoresPool setObject:ignores forKey:className];
-    return ignores;
+    return nil;
+}
+
++ (NSArray *)whiteProperties
+{
+    SEL sel = @selector(vv_whiteProperties);
+    if ([self respondsToSelector:sel]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        NSArray *array = [self performSelector:sel];
+#pragma clang diagnostic pop
+        return array;
+    }
+    return nil;
 }
 
 /// generate db storage data
@@ -641,6 +625,26 @@ static uint8_t digitFromChar(unichar c)
                         }
                     }
                 } break;
+
+                case VVEncodingTypeNSString:
+                    if ([value isKindOfClass:NSString.class]) {
+                        [self setValue:value forKey:propertyName];
+                    } else if ([value isKindOfClass:NSNumber.class]) {
+                        [self setValue:((NSNumber *)value).stringValue forKey:propertyName];
+                    } else {
+                        [self setValue:[value description] forKey:propertyName];
+                    }
+                    break;
+
+                case VVEncodingTypeNSNumber:
+                    if ([value isKindOfClass:NSNumber.class]) {
+                        [self setValue:value forKey:propertyName];
+                    } else if ([value isKindOfClass:NSString.class]) {
+                        [self setValue:@(((NSString *)value).doubleValue) forKey:propertyName];
+                    } else {
+                        [self setValue:@([value description].doubleValue) forKey:propertyName];
+                    }
+                    break;
 
                 case VVEncodingTypeNSUndefined:
                     break;

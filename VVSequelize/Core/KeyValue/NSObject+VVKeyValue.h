@@ -58,11 +58,15 @@ FOUNDATION_EXPORT CLLocationCoordinate2D Coordinate2DFromString(NSString *string
 @end
 
 @protocol VVKeyValue <NSObject>
+@optional
 /// class in Array/Set, key: array property name, value: class or name
 + (nullable NSDictionary *)vv_collectionMapper;
 
-/// properties to ignore
-+ (nullable NSArray<NSString *> *)vv_ignoredProperties;
+/// black list
++ (nullable NSArray<NSString *> *)vv_blackProperties;
+
+/// white list
++ (nullable NSArray<NSString *> *)vv_whiteProperties;
 
 @end
 

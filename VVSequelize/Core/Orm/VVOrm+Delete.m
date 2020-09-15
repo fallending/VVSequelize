@@ -13,7 +13,9 @@
 - (BOOL)drop
 {
     NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", self.name.quoted];
-    return [self.vvdb run:sql];
+    BOOL ret = [self.vvdb run:sql];
+    if (ret) [self.vvdb.orms removeObjectForKey:self.name];
+    return ret;
 }
 
 - (BOOL)deleteOne:(nonnull id)object

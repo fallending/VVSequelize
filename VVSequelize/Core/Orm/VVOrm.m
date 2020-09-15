@@ -36,11 +36,15 @@
                               database:(nullable VVDatabase *)vvdb
                                  setup:(BOOL)setup
 {
-    VVOrm *orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
+    VVOrm *orm = [vvdb.orms objectForKey:name];
+    if (orm) return orm;
+
+    orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
     if (setup) {
         VVOrmInspection comparison = [orm inspectExistingTable];
         [orm setupTableWith:comparison];
     }
+    [vvdb.orms setObject:orm forKey:name];
     return orm;
 }
 
@@ -51,13 +55,17 @@
                          content_rowid:(nullable NSString *)content_rowid
                                  setup:(BOOL)setup
 {
-    VVOrm *orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
+    VVOrm *orm = [vvdb.orms objectForKey:name];
+    if (orm) return orm;
+
+    orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
     orm.content_table = content_table;
     orm.content_rowid = content_rowid;
     if (setup) {
         VVOrmInspection comparison = [orm inspectExistingTable];
         [orm setupTableWith:comparison];
     }
+    [vvdb.orms setObject:orm forKey:name];
     return orm;
 }
 
@@ -65,6 +73,10 @@
                               relative:(VVOrm *)relativeORM
                          content_rowid:(nullable NSString *)content_rowid
 {
+    NSString *fts_table = [NSString stringWithFormat:@"fts_%@", relativeORM.name];
+    VVOrm *orm = [relativeORM.vvdb.orms objectForKey:fts_table];
+    if (orm) return orm;
+
     config.blackList = config.blackList ? [config.blackList arrayByAddingObject:content_rowid] : @[content_rowid];
     [config treate];
     VVOrmConfig *cfg = relativeORM.config;
@@ -83,8 +95,7 @@
                  "4. The relative ORM contains the content_rowid\n");
     }
 
-    NSString *fts_table = [NSString stringWithFormat:@"fts_%@", relativeORM.name];
-    VVOrm *orm = [[VVOrm alloc] initWithConfig:config name:fts_table database:relativeORM.vvdb];
+    orm = [[VVOrm alloc] initWithConfig:config name:fts_table database:relativeORM.vvdb];
     orm.content_table = relativeORM.name;
     orm.content_rowid = content_rowid;
 
@@ -138,6 +149,7 @@
     [relativeORM.vvdb run:del_trigger];
     [relativeORM.vvdb run:upd_trigger];
 
+    [relativeORM.vvdb.orms setObject:orm forKey:fts_table];
     return orm;
 }
 

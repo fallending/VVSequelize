@@ -36,6 +36,10 @@ NSString *const VVSqlTypeJson = @"JSON";
             break;
         case VVEncodingTypeObject: {
             switch (self.nsType) {
+                case VVEncodingTypeNSString:
+                case VVEncodingTypeNSMutableString:
+                    type = VVSqlTypeText;
+                    break;
                 case VVEncodingTypeNSNumber:
                 case VVEncodingTypeNSDecimalNumber:
                     type = VVSqlTypeReal;
@@ -456,7 +460,18 @@ NSString *const VVSqlTypeJson = @"JSON";
     if (dictionary.count == 0 && otherDictionary.count == 0) {
         return YES;
     }
-    return [dictionary isEqualToDictionary:otherDictionary];
+    if (dictionary.count != otherDictionary.count) return NO;
+
+    NSMutableDictionary *lhs = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
+    NSMutableDictionary *rhs = [NSMutableDictionary dictionaryWithCapacity:otherDictionary.count];
+    [dictionary enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        lhs[key] = [obj description];
+    }];
+    [otherDictionary enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        rhs[key] = [obj description];
+    }];
+
+    return [lhs isEqualToDictionary:rhs];
 }
 
 + (BOOL)ormString:(NSString *)string isEqual:(NSString *)otherString

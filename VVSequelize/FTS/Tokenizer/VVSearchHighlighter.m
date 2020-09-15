@@ -262,7 +262,7 @@
 
 - (NSAttributedString *)trim:(NSAttributedString *)matchedText maxLength:(NSUInteger)maxLen
 {
-    return [matchedText attributedStringByTrimmingToLength:maxLen withAttributes:self.highlightAttributes];
+    return [matchedText vv_attributedStringByTrimmingToLength:maxLen withAttributes:self.highlightAttributes];
 }
 
 //MARK: - highlight search result

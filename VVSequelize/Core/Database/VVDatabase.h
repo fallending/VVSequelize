@@ -176,12 +176,16 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 /// @attention cache results.  clear cache after update/insert/delete/commit.
 - (NSArray<NSDictionary *> *)query:(NSString *)sql;
 
+- (NSArray<NSDictionary *> *)query:(NSString *)sql bind:(NSArray *)values;
+
 /// execute native sql query
 /// @param sql native sqls
 /// @param clazz results class
 /// @return query results
 /// @attention cache results.  clear cache after update/insert/delete/commit.
 - (NSArray *)query:(NSString *)sql clazz:(Class)clazz;
+
+- (NSArray *)query:(NSString *)sql bind:(NSArray *)values clazz:(Class)clazz;
 
 /// check if table exists
 /// @param table name
@@ -284,6 +288,9 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 
 /// sqlite3 structure
 @property (nonatomic, assign, readonly) sqlite3 *db;
+
+/// orm cache
+@property (nonatomic, strong, readonly) NSMutableDictionary *orms;
 
 #ifdef VVSEQUELIZE_FTS
 @property (nonatomic, strong) NSMutableDictionary *enumerators;

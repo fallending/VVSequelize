@@ -27,6 +27,7 @@
     VVExpr *_having;       ///< group filter: NSString, NSDictionary, NSArray
     NSUInteger _offset;    ///< offset
     NSUInteger _limit;     ///< limit
+    NSArray *_values;      ///< bind values
 }
 
 - (NSArray *)allObjects
@@ -42,12 +43,22 @@
 - (NSArray *)allResults:(BOOL)useObjects
 {
     NSAssert(_vvdb, @"set database or orm first!");
-    NSArray *keyValuesArray = [_vvdb query:self.sql];
+    NSArray *keyValuesArray = [_vvdb query:self.sql bind:_values];
     if (useObjects) {
         NSAssert(_clazz, @"set class or orm first!");
         return [_clazz vv_objectsWithKeyValuesArray:keyValuesArray];
     }
     return keyValuesArray;
+}
+
+- (NSArray *)allValues:(NSString *)field {
+    if (field.length == 0) return @[];
+    NSArray *allKeyValues = [self allKeyValues];
+    NSMutableArray *results = [NSMutableArray arrayWithCapacity:allKeyValues.count];
+    for (NSDictionary *keyValues in allKeyValues) {
+        [results addObject:keyValues[field] ? : NSNull.null];
+    }
+    return results;
 }
 
 //MARK: - chain
@@ -152,6 +163,14 @@
 {
     return ^(NSUInteger limit) {
         self->_limit = limit;
+        return self;
+    };
+}
+
+- (VVSelect *(^)(NSArray *values))values
+{
+    return ^(NSArray *values) {
+        self->_values = values;
         return self;
     };
 }

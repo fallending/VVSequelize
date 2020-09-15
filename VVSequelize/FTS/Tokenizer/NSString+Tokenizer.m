@@ -522,7 +522,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 
 @implementation NSAttributedString (Highlighter)
 
-- (NSAttributedString *)attributedStringByTrimmingToLength:(NSUInteger)maxLen withAttributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
+- (NSAttributedString *)vv_attributedStringByTrimmingToLength:(NSUInteger)maxLen withAttributes:(NSDictionary<NSAttributedStringKey, id> *)attributes
 {
     if (self.length < maxLen) return self.copy;
     NSUInteger length = self.length;

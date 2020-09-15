@@ -19,6 +19,10 @@
 /// @note must set orm
 - (NSArray *)allKeyValues;
 
+/// query the specified column
+/// @note must set orm
+- (NSArray *)allValues:(NSString *)field;
+
 //MARK: - chain
 /// create chain
 + (instancetype)makeSelect:(void (^)(VVSelect *make))block;
@@ -47,5 +51,7 @@
 - (VVSelect *(^)(NSUInteger offset))offset;
 
 - (VVSelect *(^)(NSUInteger limit))limit;
+
+- (VVSelect *(^)(NSArray *values))values;
 
 @end

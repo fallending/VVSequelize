@@ -75,6 +75,8 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 @property (nonatomic, copy) NSString *path;
 @property (nonatomic, strong) NSCache *cache;
 @property (nonatomic, assign) sqlite3 *db;
+@property (nonatomic, strong) NSMutableDictionary *orms;
+@property (nonatomic, assign) BOOL inTransaction;
 @end
 
 @implementation VVDatabase
@@ -215,6 +217,13 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     return _path;
 }
 
+- (NSMutableDictionary *)orms {
+    if (!_orms) {
+        _orms = [NSMutableDictionary dictionary];
+    }
+    return _orms;
+}
+
 - (NSArray<NSString *> *)normalOptions
 {
     if (!_normalOptions) {
@@ -304,9 +313,20 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     return [[self prepare:sql] query];
 }
 
+- (NSArray<NSDictionary *> *)query:(NSString *)sql bind:(NSArray *)values
+{
+    return [[self prepare:sql bind:values] query];
+}
+
 - (NSArray *)query:(NSString *)sql clazz:(Class)clazz
 {
     NSArray *array = [self query:sql];
+    return [clazz vv_objectsWithKeyValuesArray:array];
+}
+
+- (NSArray *)query:(NSString *)sql bind:(NSArray *)values clazz:(Class)clazz
+{
+    NSArray *array = [self query:sql bind:values];
     return [clazz vv_objectsWithKeyValuesArray:array];
 }
 
@@ -336,6 +356,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 // MARK: - Transactions
 - (BOOL)begin:(VVDBTransaction)mode
 {
+    if (_inTransaction) return YES;
     NSString *sql = nil;
     switch (mode) {
         case VVDBTransactionImmediate:
@@ -348,17 +369,25 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
             sql = @"BEGIN DEFERRED TRANSACTION";
             break;
     }
-    return [[self prepare:sql] run];
+    BOOL ret = [[self prepare:sql] run];
+    if (ret) _inTransaction = YES;
+    return ret;
 }
 
 - (BOOL)commit
 {
-    return [[self prepare:@"COMMIT TRANSACTION"] run];
+    if (!_inTransaction) return YES;
+    BOOL ret = [[self prepare:@"COMMIT TRANSACTION"] run];
+    if (ret) _inTransaction = NO;
+    return ret;
 }
 
 - (BOOL)rollback
 {
-    return [[self prepare:@"ROLLBACK TRANSACTION"] run];
+    if (!_inTransaction) return YES;
+    BOOL ret = [[self prepare:@"ROLLBACK TRANSACTION"] run];
+    if (ret) _inTransaction = NO;
+    return ret;
 }
 
 - (BOOL)savepoint:(NSString *)name block:(BOOL (^)(void))block
@@ -396,16 +425,21 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     if (!block) {
         return YES;
     }
+    if (_inTransaction) {
+        return block();
+    }
     BOOL ret = [[self prepare:begin] run];
     if (!ret) {
         return block();
     }
+    _inTransaction = YES;
     ret = block();
     if (ret) {
-        [[self prepare:commit] run];
+        ret = [[self prepare:commit] run];
     } else {
         [[self prepare:rollback] run];
     }
+    _inTransaction = NO;
     return ret;
 }
 
