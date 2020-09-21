@@ -65,7 +65,6 @@ NSString *const VVSqlTypeJson = @"JSON";
 @property (nonatomic, assign) NSUInteger ftsVersion;
 @property (nonatomic, assign) BOOL fromTable;
 @property (nonatomic, strong) NSArray<NSString *> *columns;
-
 @end
 
 @implementation VVOrmConfig
@@ -109,7 +108,7 @@ NSString *const VVSqlTypeJson = @"JSON";
     NSMutableArray *uniques = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *indexes = [NSMutableArray arrayWithCapacity:0];
 
-    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(%@);", tableName.quoted];
+    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info = %@;", tableName.quoted];
     NSArray *infos = [vvdb query:tableInfoSql];
 
     for (NSDictionary *dic in infos) {
@@ -131,13 +130,13 @@ NSString *const VVSqlTypeJson = @"JSON";
     }
 
     // get indexes
-    NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list(%@);", tableName.quoted];
+    NSString *indexListSql = [NSString stringWithFormat:@"PRAGMA index_list = %@;", tableName.quoted];
     NSArray *indexList =  [vvdb query:indexListSql];
     for (NSDictionary *indexDic in indexList) {
         NSString *indexName =  indexDic[@"name"];
         BOOL unique = [indexDic[@"unique"] boolValue];
 
-        NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info(%@);", indexName.quoted];
+        NSString *indexInfoSql = [NSString stringWithFormat:@"PRAGMA index_info = %@;", indexName.quoted];
         NSArray *indexInfos = [vvdb query:indexInfoSql];
         for (NSDictionary *indexInfo in indexInfos) {
             NSString *name = indexInfo[@"name"];
@@ -216,7 +215,7 @@ NSString *const VVSqlTypeJson = @"JSON";
     NSMutableArray *colmuns = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *indexes = [NSMutableArray arrayWithCapacity:0];
 
-    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info(%@);", tableName.quoted];
+    NSString *tableInfoSql = [NSString stringWithFormat:@"PRAGMA table_info = %@;", tableName.quoted];
     NSArray *infos = [vvdb query:tableInfoSql];
 
     for (NSDictionary *info in infos) {

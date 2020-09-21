@@ -10,10 +10,17 @@
 
 #define VV_NO_WARNING(exp) if (exp) {}
 
+typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
+    VVOrmTableExist   = 1 << 0,
+    VVOrmTableChanged = 1 << 1,
+    VVOrmIndexChanged = 1 << 2,
+};
+
 @interface VVOrm ()
 @property (nonatomic, assign) BOOL created;
 @property (nonatomic, copy) NSString *content_table;
 @property (nonatomic, copy) NSString *content_rowid;
+@property (nonatomic, strong) NSArray<NSString *> *existingIndexes;
 @end
 
 @implementation VVOrm
@@ -28,22 +35,20 @@
                                   name:(nullable NSString *)name
                               database:(nullable VVDatabase *)vvdb
 {
-    return [self ormWithConfig:config name:name database:vvdb setup:YES];
+    return [self ormWithConfig:config name:name database:vvdb setup:VVOrmSetupCreate];
 }
 
 + (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
                                   name:(nullable NSString *)name
                               database:(nullable VVDatabase *)vvdb
-                                 setup:(BOOL)setup
+                                 setup:(VVOrmSetup)setup
 {
     VVOrm *orm = [vvdb.orms objectForKey:name];
     if (orm) return orm;
 
     orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
-    if (setup) {
-        VVOrmInspection comparison = [orm inspectExistingTable];
-        [orm setupTableWith:comparison];
-    }
+    if (setup == VVOrmSetupCreate) [orm createTableAndIndexes];
+    else if (setup == VVOrmSetupRebuild) [orm rebuildTableAndIndexes];
     [vvdb.orms setObject:orm forKey:name];
     return orm;
 }
@@ -53,7 +58,7 @@
                               database:(nullable VVDatabase *)vvdb
                          content_table:(nullable NSString *)content_table
                          content_rowid:(nullable NSString *)content_rowid
-                                 setup:(BOOL)setup
+                                 setup:(VVOrmSetup)setup
 {
     VVOrm *orm = [vvdb.orms objectForKey:name];
     if (orm) return orm;
@@ -61,10 +66,8 @@
     orm = [[VVOrm alloc] initWithConfig:config name:name database:vvdb];
     orm.content_table = content_table;
     orm.content_rowid = content_rowid;
-    if (setup) {
-        VVOrmInspection comparison = [orm inspectExistingTable];
-        [orm setupTableWith:comparison];
-    }
+    if (setup == VVOrmSetupCreate) [orm createTableAndIndexes];
+    else if (setup == VVOrmSetupRebuild) [orm rebuildTableAndIndexes];
     [vvdb.orms setObject:orm forKey:name];
     return orm;
 }
@@ -99,13 +102,8 @@
     orm.content_table = relativeORM.name;
     orm.content_rowid = content_rowid;
 
-    if (!relativeORM.created) {
-        VVOrmInspection comparison1 = [relativeORM inspectExistingTable];
-        [relativeORM setupTableWith:comparison1];
-    }
-
-    VVOrmInspection comparison2 = [orm inspectExistingTable];
-    [orm setupTableWith:comparison2];
+    if (!relativeORM.created) [relativeORM rebuildTableAndIndexes];
+    [orm rebuildTableAndIndexes];
 
     NSArray * (^ map)(NSArray<NSString *> *, NSString *) = ^(NSArray<NSString *> *array, NSString *prefix) {
         NSMutableArray *results = [NSMutableArray arrayWithCapacity:array.count];
@@ -171,6 +169,63 @@
     return self;
 }
 
+- (BOOL)createTableAndIndexes
+{
+    [_config treate];
+    BOOL ret = [self createTable];
+    if (!ret || _config.fts || _config.indexes.count == 0) return ret;
+    NSString *indexName = [NSString stringWithFormat:@"vvdb_index_%@", _name];
+    BOOL exist = [self.existingIndexes containsObject:indexName];
+    if (!exist) {
+        ret = [self createIndexes];
+    }
+    return ret;
+}
+
+- (BOOL)createTable
+{
+    if (_created) return YES;
+    if ([self.vvdb isExist:_name]) {
+        _created = YES;
+        return YES;
+    }
+    NSString *sql = nil;
+    // create fts table
+    if (_config.fts) {
+        sql = [_config createFtsSQLWith:_name content_table:_content_table content_rowid:_content_rowid];
+    }
+    // create nomarl table
+    else {
+        sql = [_config createSQLWith:_name];
+    }
+    // execute create sql
+    BOOL ret = [self.vvdb run:sql];
+    //NSAssert1(ret, @"Failure to create a table: %@", _name);
+    if (ret) _created = YES;
+    return ret;
+}
+
+- (BOOL)createIndexes
+{
+    _existingIndexes = nil;
+
+    /// fts table do not need this indexes
+    if (_config.fts || _config.indexes.count == 0) return YES;
+
+    // create new indexes
+    NSString *indexName = [NSString stringWithFormat:@"vvdb_index_%@", _name];
+
+    NSString *indexSQL = [_config.indexes sqlJoin];
+    NSString *createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS %@ on %@ (%@);", indexName.quoted, _name.quoted, indexSQL];
+    BOOL ret = [self.vvdb run:createIdxSQL];
+    if (!ret) {
+#if DEBUG
+        printf("[VVDB][WARN] Failed create index for table (%s)!", self.name.UTF8String);
+#endif
+    }
+    return ret;
+}
+
 - (nullable NSDictionary *)uniqueConditionForObject:(id)object
 {
     if (_config.primaries.count > 0) {
@@ -190,16 +245,21 @@
     return nil;
 }
 
+- (void)rebuildTableAndIndexes {
+    _created = NO;
+    VVOrmInspection comparison = [self inspectExistingTable];
+    [self setupTableWith:comparison];
+}
+
 - (VVOrmInspection)inspectExistingTable
 {
     VVOrmInspection inspection = 0x0;
-    VVOrmConfig *tableConfig = [VVOrmConfig configFromTable:_name database:_vvdb];
+    VVOrmConfig *tableConfig = [VVOrmConfig configFromTable:_name database:self.vvdb];
     // check if table exists
-    BOOL ret = [_vvdb isExist:_name];
-    if (!ret) return inspection;
+    if (!tableConfig) return inspection;
     inspection |= VVOrmTableExist;
     // check table and indexes for updates
-    ret = [_config isEqualToConfig:tableConfig];
+    BOOL ret = [_config isEqualToConfig:tableConfig];
     if (!ret) inspection |= VVOrmTableChanged;
     ret = [_config isInedexesEqual:tableConfig];
     if (!ret) inspection |= VVOrmIndexChanged;
@@ -208,8 +268,6 @@
 
 - (void)setupTableWith:(VVOrmInspection)inspection
 {
-    if (_created) return;
-
     // if table exists, check for updates. if need, rename original table
     NSString *tempTableName = [NSString stringWithFormat:@"%@_%@", _name, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
     BOOL exist = inspection & VVOrmTableExist;
@@ -232,24 +290,6 @@
     if (indexChanged || !exist) {
         [self rebuildIndex];
     }
-    _created = YES;
-}
-
-- (void)createTable
-{
-    NSString *sql = nil;
-    // create fts table
-    if (_config.fts) {
-        sql = [_config createFtsSQLWith:_name content_table:_content_table content_rowid:_content_rowid];
-    }
-    // create nomarl table
-    else {
-        sql = [_config createSQLWith:_name];
-    }
-    // execute create sql
-    BOOL ret = [self.vvdb run:sql];
-    VV_NO_WARNING(ret);
-    //NSAssert1(ret, @"Failure to create a table: %@", _name);
 }
 
 - (void)renameToTempTable:(NSString *)tempTableName
@@ -258,6 +298,23 @@
     BOOL ret = [self.vvdb run:sql];
     VV_NO_WARNING(ret);
     //NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
+}
+
+//MARK: - getter
+
+- (NSArray<NSString *> *)existingIndexes
+{
+    if (!_existingIndexes) {
+        NSString *sql = [NSString stringWithFormat:@"PRAGMA index_list = %@;", _name];
+        NSArray *indexes =  [self.vvdb query:sql];
+        NSMutableArray *results = [NSMutableArray arrayWithCapacity:indexes.count];
+        for (NSDictionary *dic in indexes) {
+            NSString *index = dic[@"name"];
+            if (index) [results addObject:index];
+        }
+        _existingIndexes = results;
+    }
+    return _existingIndexes;
 }
 
 //MARK: - Private
@@ -281,44 +338,43 @@
 
     if (!ret) {
 #if DEBUG
-        NSLog(@"Warning: copying data from old table (%@) to new table (%@) failed!", tempTableName, self.name);
+        printf("[VVDB][WARN] copying data from old table (%s) to new table (%s) failed!", tempTableName.UTF8String, self.name.UTF8String);
 #endif
     }
+}
+
+- (BOOL)dropOldIndexes {
+    if (self.existingIndexes.count == 0) return YES;
+
+    NSMutableString *dropIdxSQL = [NSMutableString stringWithCapacity:0];
+    for (NSDictionary *dic in self.existingIndexes) {
+        NSString *idxName = dic[@"name"];
+        if ([idxName hasPrefix:@"sqlite_autoindex_"]) continue;
+        [dropIdxSQL appendFormat:@"DROP INDEX IF EXISTS %@;", idxName.quoted];
+    }
+    BOOL ret = [self.vvdb run:dropIdxSQL];
+    return ret;
 }
 
 - (void)rebuildIndex
 {
     /// fts table do not need this indexes
-    if (_config.fts) return;
-    NSString *indexesSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type ='index' and tbl_name = %@", _name.quoted];
-    NSArray *array = [_vvdb query:indexesSQL];
-    NSMutableString *dropIdxSQL = [NSMutableString stringWithCapacity:0];
-    for (NSDictionary *dic  in array) {
-        NSString *idxName = dic[@"name"];
-        if ([idxName hasPrefix:@"sqlite_autoindex_"]) continue;
-        [dropIdxSQL appendFormat:@"DROP INDEX IF EXISTS %@;", idxName.quoted];
-    }
+    if (_config.fts || _config.indexes.count == 0) return;
 
-    if (self.config.indexes.count == 0) return;
+    /// drop old indexes
+    BOOL ret1 = [self dropOldIndexes];
+    BOOL ret2 = [self createIndexes];
+    if (ret2) _existingIndexes = nil;
 
-    // create new indexes
-    NSString *indexName = [NSString stringWithFormat:@"vvdb_index_%@", _name];
-    NSString *indexSQL = [_config.indexes sqlJoin];
-    NSString *createIdxSQL = nil;
-    if (indexSQL.length > 0) {
-        createIdxSQL = [NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS %@ on %@ (%@);", indexName.quoted, _name.quoted, indexSQL];
-    }
-    BOOL ret = YES;
-    if (dropIdxSQL.length > 0) {
-        ret = [self.vvdb run:dropIdxSQL];
-    }
-    if (ret && createIdxSQL.length > 0) {
-        ret = [self.vvdb run:createIdxSQL];
-    }
-
-    if (!ret) {
+    if (!ret1) {
 #if DEBUG
-        NSLog(@"Warning: Failed create index for table (%@)!", self.name);
+        printf("[VVDB][WARN] Failed create index for table (%s)!", self.name.UTF8String);
+#endif
+    }
+
+    if (!ret2) {
+#if DEBUG
+        printf("[VVDB][WARN] Failed create index for table (%s)!", self.name.UTF8String);
 #endif
     }
 }

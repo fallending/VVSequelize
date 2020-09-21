@@ -14,6 +14,8 @@
 
 - (BOOL)_insertOne:(nonnull id)object upsert:(BOOL)upsert
 {
+    [self createTableAndIndexes];
+
     NSDictionary *dic = [object isKindOfClass:[NSDictionary class]] ? object : [object vv_keyValues];
     if (!upsert && self.config.primaries.count == 1 && self.config.pkAutoIncrement) {
         dic = [dic vv_removeObjectsForKeys:self.config.primaries];

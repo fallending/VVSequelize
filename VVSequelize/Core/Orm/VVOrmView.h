@@ -45,11 +45,10 @@ NS_ASSUME_NONNULL_BEGIN
 #define VVORMVIEW_UNAVAILABLE __attribute__((unavailable("This method is not supported by VVOrmView.")))
 
 //MARK: Setup
-- (VVOrmInspection)inspectExistingTable VVORMVIEW_UNAVAILABLE;
-
-- (void)setupTableWith:(VVOrmInspection)inspection VVORMVIEW_UNAVAILABLE;
 
 - (void)createTable VVORMVIEW_UNAVAILABLE;
+
+- (void)rebuildTable VVORMVIEW_UNAVAILABLE;
 
 //MARK: Create
 - (BOOL)insertOne:(nonnull id)object VVORMVIEW_UNAVAILABLE;

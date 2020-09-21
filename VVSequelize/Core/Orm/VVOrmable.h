@@ -50,7 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable instancetype)ormWithClass:(Class<VVOrmable>)clazz
                                  name:(nullable NSString *)name
                              database:(nullable VVDatabase *)vvdb
-                                setup:(BOOL)setup;
+                                setup:(VVOrmSetup)setup;
 
 @end
 

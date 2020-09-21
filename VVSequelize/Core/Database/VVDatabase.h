@@ -20,9 +20,9 @@ FOUNDATION_EXPORT int VVDBEssentialFlags;
 
 /// sqlite3 transaction type
 ///
-/// VVDBTransactionDeferred: `BEGIN DEFERRED TRANSACTION`
-/// VVDBTransactionImmediate: `BEGIN IMMEDIATE TRANSACTION`
-/// VVDBTransactionExclusive: `BEGIN EXCLUSIVE TRANSACTION`
+/// VVDBTransactionDeferred: `BEGIN DEFERRED`
+/// VVDBTransactionImmediate: `BEGIN IMMEDIATE`
+/// VVDBTransactionExclusive: `BEGIN EXCLUSIVE`
 typedef NS_ENUM (NSUInteger, VVDBTransaction) {
     VVDBTransactionDeferred,
     VVDBTransactionImmediate,
@@ -176,6 +176,8 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 /// @attention cache results.  clear cache after update/insert/delete/commit.
 - (NSArray<NSDictionary *> *)query:(NSString *)sql;
 
+/// execute native sql query
+/// @param values corresponding to `?` In sql
 - (NSArray<NSDictionary *> *)query:(NSString *)sql bind:(NSArray *)values;
 
 /// execute native sql query
@@ -185,6 +187,8 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 /// @attention cache results.  clear cache after update/insert/delete/commit.
 - (NSArray *)query:(NSString *)sql clazz:(Class)clazz;
 
+/// execute native sql query
+/// @param values corresponding to `?` In sql
 - (NSArray *)query:(NSString *)sql bind:(NSArray *)values clazz:(Class)clazz;
 
 /// check if table exists
@@ -222,6 +226,9 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 /// @param name save point name
 /// @param block operation
 - (BOOL)savepoint:(NSString *)name block:(BOOL (^)(void))block;
+
+/// immediate transaction
+- (BOOL)transaction:(BOOL (^)(void))block;
 
 /// transaction
 /// @param mode transaction mode
@@ -285,6 +292,8 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 //MARK: - private
 /// query results cache
 @property (nonatomic, strong, readonly) NSCache *cache;
+
+@property (nonatomic, assign) BOOL needClearCache;
 
 /// sqlite3 structure
 @property (nonatomic, assign, readonly) sqlite3 *db;

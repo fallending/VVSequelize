@@ -304,10 +304,11 @@ static int vv_fts5_xTokenize(
 
 - (void)registerEnumerators:(sqlite3 *)db
 {
+    if (self.enumerators.count == 0) return;
     fts5_api *pApi = fts5_api_from_db(db);
     if (!pApi) {
 #if DEBUG
-        printf("[VVDB][Debug] fts5 is not supported\n");
+        printf("[VVDB][DEBUG] fts5 is not supported\n");
 #endif
         return;
     }

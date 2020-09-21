@@ -12,10 +12,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
-    VVOrmTableExist   = 1 << 0,
-    VVOrmTableChanged = 1 << 1,
-    VVOrmIndexChanged = 1 << 2,
+typedef NS_ENUM (NSUInteger, VVOrmSetup) {
+    VVOrmSetupNoCreation = 0,
+    VVOrmSetupCreate,
+    VVOrmSetupRebuild,
 };
 
 /// Object Relational Mapping
@@ -26,8 +26,10 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 @property (nonatomic, strong, readonly) VVDatabase *vvdb;
 /// table name in VVOrm , view name in VVOrmView
 @property (nonatomic, copy, readonly) NSString *name;
+/// the table has been created
+@property (nonatomic, assign, readonly) BOOL created;
 /// class of queried objects
-@property (nonatomic) Class metaClass;
+@property (nonatomic, strong) Class metaClass;
 
 - (instancetype)init __attribute__((unavailable("use initWithConfig:name:database: instead.")));
 + (instancetype)new __attribute__((unavailable("use initWithConfig:name:database: instead.")));
@@ -52,7 +54,7 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 + (nullable instancetype)ormWithConfig:(VVOrmConfig *)config
                                   name:(nullable NSString *)name
                               database:(nullable VVDatabase *)vvdb
-                                 setup:(BOOL)setup;
+                                 setup:(VVOrmSetup)setup;
 
 /// Initialize fts orm
 /// @param config orm configuration
@@ -66,7 +68,7 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
                               database:(nullable VVDatabase *)vvdb
                          content_table:(nullable NSString *)content_table
                          content_rowid:(nullable NSString *)content_rowid
-                                 setup:(BOOL)setup;
+                                 setup:(VVOrmSetup)setup;
 
 /// Initialize fts orm
 /// @param config orm configuration
@@ -85,14 +87,11 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
                                    name:(nullable NSString *)name
                                database:(nullable VVDatabase *)vvdb NS_DESIGNATED_INITIALIZER;
 
-/// inspect table
-- (VVOrmInspection)inspectExistingTable;
-
-/// create/modify table and indexes with inspect results
-- (void)setupTableWith:(VVOrmInspection)inspection;
-
 /// create table manually
-- (void)createTable;
+- (BOOL)createTableAndIndexes;
+
+///compare and update table structures
+- (void)rebuildTableAndIndexes;
 
 /// get unique condition, use to update/delete
 - (nullable NSDictionary *)uniqueConditionForObject:(id)object;

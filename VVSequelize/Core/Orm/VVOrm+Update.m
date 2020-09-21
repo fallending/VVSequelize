@@ -14,6 +14,8 @@
 
 - (BOOL)_update:(nullable VVExpr *)condition keyValues:(NSDictionary<NSString *, id> *)keyValues
 {
+    [self createTableAndIndexes];
+
     NSString *where = [condition sqlWhere];
     if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
 

@@ -44,14 +44,14 @@ static int vvdb_trace_callback(unsigned mask, void *pCtx, void *p, void *x)
 static void vvdb_update_hook(void *pCtx, int op, char const *db, char const *table, int64_t rowid)
 {
     VVDatabase *vvdb = (__bridge VVDatabase *)pCtx;
-    [vvdb.cache removeAllObjects];
+    vvdb.needClearCache = YES;
     if (vvdb.updateHook) vvdb.updateHook(op, db, table, rowid);
 }
 
 static int vvdb_commit_hook(void *pCtx)
 {
     VVDatabase *vvdb = (__bridge VVDatabase *)pCtx;
-    [vvdb.cache removeAllObjects];
+    vvdb.needClearCache = YES;
     return !vvdb.commitHook ? 0 : vvdb.commitHook();
 }
 
@@ -124,6 +124,14 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     BOOL ret = [self check:rc sql:@"sqlite3_open_v2()"];
     //NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
     if (!ret) return NO;
+    
+    // hook
+    sqlite3_update_hook(_db, vvdb_update_hook, (__bridge void *)self);
+    sqlite3_commit_hook(_db, vvdb_commit_hook, (__bridge void *)self);
+    if (_busyHandler) sqlite3_busy_handler(_db, vvdb_busy_callback, (__bridge void *)self);
+    if (_traceHook) sqlite3_trace_v2(_db, SQLITE_TRACE_STMT, vvdb_trace_callback, (__bridge void *)self);
+    if (_rollbackHook) sqlite3_rollback_hook(_db, vvdb_rollback_hook, (__bridge void *)self);
+
 #ifdef SQLITE_HAS_CODEC
     for (NSString *sql in self.cipherDefaultOptions) {
         rc = sqlite3_exec(_db, sql.UTF8String, nil, nil, nil);
@@ -144,14 +152,10 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
         rc = sqlite3_exec(_db, sql.UTF8String, nil, nil, nil);
         [self check:rc sql:sql];
     }
-    // hook
-    sqlite3_update_hook(_db, vvdb_update_hook, (__bridge void *)self);
-    sqlite3_commit_hook(_db, vvdb_commit_hook, (__bridge void *)self);
 
 #ifdef VVSEQUELIZE_FTS
     [self registerEnumerators:_db];
 #endif
-
     return ret;
 }
 
@@ -185,6 +189,10 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
             cache.countLimit = 1000;
             cache.totalCostLimit = 1024 * 1024;
             _caches[self.path] = cache;
+        }
+        if (_needClearCache) {
+            [cache removeAllObjects];
+            _needClearCache = NO;
         }
         return cache;
     }
@@ -332,8 +340,15 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 
 - (BOOL)isExist:(NSString *)table
 {
-    NSString *sql = [NSString stringWithFormat:@"SELECT count(*) as 'count' FROM sqlite_master WHERE type ='table' and tbl_name = %@", table.singleQuoted];
-    return [[self scalar:sql bind:nil] boolValue];
+    NSString *sql = [NSString stringWithFormat:@"SELECT 1 FROM %@ LIMIT 0", table.singleQuoted];
+    sqlite3_stmt *pStmt;
+    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &pStmt, nil);
+    if (rc == SQLITE_OK) {
+        rc = sqlite3_step(pStmt);
+        sqlite3_finalize(pStmt);
+        if (rc == SQLITE_DONE) rc = SQLITE_OK;
+    }
+    return rc == SQLITE_OK;
 }
 
 - (BOOL)run:(NSString *)sql
@@ -360,13 +375,13 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     NSString *sql = nil;
     switch (mode) {
         case VVDBTransactionImmediate:
-            sql = @"BEGIN IMMEDIATE TRANSACTION";
+            sql = @"BEGIN IMMEDIATE";
             break;
         case VVDBTransactionExclusive:
-            sql = @"BEGIN EXCLUSIVE TRANSACTION";
+            sql = @"BEGIN EXCLUSIVE";
             break;
         default:
-            sql = @"BEGIN DEFERRED TRANSACTION";
+            sql = @"BEGIN DEFERRED";
             break;
     }
     BOOL ret = [[self prepare:sql] run];
@@ -377,7 +392,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 - (BOOL)commit
 {
     if (!_inTransaction) return YES;
-    BOOL ret = [[self prepare:@"COMMIT TRANSACTION"] run];
+    BOOL ret = [[self prepare:@"COMMIT"] run];
     if (ret) _inTransaction = NO;
     return ret;
 }
@@ -385,7 +400,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 - (BOOL)rollback
 {
     if (!_inTransaction) return YES;
-    BOOL ret = [[self prepare:@"ROLLBACK TRANSACTION"] run];
+    BOOL ret = [[self prepare:@"ROLLBACK"] run];
     if (ret) _inTransaction = NO;
     return ret;
 }
@@ -398,22 +413,27 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     return [self transaction:savepoint commit:commit rollback:rollback block:block];
 }
 
+- (BOOL)transaction:(BOOL (^)(void))block
+{
+    return [self transaction:VVDBTransactionImmediate block:block];
+}
+
 - (BOOL)transaction:(VVDBTransaction)mode block:(BOOL (^)(void))block
 {
     NSString *begin = nil;
     switch (mode) {
         case VVDBTransactionImmediate:
-            begin = @"BEGIN IMMEDIATE TRANSACTION";
+            begin = @"BEGIN IMMEDIATE";
             break;
         case VVDBTransactionExclusive:
-            begin = @"BEGIN EXCLUSIVE TRANSACTION";
+            begin = @"BEGIN EXCLUSIVE";
             break;
         default:
-            begin = @"BEGIN DEFERRED TRANSACTION";
+            begin = @"BEGIN DEFERRED";
             break;
     }
-    NSString *commit = @"COMMIT TRANSACTION";
-    NSString *rollback = @"ROLLBACK TRANSACTION";
+    NSString *commit = @"COMMIT";
+    NSString *rollback = @"ROLLBACK";
     return [self transaction:begin commit:commit rollback:rollback block:block];
 }
 
@@ -458,54 +478,33 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 - (void)setbusyHandler:(VVDBBusyHandler)busyHandler
 {
     _busyHandler = busyHandler;
+    if (!_db) return;
     if (!busyHandler) {
-        sqlite3_busy_handler(self.db, NULL, NULL);
+        sqlite3_busy_handler(_db, NULL, NULL);
     } else {
-        sqlite3_busy_handler(self.db, vvdb_busy_callback, (__bridge void *)self);
+        sqlite3_busy_handler(_db, vvdb_busy_callback, (__bridge void *)self);
     }
 }
 
 - (void)setTraceHook:(VVDBTraceHook)traceHook
 {
     _traceHook = traceHook;
+    if (!_db) return;
     if (!traceHook) {
-        sqlite3_trace_v2(self.db, 0, NULL, NULL);
+        sqlite3_trace_v2(_db, 0, NULL, NULL);
     } else {
-        sqlite3_trace_v2(self.db, SQLITE_TRACE_STMT, vvdb_trace_callback, (__bridge void *)self);
+        sqlite3_trace_v2(_db, SQLITE_TRACE_STMT, vvdb_trace_callback, (__bridge void *)self);
     }
 }
-
-/* sqlite3_update_hook has been set when `-open`
- - (void)setUpdateHook:(VVDBUpdateHook)updateHook{
- _updateHook = updateHook;
- if (!updateHook) {
- sqlite3_update_hook(self.db, NULL, NULL);
- }
- else{
- sqlite3_update_hook(self.db, vvdb_update_hook, (__bridge void *)self);
- }
- }
- */
-
-/* sqlite3_commit_hook has been set when `-open`
- - (void)setCommitHook:(VVDBCommitHook)commitHook{
- _commitHook = commitHook;
- if (!commitHook) {
- sqlite3_commit_hook(self.db, NULL, NULL);
- }
- else{
- sqlite3_commit_hook(self.db, vvdb_commit_hook, (__bridge void *)self);
- }
- }
- */
 
 - (void)setRollbackHook:(VVDBRollbackHook)rollbackHook
 {
     _rollbackHook = rollbackHook;
+    if (!_db) return;
     if (!rollbackHook) {
-        sqlite3_rollback_hook(self.db, NULL, NULL);
+        sqlite3_rollback_hook(_db, NULL, NULL);
     } else {
-        sqlite3_rollback_hook(self.db, vvdb_rollback_hook, (__bridge void *)self);
+        sqlite3_rollback_hook(_db, vvdb_rollback_hook, (__bridge void *)self);
     }
 }
 
@@ -525,7 +524,7 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
                 _traceError(resultCode, sql, msg);
             } else {
 #if DEBUG
-                printf("[VVDB][Error] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
+                printf("[VVDB][ERROR] code: %i, error: %s, sql: %s\n", resultCode, errmsg, sql.UTF8String);
 #endif
             }
             if (resultCode == SQLITE_NOTADB && _removeWhenNotADB) {

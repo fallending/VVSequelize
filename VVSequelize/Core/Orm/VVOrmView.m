@@ -108,16 +108,11 @@
 }
 
 //MAKR: - UNAVAILABLE
-- (VVOrmInspection)inspectExistingTable
-{
-    return 0;
-}
-
-- (void)setupTableWith:(VVOrmInspection)inspection
-{
-}
-
 - (void)createTable
+{
+}
+
+- (void)rebuildTable
 {
 }
 

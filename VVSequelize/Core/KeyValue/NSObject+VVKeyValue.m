@@ -665,21 +665,21 @@ static uint8_t digitFromChar(unichar c)
 {
     // do Nothing
 #if DEBUG
-    NSLog(@"setValue: %@ forUndefinedKey: %@", value, key);
+    printf("[VVDB][WARN] setValue: %s forUndefinedKey: %s", [value description].UTF8String, key.UTF8String);
 #endif
 }
 
 - (void)setNilValueForKey:(NSString *)key
 {
 #if DEBUG
-    NSLog(@"setNilValueForKey: %@", key);
+    printf("[VVDB][WARN] setNilValueForKey: %s", key.UTF8String);
 #endif
 }
 
 - (id)valueForUndefinedKey:(NSString *)key
 {
 #if DEBUG
-    NSLog(@"valueForUndefinedKey: %@", key);
+    printf("[VVDB][WARN] valueForUndefinedKey: %s", key.UTF8String);
 #endif
     return nil;
 }

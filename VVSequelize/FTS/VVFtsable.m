@@ -45,10 +45,10 @@
 
 + (instancetype)ormWithFtsClass:(Class<VVFtsable>)clazz name:(NSString *)name database:(VVDatabase *)vvdb
 {
-    return [VVOrm ormWithFtsClass:clazz name:name database:vvdb setup:YES];
+    return [VVOrm ormWithFtsClass:clazz name:name database:vvdb setup:VVOrmSetupCreate];
 }
 
-+ (instancetype)ormWithFtsClass:(Class<VVFtsable>)clazz name:(NSString *)name database:(VVDatabase *)vvdb setup:(BOOL)setup
++ (instancetype)ormWithFtsClass:(Class<VVFtsable>)clazz name:(NSString *)name database:(VVDatabase *)vvdb setup:(VVOrmSetup)setup
 {
     VVOrmConfig *config = [VVOrmConfig configWithFtsable:clazz];
     return [VVOrm ormWithConfig:config name:name database:vvdb setup:setup];
