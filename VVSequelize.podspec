@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'VVSequelize'
-  s.version          = '0.4.0'
+  s.version          = '0.4.1'
   s.summary          = 'ORM model based on SQLite3.'
   s.description      = <<-DESC
                        ORM model based on SQLite3.
@@ -28,7 +28,7 @@ Pod::Spec.new do |s|
       ss.dependency 'VVSequelize/util'
       ss.dependency 'SQLCipher'
       ss.xcconfig = {
-          'OTHER_CFLAGS' => '-DSQLITE_HAS_CODEC -DHAVE_USLEEP=1',
+          'OTHER_CFLAGS' => '-DSQLITE_HAS_CODEC',
           'HEADER_SEARCH_PATHS' => "{PODS_ROOT}/SQLCipher"
       }
   end

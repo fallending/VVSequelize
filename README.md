@@ -4,10 +4,9 @@
 [![License](https://img.shields.io/cocoapods/l/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 [![Platform](https://img.shields.io/cocoapods/p/VVSequelize.svg?style=flat)](https://cocoapods.org/pods/VVSequelize)
 
-## 改动(0.4.0)
-1. 修改highlighter.
-2. 新增协议`VVOrmable`,`VVFtsable`,可直接从Class创建Orm.
-3. 在复杂项目中使用,经过测试,修复多个bug.
+## 改动(0.4.1)
+1. 修复bug, 优化细节.
+2. 懒加载
 
 ## 功能
 * [x] 根据Class生成数据表
