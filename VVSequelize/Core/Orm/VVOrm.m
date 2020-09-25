@@ -10,12 +10,6 @@
 
 #define VV_NO_WARNING(exp) if (exp) {}
 
-typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
-    VVOrmTableExist   = 1 << 0,
-    VVOrmTableChanged = 1 << 1,
-    VVOrmIndexChanged = 1 << 2,
-};
-
 @interface VVOrm ()
 @property (nonatomic, assign) BOOL created;
 @property (nonatomic, copy) NSString *content_table;
@@ -246,62 +240,73 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 
 - (void)rebuildTableAndIndexes {
     _created = NO;
-    VVOrmInspection comparison = [self inspectExistingTable];
-    BOOL ret = [self setupTableWith:comparison];
-    if (ret) _created = YES;
-}
-
-- (VVOrmInspection)inspectExistingTable
-{
-    VVOrmInspection inspection = 0x0;
     VVOrmConfig *tableConfig = [VVOrmConfig configFromTable:_name database:self.vvdb];
-    // check if table exists
-    if (!tableConfig) return inspection;
-    inspection |= VVOrmTableExist;
-    // check table and indexes for updates
-    BOOL ret = [_config isEqualToConfig:tableConfig];
-    if (!ret) inspection |= VVOrmTableChanged;
-    ret = [_config isInedexesEqual:tableConfig];
-    if (!ret) inspection |= VVOrmIndexChanged;
-    return inspection;
-}
+    if (!tableConfig) {
+        [self createTableAndIndexes];
+        return;
+    }
 
-- (BOOL)setupTableWith:(VVOrmInspection)inspection
-{
-    // if table exists, check for updates. if need, rename original table
-    NSString *tempTableName = [NSString stringWithFormat:@"%@_%@", _name, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
-    BOOL exist = inspection & VVOrmTableExist;
-    BOOL changed = inspection & VVOrmTableChanged;
-    BOOL indexChanged = inspection & VVOrmIndexChanged;
     BOOL ret = YES;
-    // rename original table
-    if (exist && changed) {
-        ret = [self renameToTempTable:tempTableName];
-    }
-    if (!ret) return ret;
-    // create new table
-    if (!exist || changed) {
-        ret = [self createTable];
-    }
-    if (!ret) return ret;
-    // migrate data to new table
-    if (exist && changed && !_config.fts) {
-        //MARK: FTS table must migrate data manually
-        [self migrationDataFormTempTable:tempTableName];
-    }
-    // rebuild indexes
-    if (indexChanged || !exist) {
-        [self rebuildIndex];
-    }
-    return ret;
-}
+    #define checkRollback() { if (!ret) { [self.vvdb rollback]; return; } }
 
-- (BOOL)renameToTempTable:(NSString *)tempTableName
-{
-    NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _name.quoted, tempTableName.quoted];
-    BOOL ret = [self.vvdb run:sql];
-    //NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
-    return ret;
+    // add columns
+    if (![_config isEqualToConfig:tableConfig]) {
+        // add columns
+        NSMutableOrderedSet *added = [NSMutableOrderedSet orderedSetWithArray:_config.columns];
+        [added removeObjectsInArray:tableConfig.columns];
+
+        NSArray *addedColumns = added.array;
+        if (addedColumns.count > 0) {
+            [self.vvdb begin:VVDBTransactionImmediate];
+            for (NSString *column in addedColumns) {
+                NSString *alertSQL = [_config alertSQLOfColumn:column table:_name];
+                ret = [self.vvdb run:alertSQL];
+                if (!ret) break;
+                id dflt_val = _config.defaultValues[column];
+                if (dflt_val) {
+                    NSString *updateSQL = [NSString stringWithFormat:@"UPDATE %@ SET %@ = ?", _name.quoted, column.quoted];
+                    [self.vvdb run:updateSQL bind:@[dflt_val]];
+                }
+            }
+            checkRollback();
+            [self.vvdb commit];
+        }
+
+        tableConfig = [VVOrmConfig configFromTable:_name database:self.vvdb];
+        NSMutableOrderedSet *removed = [NSMutableOrderedSet orderedSetWithArray:tableConfig.columns];
+        [removed removeObjectsInArray:_config.columns];
+        if (removed.count > 0) {
+            NSMutableArray *final = [NSMutableArray arrayWithArray:tableConfig.columns];
+            [final removeObjectsInArray:removed.array];
+            tableConfig.columns = final;
+        }
+    }
+
+    if (![_config isEqualToConfig:tableConfig]) {
+        // modify columns
+        [self.vvdb begin:VVDBTransactionImmediate];
+        NSString *tempTableName = [NSString stringWithFormat:@"%@_%@", _name, @((NSUInteger)[[NSDate date] timeIntervalSince1970])];
+        ret = [self renameToTempTable:tempTableName];
+        checkRollback();
+
+        ret =  [self createTableAndIndexes];
+        checkRollback();
+
+        if (!_config.fts) {
+            ret = [self migrationDataFormTempTable:tempTableName];
+            checkRollback();
+        }
+        [self.vvdb commit];
+    } else {
+        _created = YES;
+        // rebuild indexes
+        if (![_config isInedexesEqual:tableConfig]) {
+            [self.vvdb begin:VVDBTransactionImmediate];
+            [self rebuildIndexes];
+            checkRollback();
+            [self.vvdb commit];
+        }
+    }
 }
 
 //MARK: - getter
@@ -322,18 +327,23 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
 }
 
 //MARK: - Private
-- (void)migrationDataFormTempTable:(NSString *)tempTableName
+- (BOOL)renameToTempTable:(NSString *)tempTableName
 {
+    NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _name.quoted, tempTableName.quoted];
+    BOOL ret = [self.vvdb run:sql];
+    //NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
+    return ret;
+}
+
+- (BOOL)migrationDataFormTempTable:(NSString *)tempTableName
+{
+    if (_config.columns.count == 0) return YES;
+
     NSString *allFields = [_config.columns sqlJoin];
-    if (allFields.length == 0) {
-        return;
-    }
     NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.name.quoted, allFields, allFields, tempTableName.quoted];
-    __block BOOL ret = YES;
-    [self.vvdb transaction:VVDBTransactionDeferred block:^BOOL {
-        ret = [self.vvdb run:sql];
-        return ret;
-    }];
+    BOOL ret = YES;
+    ret = [self.vvdb run:sql];
+    if (!ret) return ret;
 
     if (ret) {
         sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", tempTableName.quoted];
@@ -345,6 +355,7 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
         printf("[VVDB][WARN] copying data from old table (%s) to new table (%s) failed!", tempTableName.UTF8String, self.name.UTF8String);
 #endif
     }
+    return ret;
 }
 
 - (BOOL)dropOldIndexes {
@@ -360,27 +371,29 @@ typedef NS_OPTIONS (NSUInteger, VVOrmInspection) {
     return ret;
 }
 
-- (void)rebuildIndex
+- (BOOL)rebuildIndexes
 {
     /// fts table do not need this indexes
-    if (_config.fts || _config.indexes.count == 0) return;
+    if (_config.fts || _config.indexes.count == 0) return YES;
 
     /// drop old indexes
-    BOOL ret1 = [self dropOldIndexes];
-    BOOL ret2 = [self createIndexes];
-    if (ret2) _existingIndexes = nil;
+    BOOL ret = [self dropOldIndexes];
+    if (!ret) {
+#if DEBUG
+        printf("[VVDB][WARN] Failed create index for table (%s)!", self.name.UTF8String);
+#endif
+        return ret;
+    }
 
-    if (!ret1) {
+    ret = [self createIndexes];
+    if (ret) _existingIndexes = nil;
+
+    if (!ret) {
 #if DEBUG
         printf("[VVDB][WARN] Failed create index for table (%s)!", self.name.UTF8String);
 #endif
     }
-
-    if (!ret2) {
-#if DEBUG
-        printf("[VVDB][WARN] Failed create index for table (%s)!", self.name.UTF8String);
-#endif
-    }
+    return ret;
 }
 
 @end

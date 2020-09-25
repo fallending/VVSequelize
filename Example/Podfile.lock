@@ -7,20 +7,20 @@ PODS:
   - SQLCipher/common (4.4.0)
   - SQLCipher/standard (4.4.0):
     - SQLCipher/common
-  - VVSequelize (0.4.0):
-    - VVSequelize/cipher (= 0.4.0)
-  - VVSequelize/cipher (0.4.0):
+  - VVSequelize (0.4.1):
+    - VVSequelize/cipher (= 0.4.1)
+  - VVSequelize/cipher (0.4.1):
     - SQLCipher
     - VVSequelize/core
     - VVSequelize/fts
     - VVSequelize/util
-  - VVSequelize/core (0.4.0):
+  - VVSequelize/core (0.4.1):
     - VVSequelize/header
-  - VVSequelize/fts (0.4.0):
+  - VVSequelize/fts (0.4.1):
     - VVSequelize/core
     - VVSequelize/header
-  - VVSequelize/header (0.4.0)
-  - VVSequelize/util (0.4.0):
+  - VVSequelize/header (0.4.1)
+  - VVSequelize/util (0.4.1):
     - VVSequelize/header
 
 DEPENDENCIES:
@@ -39,7 +39,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   CocoaLumberjack: b17ae15142558d08bbacf69775fa10c4abbebcc9
   SQLCipher: e434ed542b24f38ea7b36468a13f9765e1b5c072
-  VVSequelize: afacb6ab3acefd984c3c12d5c9de7c8e1bee72ec
+  VVSequelize: d7ddd23cfb56bf76dcfa3d200d583daaaaa1ca63
 
 PODFILE CHECKSUM: 93551fd5907f9990e8b8f19e0abcc0881f8dd7dd
 

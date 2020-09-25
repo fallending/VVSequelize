@@ -64,7 +64,9 @@ NSString *const VVSqlTypeJson = @"JSON";
 @interface VVOrmConfig ()
 @property (nonatomic, assign) NSUInteger ftsVersion;
 @property (nonatomic, assign) BOOL fromTable;
-@property (nonatomic, strong) NSArray<NSString *> *columns;
+@property (nonatomic, strong) NSArray<NSString *> *allColumns;
+@property (nonatomic, strong) NSDictionary<NSString *, NSString *> *allTypes;
+@property (nonatomic, strong) NSDictionary<NSString *, id> *allDefaultValues;
 @end
 
 @implementation VVOrmConfig
@@ -159,7 +161,7 @@ NSString *const VVSqlTypeJson = @"JSON";
     }
 
     config.pkAutoIncrement = pkAutoIncrement;
-    config.columns = colmuns;
+    config.columns = colmuns.copy;
     config.primaries = primaries.copy;
     config.notnulls = notnulls.copy;
     config.uniques = uniques.copy;
@@ -245,7 +247,7 @@ NSString *const VVSqlTypeJson = @"JSON";
         [columns addObject:propertyInfo.name];
     }
     config.columns = columns.copy;
-    config.types = types;
+    config.types = types.copy;
     return config;
 }
 
@@ -263,6 +265,23 @@ NSString *const VVSqlTypeJson = @"JSON";
 }
 
 //MARK: - setter/geter
+- (void)setColumns:(NSArray<NSString *> *)columns
+{
+    _allColumns = columns.copy;
+    _columns = columns;
+}
+
+- (void)setTypes:(NSDictionary<NSString *, NSString *> *)types {
+    _allTypes = types.copy;
+    _types = types;
+}
+
+- (void)setDefaultValues:(NSDictionary<NSString *, id> *)defaultValues
+{
+    _allDefaultValues = defaultValues.copy;
+    _defaultValues = defaultValues;
+}
+
 - (NSUInteger)ftsVersion
 {
     if (_ftsVersion <= 3) {
@@ -284,7 +303,7 @@ NSString *const VVSqlTypeJson = @"JSON";
 //MAKR: - public
 - (void)treate
 {
-    NSMutableOrderedSet *columnsSet = [NSMutableOrderedSet orderedSetWithArray:(_columns ? : @[])];
+    NSMutableOrderedSet *columnsSet = [NSMutableOrderedSet orderedSetWithArray:(_allColumns ? : @[])];
     NSMutableSet *whitesSet = [NSMutableSet setWithArray:(_whiteList ? : @[])];
     NSMutableSet *blacksSet = [NSMutableSet setWithArray:(_blackList ? : @[])];
     if (whitesSet.count > 0) {
@@ -299,8 +318,8 @@ NSString *const VVSqlTypeJson = @"JSON";
     NSMutableSet *uniquesSet = [NSMutableSet setWithArray:(_uniques ? : @[])];
     NSMutableSet *notnullsSet = [NSMutableSet setWithArray:(_notnulls ? : @[])];
     NSMutableSet *primariesSet = [NSMutableSet setWithArray:(_primaries ? : @[])];
-    NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_types.allKeys ? : @[])];
-    NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_defaultValues.allKeys ? : @[])];
+    NSMutableSet *typeTrashKeysSet = [NSMutableSet setWithArray:(_allTypes.allKeys ? : @[])];
+    NSMutableSet *defValTrashKeysSet = [NSMutableSet setWithArray:(_allDefaultValues.allKeys ? : @[])];
 
     [indexesSet intersectSet:rowsSet];
     [uniquesSet intersectSet:rowsSet];
@@ -330,8 +349,8 @@ NSString *const VVSqlTypeJson = @"JSON";
     [tempSet intersectSet:notnullsSet];
     _notnulls = tempSet.array.copy;
 
-    _types = [_types vv_removeObjectsForKeys:typeTrashKeysSet.allObjects];
-    _defaultValues = [_defaultValues vv_removeObjectsForKeys:defValTrashKeysSet.allObjects];
+    _types = [_allTypes vv_removeObjectsForKeys:typeTrashKeysSet.allObjects];
+    _defaultValues = [_allDefaultValues vv_removeObjectsForKeys:defValTrashKeysSet.allObjects];
 }
 
 - (BOOL)isEqualToConfig:(VVOrmConfig *)config
@@ -364,6 +383,12 @@ NSString *const VVSqlTypeJson = @"JSON";
     BOOL ret1 = [VVOrmConfig ormArray:self.uniques isEqual:config.uniques];
     BOOL ret2 = [VVOrmConfig ormArray:self.indexes isEqual:config.indexes];
     return ret1 && ret2;
+}
+
+- (NSString *)alertSQLOfColumn:(NSString *)column table:(NSString *)tableName
+{
+    NSString *columnSQL = [self createSQLOfColumn:column];
+    return [NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@", tableName.quoted, columnSQL];
 }
 
 - (NSString *)createSQLOfColumn:(NSString *)column
