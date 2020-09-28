@@ -272,6 +272,16 @@ typedef void (^VVDBTraceError)(int rc, NSString *sql, NSString *errmsg);
 /// last error infomation
 - (NSError *)lastError;
 
+// MARK: - Utils
+
+/// migrating data to a new table
+/// @param columns columns to migrate
+/// @param drop drop source table
+- (BOOL)migrating:(NSArray<NSString *> *)columns
+             from:(NSString *)fromTable
+               to:(NSString *)toTable
+             drop:(BOOL)drop;
+
 // MARK: - cipher
 #ifdef SQLITE_HAS_CODEC
 /// sqlite3 cipher verision

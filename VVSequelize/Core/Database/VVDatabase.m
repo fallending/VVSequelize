@@ -124,10 +124,11 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     BOOL ret = [self check:rc sql:@"sqlite3_open_v2()"];
     //NSAssert1(ret, @"failed to open sqlite3: %@", self.path);
     if (!ret) return NO;
-    
+
     // hook
     sqlite3_update_hook(_db, vvdb_update_hook, (__bridge void *)self);
     sqlite3_commit_hook(_db, vvdb_commit_hook, (__bridge void *)self);
+    if (_timeout > 0) sqlite3_busy_timeout(_db, (int32_t)(_timeout * 1000));
     if (_busyHandler) sqlite3_busy_handler(_db, vvdb_busy_callback, (__bridge void *)self);
     if (_traceHook) sqlite3_trace_v2(_db, SQLITE_TRACE_STMT, vvdb_trace_callback, (__bridge void *)self);
     if (_rollbackHook) sqlite3_rollback_hook(_db, vvdb_rollback_hook, (__bridge void *)self);
@@ -468,11 +469,12 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     sqlite3_interrupt(self.db);
 }
 
-// MARK: - dbrs
+// MARK: - handlers
 - (void)setTimeout:(NSTimeInterval)timeout
 {
     _timeout = timeout;
-    sqlite3_busy_timeout(self.db, (int32_t)(timeout * 1000));
+    if (!_db) return;
+    sqlite3_busy_timeout(_db, (int32_t)(timeout * 1000));
 }
 
 - (void)setbusyHandler:(VVDBBusyHandler)busyHandler
@@ -549,6 +551,33 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
     userInfo[NSLocalizedFailureReasonErrorKey] = [NSString stringWithUTF8String:errmsg];
     NSError *error = [NSError errorWithDomain:VVDBErrorDomain code:code userInfo:userInfo];
     return error;
+}
+
+// MARK: - Utils
+- (BOOL)migrating:(NSArray<NSString *> *)columns
+             from:(NSString *)fromTable
+               to:(NSString *)toTable
+             drop:(BOOL)drop
+{
+    if (columns.count == 0) return YES;
+
+    NSString *allFields = [columns sqlJoin];
+    NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", toTable.quoted, allFields, allFields, fromTable.quoted];
+    BOOL ret = YES;
+    ret = [self run:sql];
+    if (!ret) {
+#if DEBUG
+        printf("[VVDB][WARN] migration data from table (%s) to table (%s) failed!", fromTable.UTF8String, toTable.UTF8String);
+#endif
+        return ret;
+    }
+
+    if (ret && drop) {
+        sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", fromTable.quoted];
+        ret = [self run:sql];
+    }
+
+    return ret;
 }
 
 // MARK: - cipher

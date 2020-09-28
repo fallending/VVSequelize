@@ -250,7 +250,7 @@
     #define checkRollback() { if (!ret) { [self.vvdb rollback]; return; } }
 
     // add columns
-    if (![_config isEqualToConfig:tableConfig]) {
+    if (!_config.fts && ![_config isEqualToConfig:tableConfig]) {
         // add columns
         NSMutableOrderedSet *added = [NSMutableOrderedSet orderedSetWithArray:_config.columns];
         [added removeObjectsInArray:tableConfig.columns];
@@ -291,11 +291,12 @@
 
         ret =  [self createTableAndIndexes];
         checkRollback();
+        
+        NSMutableOrderedSet *columnset = [NSMutableOrderedSet orderedSetWithArray:_config.columns];
+        [columnset intersectSet:[NSSet setWithArray:tableConfig.columns]];
+        ret = [self.vvdb migrating:columnset.array from:tempTableName to:_name drop:YES];
+        checkRollback();
 
-        if (!_config.fts) {
-            ret = [self migrationDataFormTempTable:tempTableName];
-            checkRollback();
-        }
         [self.vvdb commit];
     } else {
         _created = YES;
@@ -332,29 +333,6 @@
     NSString *sql = [NSString stringWithFormat:@"ALTER TABLE %@ RENAME TO %@", _name.quoted, tempTableName.quoted];
     BOOL ret = [self.vvdb run:sql];
     //NSAssert1(ret, @"Failure to create a temporary table: %@", tempTableName);
-    return ret;
-}
-
-- (BOOL)migrationDataFormTempTable:(NSString *)tempTableName
-{
-    if (_config.columns.count == 0) return YES;
-
-    NSString *allFields = [_config.columns sqlJoin];
-    NSString *sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) SELECT %@ FROM %@", self.name.quoted, allFields, allFields, tempTableName.quoted];
-    BOOL ret = YES;
-    ret = [self.vvdb run:sql];
-    if (!ret) return ret;
-
-    if (ret) {
-        sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", tempTableName.quoted];
-        ret = [self.vvdb run:sql];
-    }
-
-    if (!ret) {
-#if DEBUG
-        printf("[VVDB][WARN] copying data from old table (%s) to new table (%s) failed!", tempTableName.UTF8String, self.name.UTF8String);
-#endif
-    }
     return ret;
 }
 

@@ -47,15 +47,17 @@
     }
 
     [self.vvdb registerEnumerator:VVTokenSequelizeEnumerator.class forTokenizer:@"sequelize"];
-//    [self.vvdb setTraceHook:^int(unsigned int mask, void * _Nonnull stmt, void * _Nonnull sql) {
-//        NSLog(@"mask: %@, sql: %s",@(mask),(char *)sql);
-//        return 0;
-//    }];
+    [self.vvdb setTraceHook:^int (unsigned int mask, void *_Nonnull stmt, void *_Nonnull sql) {
+        NSLog(@"[VVDB][DEBUG] sql: %s", (char *)sql);
+        return 0;
+    }];
 
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
-    self.mobileModel = [VVOrm ormWithConfig:config name:@"mobiles" database:self.vvdb];
-    NSUInteger ftsTokenParm = VVTokenMaskDefault | 15;
+    config.defaultValues = @{@"times": @(0)};
+    config.whiteList = @[@"mobile", @"province", @"city", @"carrier", @"industry", @"relative", @"times"];
+    self.mobileModel = [VVOrm ormWithConfig:config name:@"mobiles" database:self.vvdb setup:VVOrmSetupRebuild];
+    NSUInteger ftsTokenParm = VVTokenMaskDefault;
     NSString *tokenizer = [NSString stringWithFormat:@"sequelize %@", @(ftsTokenParm)];
     VVOrmConfig *ftsConfig = [VVOrmConfig ftsConfigWithClass:VVTestMobile.class module:@"fts5" tokenizer:tokenizer indexes:@[@"industry"]];
 
@@ -63,13 +65,12 @@
     //复制数据到fts表
     NSUInteger count = [self.ftsModel count:nil];
     if (count == 0) {
-        for (NSUInteger i = 3; ; i++) {
-            VVTestMobile *mobile = [self.mobileModel findAll:nil orderBy:nil limit:1 offset:i].firstObject;
-            if (!mobile) break;
-            [self.ftsModel insertOne:mobile];
-        }
-        //[self.vvdb excute:@"INSERT INTO fts_mobiles (mobile, province, city, carrier, industry, relative, times) SELECT mobile, province, city, carrier, industry, relative, times FROM mobiles"];
+        NSMutableOrderedSet *columnset = [NSMutableOrderedSet orderedSetWithArray:ftsConfig.columns];
+        [columnset intersectSet:[NSSet setWithArray:config.columns]];
+        [self.vvdb migrating:columnset.array from:self.mobileModel.name to: self.ftsModel.name drop:NO];
     }
+
+    //view
     self.mobileView = [[VVOrmView alloc] initWithName:@"xian_mobiles" orm:self.mobileModel condition:@{ @"city": @"西安" } temporary:NO columns:nil];
 }
 
@@ -88,6 +89,13 @@
     id obj = [self.mobileModel findOne:nil orderBy:@"mobile DESC,city ASC"];
     if (array && obj) {
     }
+}
+
+- (void)testRebuild
+{
+    self.mobileModel.config.whiteList = @[@"mobile", @"province", @"city", @"carrier", @"industry", @"relative", @"frequency"];
+    self.mobileModel.config.defaultValues = @{@"frequency": @(1)};
+    [self.mobileModel rebuildTableAndIndexes];
 }
 
 - (void)testInTransaction
@@ -474,7 +482,6 @@
     } while (ch <= 0xFF5E);
     printf("\n\n\n");
 
-
     ch = 0xFFE1;
     printf("\n\n\n");
     do {
@@ -486,7 +493,7 @@
 
     int len = 7;
     unichar *array = (unichar *)malloc(len);
-    for (int i = 0; i < len; i ++) {
+    for (int i = 0; i < len; i++) {
         array[i] = 0xFFE0 + i;
     }
     NSString *string = [NSString stringWithCharacters:array length:len];
@@ -496,22 +503,21 @@
     printf("\n");
     printf("%s", mstring.UTF8String);
     printf("\n");
-    for (int i = 0; i < len; i ++) {
+    for (int i = 0; i < len; i++) {
         unichar ch = [mstring characterAtIndex:i];
-        printf("0x%x,",ch);
+        printf("0x%x,", ch);
     }
-
 
     printf("\n\n\n");
 }
 
-- (void)testUniStringToUni{
+- (void)testUniStringToUni {
     NSString *uni = @"4E01".lowercaseString;
     const char *str = uni.UTF8String;
     unichar ch = (unichar)strtol(str, NULL, 16);
 
     printf("\n\n\n");
-    printf("0x%x",ch);
+    printf("0x%x", ch);
 
 //    int len = (int)strlen(str);
 //    printf("\n\n\n");

@@ -17,6 +17,7 @@
 @property (nonatomic, copy) NSString *industry;
 @property (nonatomic, assign) CGFloat relative;
 @property (nonatomic, assign) NSInteger times;
+@property (nonatomic, assign) NSInteger frequency;
 @end
 
 @interface VVTestPerson : NSObject
