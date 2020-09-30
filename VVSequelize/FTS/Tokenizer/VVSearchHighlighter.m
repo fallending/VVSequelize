@@ -363,7 +363,7 @@
     NSArray<NSArray<NSSet<NSString *> *> *> *arrangedWords = arranged.lastObject;
     if (arrangedTokens.count == 0 && arrangedWords.count == 0) return nil;
 
-    VVMatchLV1 lv1 = VVMatchLV1_Origin;
+    VVMatchLV1 rlv1 = VVMatchLV1_None;
     BOOL whole = YES;
     NSString *text = self.useSingleLine ? source.singleLine : source;
     NSMutableAttributedString *attrText = [[NSMutableAttributedString alloc] initWithString:text attributes:self.normalAttributes];
@@ -377,6 +377,7 @@
                 NSUInteger k = i;
                 int sloc = -1;
                 int slen = -1;
+                VVMatchLV1 xlv1 = VVMatchLV1_Origin;
                 while (j < kwGroupWords.count && k < groupWords.count) {
                     NSSet<NSString *> *set = groupWords[k];
                     NSSet<NSString *> *kwset = kwGroupWords[j];
@@ -408,7 +409,7 @@
                         } else {
                             tlv1 = VVMatchLV1_Fuzzy;
                         }
-                        if (tlv1 < lv1) lv1 = tlv1;
+                        if (tlv1 < xlv1) xlv1 = tlv1;
                         if (sloc < 0) sloc = tk.start;
                         slen = tk.end - sloc;
                         j++;
@@ -418,6 +419,7 @@
                     }
                 }
                 if (j > 0 && j == kwGroupWords.count) {
+                    if (rlv1 < xlv1) rlv1 = xlv1;
                     NSString *s1 = [[NSString alloc] initWithBytes:cSource length:sloc encoding:NSUTF8StringEncoding];
                     NSString *s2 = [[NSString alloc] initWithBytes:cSource + sloc length:slen encoding:NSUTF8StringEncoding];
                     NSRange range = NSMakeRange(s1.length, s2.length);
@@ -436,9 +438,9 @@
     match.source = source;
     match.ranges = ranges;
     match.attrText = attrText;
-    match.lv1 = lv1;
+    match.lv1 = rlv1;
     match.lv2 = first.location == 0 ? (first.length == attrText.length && whole ? VVMatchLV2_Full : VVMatchLV2_Prefix) : VVMatchLV2_NonPrefix;
-    match.lv3 = lv1 == VVMatchLV1_Origin ? VVMatchLV3_High : lv1 == VVMatchLV1_Fulls ? VVMatchLV3_Medium : VVMatchLV3_Low;
+    match.lv3 = rlv1 == VVMatchLV1_Origin ? VVMatchLV3_High : rlv1 == VVMatchLV1_Fulls ? VVMatchLV3_Medium : VVMatchLV3_Low;
     return match;
 }
 

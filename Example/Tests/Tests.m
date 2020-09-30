@@ -54,7 +54,7 @@
 
     VVOrmConfig *config = [VVOrmConfig configWithClass:VVTestMobile.class];
     config.primaries = @[@"mobile"];
-    config.defaultValues = @{@"times": @(0)};
+    config.defaultValues = @{ @"times": @(0) };
     config.whiteList = @[@"mobile", @"province", @"city", @"carrier", @"industry", @"relative", @"times"];
     self.mobileModel = [VVOrm ormWithConfig:config name:@"mobiles" database:self.vvdb setup:VVOrmSetupRebuild];
     NSUInteger ftsTokenParm = VVTokenMaskDefault;
@@ -67,7 +67,7 @@
     if (count == 0) {
         NSMutableOrderedSet *columnset = [NSMutableOrderedSet orderedSetWithArray:ftsConfig.columns];
         [columnset intersectSet:[NSSet setWithArray:config.columns]];
-        [self.vvdb migrating:columnset.array from:self.mobileModel.name to: self.ftsModel.name drop:NO];
+        [self.vvdb migrating:columnset.array from:self.mobileModel.name to:self.ftsModel.name drop:NO];
     }
 
     //view
@@ -94,7 +94,7 @@
 - (void)testRebuild
 {
     self.mobileModel.config.whiteList = @[@"mobile", @"province", @"city", @"carrier", @"industry", @"relative", @"frequency"];
-    self.mobileModel.config.defaultValues = @{@"frequency": @(1)};
+    self.mobileModel.config.defaultValues = @{ @"frequency": @(1) };
     [self.mobileModel rebuildTableAndIndexes];
 }
 
@@ -596,6 +596,20 @@
         NSAttributedString *attrText = [highlighter trim:match.attrText maxLength:17];
         NSString *desc = [attrText.string.description stringByReplacingOccurrencesOfString:@"\n" withString:@""];
         printf("\ntrim : %s", desc.UTF8String);
+    }
+    printf("\n");
+}
+
+- (void)testHighlight3
+{
+    NSString *keyword = @"an";
+    NSArray *sources = @[@"安", @"安娜"];
+    VVSearchHighlighter *highlighter = [[VVSearchHighlighter alloc] initWithKeyword:keyword];
+    highlighter.mask = VVTokenMaskAll;
+    highlighter.highlightAttributes = @{ NSForegroundColorAttributeName: [UIColor redColor] };
+    for (NSString *source in sources) {
+        VVResultMatch *match = [highlighter highlight:source];
+        printf("\n%16s : %s", keyword.UTF8String, match.description.UTF8String);
     }
     printf("\n");
 }
