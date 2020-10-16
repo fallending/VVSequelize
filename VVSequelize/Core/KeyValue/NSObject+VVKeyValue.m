@@ -551,6 +551,8 @@ static uint8_t digitFromChar(unichar c)
                     else if ([value isKindOfClass:[NSString class]]) {
                         NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
                         if (data.length > 0) tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    } else if ([value isKindOfClass:[NSData class]]) {
+                        tempArray = [NSObject vv_unarchivedObjectOfClass:NSArray.class fromData:value];
                     }
                     if (tempArray && [tempArray isKindOfClass:[NSArray class]]) {
                         NSDictionary *mapper = [[self class] customMapper];
@@ -567,14 +569,18 @@ static uint8_t digitFromChar(unichar c)
                     else if ([value isKindOfClass:[NSString class]]) {
                         NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
                         if (data.length > 0) tempArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    } else if ([value isKindOfClass:[NSData class]]) {
+                        tempArray = [NSObject vv_unarchivedObjectOfClass:NSArray.class fromData:value];
                     }
-                    if (tempArray && [tempArray isKindOfClass:[NSArray class]]) {
-                        NSDictionary *mapper = [[self class] customMapper];
-                        Class cls = mapper[propertyName];
-                        NSArray *array = cls ? [cls vv_objectsWithKeyValuesArray:tempArray] : tempArray;
-                        NSMutableSet *set = [NSMutableSet setWithArray:array];
-                        [self setValue:set forKey:propertyName];
+                    NSMutableSet *set = nil;
+                    if (tempArray) {
+                        if ([tempArray isKindOfClass:[NSSet class]]) {
+                            set = [(NSSet *)tempArray mutableCopy];
+                        } else if ([tempArray isKindOfClass:[NSArray class]]) {
+                            set = [NSMutableSet setWithArray:tempArray];
+                        }
                     }
+                    if (set) [self setValue:set forKey:propertyName];
                 } break;
 
                 case VVEncodingTypeNSDictionary:
@@ -584,6 +590,8 @@ static uint8_t digitFromChar(unichar c)
                     else if ([value isKindOfClass:[NSString class]]) {
                         NSData *data = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
                         if (data.length > 0) tempDic = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    } else if ([value isKindOfClass:[NSData class]]) {
+                        tempDic = [NSObject vv_unarchivedObjectOfClass:NSDictionary.class fromData:value];
                     }
                     if (tempDic) [self setValue:[tempDic mutableCopy] forKey:propertyName];
                 } break;
@@ -620,6 +628,14 @@ static uint8_t digitFromChar(unichar c)
                             NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
                             id obj = [cls vv_objectWithKeyValues:dic];
                             if (obj) [self setValue:obj forKey:propertyName];
+                        } else if ([value isKindOfClass:[NSData class]]) {
+                            id obj = [NSObject vv_unarchivedObjectOfClass:NSDictionary.class fromData:value];
+                            if ([obj isKindOfClass:NSDictionary.class]) {
+                                obj = [cls vv_objectWithKeyValues:(NSDictionary *)obj];
+                            }
+                            if ([obj isKindOfClass:cls]) {
+                                [self setValue:obj forKey:propertyName];
+                            }
                         } else if ([value isKindOfClass:cls]) {
                             [self setValue:value forKey:propertyName];
                         }
@@ -659,6 +675,18 @@ static uint8_t digitFromChar(unichar c)
             break;
     }
 #pragma clang diagnostic pop
+}
+
++ (nullable id)vv_unarchivedObjectOfClass:(Class<NSMutableCopying>)cls fromData:(NSData *)data {
+    if (data.length == 0) return nil;
+    id object = nil;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_14_0
+    object = [NSKeyedUnarchiver unarchivedObjectOfClass:cls fromData:data error:nil];
+#else
+    object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+#endif
+    if (!object) object = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    return object;
 }
 
 - (void)setValue:(id)value forUndefinedKey:(NSString *)key
