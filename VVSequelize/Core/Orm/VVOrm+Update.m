@@ -17,7 +17,7 @@
     [self createTableAndIndexes];
 
     NSString *where = [condition sqlWhere];
-    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
+    where = where.length == 0 ? @"" : [NSString stringWithFormat:@" WHERE %@", where];
 
     NSMutableArray *sets = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray *vals = [NSMutableArray arrayWithCapacity:0];
@@ -109,7 +109,7 @@
     }
 
     NSString *where = [condition sqlWhere];
-    if (where.length > 0) where = [NSString stringWithFormat:@" WHERE %@", where];
+    where = where.length == 0 ? @"" : [NSString stringWithFormat:@" WHERE %@", where];
 
     NSString *sql = [NSString stringWithFormat:@"UPDATE %@ SET %@ %@", self.name.quoted, setString, where];
     return [self.vvdb run:sql];

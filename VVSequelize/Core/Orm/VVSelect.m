@@ -10,7 +10,7 @@
 #import "NSObject+VVOrm.h"
 
 @interface VVSelect ()
-@property (nonatomic, copy) NSString *fieldsString;     ///< 字段列表字符串
+@property (nonatomic, copy) NSString *fieldsString;
 @end
 
 @implementation VVSelect
@@ -189,12 +189,12 @@
     return _fieldsString;
 }
 
-//MARK: - 生成查询语句
+//MARK: - generate query sql
 - (NSString *)sql
 {
     NSAssert(_table.length > 0, @"set table or orm first!");
-    _fieldsString = nil;     // 重置fieldsString
-    
+    _fieldsString = nil;     // reset fieldsString
+
     NSString *where = [_where sqlWhere] ? : @"";
     if (where.length > 0) where =  [NSString stringWithFormat:@" WHERE %@", where];
     

@@ -171,9 +171,10 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 //MARK: - lazy loading
 - (sqlite3 *)db
 {
-    if (_db) return _db;
-    [self open];
-    return _db;
+    @synchronized (self) {
+        if (!_db) [self open];
+        return _db;
+    }
 }
 
 - (NSCache *)cache
