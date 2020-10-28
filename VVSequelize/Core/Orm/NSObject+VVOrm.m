@@ -278,7 +278,12 @@
 
 - (NSString *)vv_strip
 {
-    return [self stringByReplacingOccurrencesOfString:@" +" withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, self.length)];
+    static NSRegularExpression *_regex;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _regex = [NSRegularExpression regularExpressionWithPattern:@" +" options:0 error:nil];
+    });
+    return [_regex stringByReplacingMatchesInString:self options:0 range:NSMakeRange(0, self.length) withTemplate:@" "];
 }
 
 - (BOOL)isMatch:(NSString *)regex

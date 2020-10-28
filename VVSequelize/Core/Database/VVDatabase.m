@@ -162,19 +162,23 @@ static dispatch_queue_t dispatch_create_db_queue(NSString *_Nullable tag, NSStri
 
 - (BOOL)close
 {
-    if (_db == NULL) return YES;
-    BOOL ret = [self check:sqlite3_close_v2(_db) sql:@"sqlite3_close_v2()"];
-    if (ret) _db = NULL;
+    __block BOOL ret = YES;
+    [self sync:^{
+        if (self->_db != NULL) {
+            ret = [self check:sqlite3_close_v2(self->_db) sql:@"sqlite3_close_v2()"];
+            if (ret) self->_db = NULL;
+        }
+    }];
     return ret;
 }
 
 //MARK: - lazy loading
 - (sqlite3 *)db
 {
-    @synchronized (self) {
-        if (!_db) [self open];
-        return _db;
-    }
+    [self sync:^{
+        if (!self->_db) [self open];
+    }];
+    return _db;
 }
 
 - (NSCache *)cache
