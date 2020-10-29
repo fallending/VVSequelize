@@ -681,7 +681,11 @@ static uint8_t digitFromChar(unichar c)
     if (data.length == 0) return nil;
     id object = nil;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_14_0
-    object = [NSKeyedUnarchiver unarchivedObjectOfClass:cls fromData:data error:nil];
+    if (@available(iOS 11.0, *)) {
+        object = [NSKeyedUnarchiver unarchivedObjectOfClass:cls fromData:data error:nil];
+    } else {
+        object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+    }
 #else
     object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
 #endif
