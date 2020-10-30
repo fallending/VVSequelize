@@ -198,6 +198,55 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 
 @end
 
+@interface EGRegEx : NSObject
+@property (nonatomic, strong) NSRegularExpression *transformRegex;
+@property (nonatomic, strong) NSRegularExpression *singleLineRegex;
+@property (nonatomic, strong) NSRegularExpression *patternRegex;
++ (instancetype)shared;
+
+@end
+
+@implementation EGRegEx
+
++ (instancetype)shared
+{
+    static id _shared;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _shared = [[self alloc] init];
+    });
+    return _shared;
+}
+
+- (NSRegularExpression *)transformRegex
+{
+    if (!_transformRegex) {
+        NSString *pattern = @"[\u4e00-\u9fa5]+";
+        _transformRegex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+    }
+    return _transformRegex;
+}
+
+- (NSRegularExpression *)singleLineRegex
+{
+    if (!_singleLineRegex) {
+        NSString *pattern = @"\\s| ";
+        _singleLineRegex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+    }
+    return _singleLineRegex;
+}
+
+- (NSRegularExpression *)patternRegex
+{
+    if (!_patternRegex) {
+        NSString *pattern = @"\\.|\\^|\\$|\\\\|\\[|\\]|\\(|\\)|\\||\\{|\\}|\\*|\\+|\\?";
+        _patternRegex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+    }
+    return _patternRegex;
+}
+
+@end
+
 @implementation NSString (Tokenizer)
 
 + (void)preloadingForPinyin
@@ -239,8 +288,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 - (NSString *)transformStringWith:(NSDictionary *)map
 {
     NSMutableString *string = [NSMutableString stringWithString:self];
-    NSString *pattern = @"[\u4e00-\u9fa5]+";
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+    NSRegularExpression *regex = EGRegEx.shared.transformRegex;
     [regex enumerateMatchesInString:self options:NSMatchingReportCompletion range:NSMakeRange(0, self.length) usingBlock:^(NSTextCheckingResult *_Nullable result, NSMatchingFlags flags, BOOL *_Nonnull stop) {
         if (result.resultType != NSTextCheckingTypeRegularExpression) { return; }
         NSString *subString = [self substringWithRange:result.range];
@@ -353,7 +401,8 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 
 - (NSString *)singleLine
 {
-    return [self stringByReplacingOccurrencesOfString:@"\\s| " withString:@" " options:NSRegularExpressionSearch range:NSMakeRange(0, self.length)];
+    NSRegularExpression *regex = EGRegEx.shared.singleLineRegex;
+    return [regex stringByReplacingMatchesInString:self options:0 range:NSMakeRange(0, self.length) withTemplate:@" "];
 }
 
 - (NSString *)matchingPattern
@@ -366,8 +415,7 @@ static NSString *const kVVPinYinSyllablesFile = @"syllables.txt";
 - (NSString *)regexPattern
 {
     NSMutableString *result = self.matchingPattern.mutableCopy;
-    NSString *pattern = @"\\.|\\^|\\$|\\\\|\\[|\\]|\\(|\\)|\\||\\{|\\}|\\*|\\+|\\?";
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    NSRegularExpression *regex = EGRegEx.shared.patternRegex;
     NSArray<NSTextCheckingResult *> *array = [regex matchesInString:result options:0 range:NSMakeRange(0, result.length)];
     NSArray<NSTextCheckingResult *> *reversed = array.reverseObjectEnumerator.allObjects;
     for (NSTextCheckingResult *r in reversed) {

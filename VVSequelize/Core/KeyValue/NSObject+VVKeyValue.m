@@ -680,15 +680,14 @@ static uint8_t digitFromChar(unichar c)
 + (nullable id)vv_unarchivedObjectOfClass:(Class<NSMutableCopying>)cls fromData:(NSData *)data {
     if (data.length == 0) return nil;
     id object = nil;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_14_0
     if (@available(iOS 11.0, *)) {
         object = [NSKeyedUnarchiver unarchivedObjectOfClass:cls fromData:data error:nil];
     } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+#pragma clang diagnostic pop
     }
-#else
-    object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-#endif
     if (!object) object = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     return object;
 }

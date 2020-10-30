@@ -9,8 +9,6 @@
 #import "VVDatabase+FTS.h"
 #import "NSString+Tokenizer.h"
 
-#define _VVMatchPinyinLen 30
-
 @interface VVResultMatch ()
 @property (nonatomic, assign) VVMatchLV1 lv1;
 @property (nonatomic, assign) VVMatchLV2 lv2;
@@ -64,6 +62,7 @@
 
 @interface VVSearchHighlighter ()
 @property (nonatomic, strong) NSArray<NSArray<NSSet<NSString *> *> *> *kwTokens;
+@property (nonatomic, strong) NSRegularExpression *kwRegex;
 @end
 
 @implementation VVSearchHighlighter
@@ -233,6 +232,7 @@
 {
     _keyword = [keyword stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     _kwTokens = nil;
+    _kwRegex = nil;
 }
 
 - (NSArray<NSArray<NSSet<NSString *> *> *> *)kwTokens
@@ -244,6 +244,14 @@
     else mask = mask & ~VVTokenMaskPinyin;
     _kwTokens = [VVSearchHighlighter arrangeTokens:_keyword.UTF8String mask:mask].lastObject;
     return _kwTokens;
+}
+
+- (NSRegularExpression *)kwRegex{
+    if (!_kwRegex && _keyword.length > 0) {
+        NSString *pattern = _keyword.regexPattern;
+        _kwRegex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    }
+    return _kwRegex;
 }
 
 - (NSDictionary<NSAttributedStringKey, id> *)normalAttributes {
@@ -321,9 +329,7 @@
     VVResultMatch *match = [[VVResultMatch alloc] init];
     match.source = source;
 
-    NSString *pattern = keyword.regexPattern;
-    NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-    NSArray<NSTextCheckingResult *> *results = [expression matchesInString:comparison options:0 range:NSMakeRange(0, comparison.length)];
+    NSArray<NSTextCheckingResult *> *results = [self.kwRegex matchesInString:comparison options:0 range:NSMakeRange(0, comparison.length)];
     if (results.count == 0) return nil;
 
     if (self.quantity > 0 && results.count > self.quantity) {
